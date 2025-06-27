@@ -637,6 +637,8 @@
                 this.setupEventListeners();
                 this.setupCanvas();
                 this.updatePhysics();
+                this.setQuantumMode('cascade'); // Set default quantum mode
+                this.setSequenceType('quantum-walk'); // Set default sequence type
                 this.startVisualizationLoop();
             }
 
@@ -824,6 +826,12 @@
                 document.querySelectorAll('.tab-content').forEach(content => {
                     content.classList.toggle('active', content.id === tabName);
                 });
+                
+                // Redraw visualization for the new tab
+                setTimeout(() => {
+                    this.setupCanvas();
+                    this.drawVisualization();
+                }, 100);
             }
 
             setupCanvas() {
@@ -916,7 +924,8 @@
             }
 
             updateScientificAnalysis() {
-                if (!document.getElementById('analysisResults')) return;
+                const analysisContainer = document.getElementById('analysisResults');
+                if (!analysisContainer) return;
                 
                 const energySpacing = [];
                 for (let i = 1; i < this.energyLevels.length; i++) {
@@ -928,10 +937,19 @@
                 
                 const degeneracy = this.calculateDegeneracy();
                 
-                document.getElementById('energyCount').textContent = this.energyLevels.length;
-                document.getElementById('avgSpacing').textContent = avgSpacing;
-                document.getElementById('maxQuantum').textContent = this.energyLevels.length;
-                document.getElementById('degeneracy').textContent = degeneracy;
+                const elements = {
+                    'energyCount': this.energyLevels.length,
+                    'avgSpacing': avgSpacing,
+                    'maxQuantum': this.energyLevels.length,
+                    'degeneracy': degeneracy
+                };
+                
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    }
+                });
             }
 
             updateEnergyLevelDisplay() {
@@ -1412,10 +1430,18 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 document.querySelectorAll('[data-mode]').forEach(btn => {
                     btn.style.background = btn.dataset.mode === mode ? 
                         'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+                    btn.style.borderColor = btn.dataset.mode === mode ? 
+                        '#00d4ff' : 'rgba(255, 255, 255, 0.2)';
                 });
+                
+                console.log(`Quantum mode set to: ${mode}`);
             }
 
             async exciteSystemWithMode() {
+                if (this.isDecaying) return;
+                
+                console.log(`Executing quantum mode: ${this.currentQuantumMode}`);
+                
                 switch (this.currentQuantumMode) {
                     case 'cascade':
                         return this.exciteSystem();
