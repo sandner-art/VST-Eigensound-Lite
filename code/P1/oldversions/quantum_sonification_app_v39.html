@@ -1,0 +1,2418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Eigensound Lite - Quantum Sonification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0c1445 0%, #1a0b3d 50%, #2d1b4e 100%);
+            color: #e0e6ff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        .container {
+            max-width: 100vw;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #00d4ff, #9d4edd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+
+        .tab.active {
+            background: linear-gradient(45deg, #00d4ff, #9d4edd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .visualization-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .wavefunction-canvas {
+            width: 100%;
+            height: 200px;
+            border-radius: 10px;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1), transparent);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            touch-action: none;
+        }
+
+        .energy-levels {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .energy-level {
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.6), rgba(157, 78, 221, 0.6));
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .energy-level:hover, .energy-level.playing {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.5);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #00d4ff;
+        }
+
+        .slider-container {
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #9d4edd);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 212, 255, 0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #9d4edd);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .slider-value {
+            position: absolute;
+            right: 0;
+            top: -25px;
+            font-size: 0.8rem;
+            color: #00d4ff;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #9d4edd, #7b2cbf);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preset-btn {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #e0e6ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+
+        .preset-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            transform: translateY(-1px);
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #00d4ff;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .recording-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff4757;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .recording-indicator.active {
+            opacity: 1;
+            animation: pulse 1s infinite;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            text-align: left;
+            border-radius: 8px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .frequency-controls {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .measurement-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .measurement-button {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e6ff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .measurement-button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+        }
+
+        .measurement-button.active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+        }
+
+        .particle-container {
+            position: relative;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .quantum-particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #00d4ff, #0099cc);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00d4ff;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .potential-well-editor {
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .wavefunction-canvas {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>EIGENSOUND LITE</h1>
+            <div class="subtitle">Quantum Mechanics Sonification Platform</div>
+            <div class="tabs">
+                <div class="tab active" data-tab="synthesizer">Synthesizer</div>
+                <div class="tab" data-tab="explorer">Explorer</div>
+                <div class="tab" data-tab="sequencer">Sequencer</div>
+                <div class="tab" data-tab="about">About</div>
+            </div>
+        </div>
+
+        <div class="recording-indicator" id="recordingIndicator">● Recording</div>
+
+        <!-- Synthesizer Tab -->
+        <div class="tab-content active" id="synthesizer">
+            <div class="preset-grid">
+                <div class="preset-btn" data-preset="particle-box">Particle in Box</div>
+                <div class="preset-btn" data-preset="harmonic">Harmonic Oscillator</div>
+                <div class="preset-btn" data-preset="double-well">Double Well</div>
+                <div class="preset-btn" data-preset="step">Step Potential</div>
+            </div>
+
+            <div class="visualization-container">
+                <canvas class="wavefunction-canvas potential-well-editor" id="wavefunctionCanvas"></canvas>
+                <div class="particle-container" id="particleContainer"></div>
+                <div class="energy-levels" id="energyLevels"></div>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <div class="tooltip">
+                        <label class="control-label">Well Width (L)</label>
+                        <span class="tooltiptext">Smaller wells = higher energies, more cramped wavefunctions = higher pitch. Controls quantum confinement strength.</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="wellWidth" min="20" max="200" value="100">
+                        <div class="slider-value" id="wellWidthValue">100</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="tooltip">
+                        <label class="control-label">Quantum ↔ Classical</label>
+                        <span class="tooltiptext">100% = sharp quantum states with discrete energies, 0% = classical uncertainty with continuous frequencies</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="quantization" min="0" max="100" value="100">
+                        <div class="slider-value" id="quantizationValue">100%</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="tooltip">
+                        <label class="control-label">Decay Rate</label>
+                        <span class="tooltiptext">How fast excited atoms release photons and drop to lower energy levels. Controls cascade timing.</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="decayRate" min="50" max="1000" value="200">
+                        <div class="slider-value" id="decayRateValue">200ms</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="tooltip">
+                        <label class="control-label">Synthesis Mode</label>
+                        <span class="tooltiptext">Different waveforms create different timbres while preserving quantum energy relationships</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="synthMode" min="0" max="3" value="0" step="1">
+                        <div class="slider-value" id="synthModeValue">Sine</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="frequency-controls">
+                <div class="tooltip">
+                    <label class="control-label">Frequency Mapping</label>
+                    <span class="tooltiptext">Controls how quantum energy levels are mapped to audible frequencies. Essential for hearing low-energy states.</span>
+                </div>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label class="control-label">Base Frequency (Hz)</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="baseFrequency" min="55" max="440" value="110">
+                            <div class="slider-value" id="baseFrequencyValue">110</div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Frequency Scaling</label>
+                        <div class="preset-grid" style="margin-bottom: 0;">
+                            <div class="preset-btn frequency-mode active" data-freq="linear">Linear</div>
+                            <div class="preset-btn frequency-mode" data-freq="log">Logarithmic</div>
+                            <div class="preset-btn frequency-mode" data-freq="octave">Octave Fold</div>
+                            <div class="preset-btn frequency-mode" data-freq="normalize">Normalize</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="exciteButton">Excite System</button>
+                <button class="btn btn-secondary" id="recordButton">Record</button>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Quantum Mode</label>
+                    <div class="preset-grid" style="margin-bottom: 0;">
+                        <div class="preset-btn" data-mode="cascade">Energy Cascade</div>
+                        <div class="preset-btn" data-mode="superposition">Superposition</div>
+                        <div class="preset-btn" data-mode="entanglement">Entanglement</div>
+                        <div class="preset-btn" data-mode="tunneling">Tunneling Beats</div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Profile Management</label>
+                    <div class="action-buttons" style="margin-bottom: 0;">
+                        <button class="btn btn-secondary" id="saveProfile" style="padding: 0.5rem; font-size: 0.85rem;">Save Profile</button>
+                        <button class="btn btn-secondary" id="loadProfile" style="padding: 0.5rem; font-size: 0.85rem;">Load Profile</button>
+                    </div>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Explorer Tab -->
+        <div class="tab-content" id="explorer">
+            <div class="info-panel">
+                <strong>Scientific Mode:</strong> Explore quantum phenomena through direct manipulation of potential wells. Each configuration produces unique sonic signatures that reflect the underlying physics.
+            </div>
+
+            <div class="visualization-container">
+                <canvas class="wavefunction-canvas" id="explorerCanvas"></canvas>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label class="control-label">Potential Shape</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="potentialShape" min="0" max="4" value="0" step="1">
+                            <div class="slider-value" id="potentialShapeValue">Square Well</div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Barrier Height</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="barrierHeight" min="0" max="10" value="5" step="0.1">
+                            <div class="slider-value" id="barrierHeightValue">5.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Scientific Analysis</label>
+                    <div id="analysisResults" style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; min-height: 80px;">
+                        <div style="color: #00d4ff;">System Analysis:</div>
+                        <div>Energy Levels: <span id="energyCount">-</span></div>
+                        <div>Avg Spacing: <span id="avgSpacing">-</span></div>
+                        <div>Quantum Number: <span id="maxQuantum">-</span></div>
+                        <div>Degeneracy: <span id="degeneracy">-</span></div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Measurement Tools</label>
+                    <div class="action-buttons" style="margin-bottom: 0;">
+                        <button class="btn btn-primary" id="measureButton" style="padding: 0.6rem; font-size: 0.9rem;">Quantum Measure</button>
+                        <button class="btn btn-secondary" id="decoherenceButton" style="padding: 0.6rem; font-size: 0.9rem;">Decoherence</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="analyzeButton">Analyze System</button>
+                <button class="btn btn-secondary" id="compareButton">Compare States</button>
+            </div>
+        </div>
+
+        <!-- Sequencer Tab -->
+        <div class="tab-content" id="sequencer">
+            <div class="info-panel">
+                <strong>Quantum Sequencer:</strong> Generate melodies and rhythms from quantum phenomena like quantum walks, spin chains, tunneling rhythms, and interference beats.
+            </div>
+
+            <div class="visualization-container">
+                <canvas class="wavefunction-canvas" id="sequencerCanvas"></canvas>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <div class="tooltip">
+                            <label class="control-label">Sequence Type</label>
+                            <span class="tooltiptext">Different quantum phenomena generate unique musical patterns: walks create melodies, spins create rhythms, tunneling creates irregular beats</span>
+                        </div>
+                        <div class="preset-grid" style="margin-bottom: 0;">
+                            <div class="preset-btn sequence-type" data-seq="quantum-walk">Quantum Walk</div>
+                            <div class="preset-btn sequence-type" data-seq="spin-chain">Spin Chain</div>
+                            <div class="preset-btn sequence-type" data-seq="tunneling">Tunneling Rhythm</div>
+                            <div class="preset-btn sequence-type" data-seq="interference">Interference Beat</div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="tooltip">
+                            <label class="control-label">Sequence Length</label>
+                            <span class="tooltiptext">Number of quantum evolution steps to generate. Longer sequences show more complex quantum behavior patterns.</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="sequenceLength" min="4" max="32" value="16">
+                            <div class="slider-value" id="sequenceLengthValue">16</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Quantum Parameters</label>
+                    <div class="tooltip">
+                        <span class="tooltiptext">Controls quantum transition probabilities - higher values = bigger jumps between energy states</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="walkProbability" min="0" max="100" value="50">
+                            <div class="slider-value" id="walkProbabilityValue">50%</div>
+                        </div>
+                    </div>
+                    <div class="tooltip">
+                        <label class="control-label" style="margin-top: 0.5rem;">Evolution Speed</label>
+                        <span class="tooltiptext">How fast the quantum system evolves in time - controls tempo of generated patterns</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="evolutionSpeed" min="100" max="2000" value="500">
+                            <div class="slider-value" id="evolutionSpeedValue">500ms</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Sequence Control</label>
+                    <div class="action-buttons" style="margin-bottom: 0;">
+                        <button class="btn btn-primary" id="generateSequence" style="padding: 0.6rem; font-size: 0.9rem;">Generate</button>
+                        <button class="btn btn-secondary" id="playSequence" style="padding: 0.6rem; font-size: 0.9rem;">Play</button>
+                    </div>
+                    <div class="action-buttons" style="margin-top: 0.5rem; margin-bottom: 0;">
+                        <button class="btn btn-secondary" id="stopSequence" style="padding: 0.6rem; font-size: 0.9rem;">Stop</button>
+                        <button class="btn btn-secondary" id="loopSequence" style="padding: 0.6rem; font-size: 0.9rem;">Loop: Off</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-container">
+                <div class="control-label">Generated Sequence:</div>
+                <div id="sequenceDisplay" style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; min-height: 60px; word-break: break-all;">
+                    Click "Generate" to create a quantum sequence...
+                </div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div class="tab-content" id="about">
+            <div class="info-panel">
+                <h3 style="margin-bottom: 1rem; color: #00d4ff;">Dual-Validity Framework</h3>
+                <p>This prototype demonstrates how quantum mechanical principles can be translated into sound while maintaining both scientific accuracy and artistic expressiveness.</p>
+            </div>
+
+            <div class="info-panel">
+                <h4 style="margin-bottom: 0.5rem; color: #9d4edd;">Core Concepts:</h4>
+                <ul style="margin-left: 1rem; line-height: 1.6;">
+                    <li><strong>Energy Quantization:</strong> Discrete energy levels create specific pitches</li>
+                    <li><strong>Wavefunction:</strong> Spatial probability shapes timbre and stereo field</li>
+                    <li><strong>Quantum Tunneling:</strong> Probabilistic note transitions</li>
+                    <li><strong>Superposition:</strong> Multiple simultaneous states create rich harmonies</li>
+                    <li><strong>Measurement Collapse:</strong> Observation changes the quantum state</li>
+                    <li><strong>Entanglement:</strong> Correlated particles affect each other instantaneously</li>
+                </ul>
+            </div>
+
+            <div class="info-panel">
+                <h4 style="margin-bottom: 0.5rem; color: #9d4edd;">Usage:</h4>
+                <p>Adjust the potential well shape by dragging on the visualization. Each configuration generates different energy levels and wavefunctions, resulting in unique sonic signatures that reflect the underlying quantum physics.</p>
+            </div>
+
+            <div class="info-panel" style="border-left-color: #9d4edd; margin-top: 2rem;">
+                <div style="font-size: 0.85rem; line-height: 1.5;">
+                    <strong>EIGENSOUND LITE v0.1.0</strong><br>
+                    Created by <strong>Daniel Sandner</strong> as research experiment<br>
+                    for scientific paper project:<br>
+                    <em>"Sonification of Quantum Mechanics for Scientific Exploration and Artistic Expression"</em><br><br>
+                    Copyright © 2025 Daniel Sandner<br>
+                    Research prototype - experimental version
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class QuantumSonificationApp {
+            constructor() {
+                this.audioContext = null;
+                this.isRecording = false;
+                this.recordedChunks = [];
+                this.mediaRecorder = null;
+                
+                // Quantum system parameters
+                this.wellWidth = 100;
+                this.quantization = 1.0;
+                this.decayRate = 200;
+                this.synthMode = 0;
+                this.potentialShape = 0;
+                this.barrierHeight = 5.0;
+                this.currentQuantumMode = 'cascade';
+                
+                // Physics constants (normalized)
+                this.hbar = 1;
+                this.mass = 1;
+                
+                // State
+                this.energyLevels = [];
+                this.wavefunctions = [];
+                this.isDecaying = false;
+                this.currentPreset = 'particle-box';
+                this.isDecoherent = false;
+                this.entangledPair = null;
+                this.superpositionStates = [];
+                
+                // New frequency mapping state
+                this.baseFrequency = 110;
+                this.frequencyMode = 'linear'; // linear, log, octave, normalize
+                
+                // Enhanced measurement state
+                this.measurementStrength = 1.0;
+                this.isContinuousMeasuring = false;
+                this.measurementInterval = null;
+                
+                // Sequencer state
+                this.sequenceType = 'quantum-walk';
+                this.sequenceLength = 16;
+                this.walkProbability = 0.5;
+                this.evolutionSpeed = 500;
+                this.currentSequence = [];
+                this.isSequencePlaying = false;
+                this.sequenceLoop = false;
+                this.sequenceInterval = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupCanvas();
+                this.updatePhysics();
+                this.setQuantumMode('cascade'); // Set default quantum mode
+                this.setSequenceType('quantum-walk'); // Set default sequence type
+                this.setFrequencyMode('linear'); // Set default frequency mode
+                this.startVisualizationLoop();
+            }
+
+            setupEventListeners() {
+                // Tab switching
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+                });
+
+                // Controls
+                this.setupSliderListener('wellWidth', (val) => {
+                    this.wellWidth = parseFloat(val);
+                    this.updatePhysics();
+                });
+
+                this.setupSliderListener('quantization', (val) => {
+                    this.quantization = parseFloat(val) / 100;
+                });
+
+                this.setupSliderListener('decayRate', (val) => {
+                    this.decayRate = parseFloat(val);
+                });
+
+                this.setupSliderListener('synthMode', (val) => {
+                    this.synthMode = parseInt(val);
+                    const modes = ['Sine', 'Square', 'Sawtooth', 'Triangle'];
+                    document.getElementById('synthModeValue').textContent = modes[val];
+                });
+
+                this.setupSliderListener('potentialShape', (val) => {
+                    this.potentialShape = parseInt(val);
+                    const shapes = ['Square Well', 'Harmonic', 'Double Well', 'Step', 'Custom'];
+                    document.getElementById('potentialShapeValue').textContent = shapes[val];
+                    this.updatePhysics();
+                });
+
+                this.setupSliderListener('barrierHeight', (val) => {
+                    this.barrierHeight = parseFloat(val);
+                    this.updatePhysics();
+                });
+
+                // Buttons
+                document.getElementById('exciteButton').addEventListener('click', () => {
+                    this.initAudioContext().then(() => this.exciteSystemWithCurrentMode());
+                });
+
+                document.getElementById('recordButton').addEventListener('click', () => {
+                    this.toggleRecording();
+                });
+
+                document.getElementById('analyzeButton').addEventListener('click', () => {
+                    this.analyzeSystem();
+                });
+
+                document.getElementById('compareButton').addEventListener('click', () => {
+                    this.compareStates();
+                });
+
+                // Presets
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    if (btn.dataset.preset) {
+                        btn.addEventListener('click', () => this.loadPreset(btn.dataset.preset));
+                    } else if (btn.dataset.mode) {
+                        btn.addEventListener('click', () => this.setQuantumMode(btn.dataset.mode));
+                    }
+                });
+
+                // Profile management
+                document.getElementById('saveProfile').addEventListener('click', () => {
+                    this.saveProfile();
+                });
+
+                document.getElementById('loadProfile').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    this.loadProfileFromFile(e.target.files[0]);
+                });
+
+                // Explorer mode buttons
+                document.getElementById('measureButton').addEventListener('click', () => {
+                    this.performQuantumMeasurement();
+                });
+
+                document.getElementById('decoherenceButton').addEventListener('click', () => {
+                    this.simulateDecoherence();
+                });
+
+                // Sequencer controls
+                this.setupSliderListener('sequenceLength', (val) => {
+                    this.sequenceLength = parseInt(val);
+                });
+
+                this.setupSliderListener('walkProbability', (val) => {
+                    this.walkProbability = parseFloat(val) / 100;
+                });
+
+                this.setupSliderListener('evolutionSpeed', (val) => {
+                    this.evolutionSpeed = parseFloat(val);
+                });
+
+                document.getElementById('generateSequence').addEventListener('click', () => {
+                    this.generateQuantumSequence();
+                });
+
+                document.getElementById('playSequence').addEventListener('click', () => {
+                    this.initAudioContext().then(() => this.playQuantumSequence());
+                });
+
+                document.getElementById('stopSequence').addEventListener('click', () => {
+                    this.stopQuantumSequence();
+                });
+
+                document.getElementById('loopSequence').addEventListener('click', () => {
+                    this.toggleSequenceLoop();
+                });
+
+                // Sequencer type selection
+                document.querySelectorAll('.sequence-type').forEach(btn => {
+                    btn.addEventListener('click', () => this.setSequenceType(btn.dataset.seq));
+                });
+
+                // Frequency mapping controls
+                this.setupSliderListener('baseFrequency', (val) => {
+                    this.baseFrequency = parseFloat(val);
+                });
+
+                document.querySelectorAll('.frequency-mode').forEach(btn => {
+                    btn.addEventListener('click', () => this.setFrequencyMode(btn.dataset.freq));
+                });
+
+                // Enhanced measurement controls - Check if elements exist first
+                this.setupSliderListener('measurementStrength', (val) => {
+                    this.measurementStrength = parseFloat(val) / 100;
+                });
+
+                const weakMeasureBtn = document.getElementById('weakMeasureButton');
+                if (weakMeasureBtn) {
+                    weakMeasureBtn.addEventListener('click', () => {
+                        this.performWeakMeasurement();
+                    });
+                }
+
+                const continuousBtn = document.getElementById('continuousMeasureButton');
+                if (continuousBtn) {
+                    continuousBtn.addEventListener('click', () => {
+                        this.toggleContinuousMeasurement();
+                    });
+                }
+
+                // Canvas interaction for potential well editing
+                const canvas = document.getElementById('wavefunctionCanvas');
+                let isDrawing = false;
+                
+                const handlePointerStart = (e) => {
+                    isDrawing = true;
+                    this.editPotentialWell(e);
+                };
+                
+                const handlePointerMove = (e) => {
+                    if (isDrawing) {
+                        this.editPotentialWell(e);
+                    }
+                };
+                
+                const handlePointerEnd = () => {
+                    isDrawing = false;
+                    this.updatePhysics();
+                };
+
+                canvas.addEventListener('pointerdown', handlePointerStart);
+                canvas.addEventListener('pointermove', handlePointerMove);
+                canvas.addEventListener('pointerup', handlePointerEnd);
+                canvas.addEventListener('pointerleave', handlePointerEnd);
+            }
+
+            setupSliderListener(id, callback) {
+                const slider = document.getElementById(id);
+                const valueDisplay = document.getElementById(id + 'Value');
+                
+                if (!slider) {
+                    console.warn(`Slider element with id '${id}' not found`);
+                    return;
+                }
+                
+                slider.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    callback(value);
+                    
+                    // Update display
+                    if (valueDisplay) {
+                        if (id === 'quantization') {
+                            valueDisplay.textContent = value + '%';
+                        } else if (id === 'decayRate') {
+                            valueDisplay.textContent = value + 'ms';
+                        } else if (id === 'evolutionSpeed') {
+                            valueDisplay.textContent = value + 'ms';
+                        } else if (id === 'walkProbability') {
+                            valueDisplay.textContent = value + '%';
+                        } else if (id === 'measurementStrength') {
+                            valueDisplay.textContent = value + '%';
+                        } else {
+                            valueDisplay.textContent = value;
+                        }
+                    }
+                });
+            }
+
+            // PHASE 1: HIGH PRIORITY IMPLEMENTATIONS
+
+            // Enhanced Potential Well Visualization with Barrier Height
+            drawEnhancedPotentialWell(ctx, width, height) {
+                ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const wellHeight = height * 0.7;
+                const wellStart = width * 0.1;
+                const wellEnd = width * 0.9;
+                const barrierHeightPx = (this.barrierHeight / 10) * wellHeight * 0.8; // Scale barrier height
+                
+                if (this.potentialShape === 0) { // Square well
+                    // Draw well walls with barrier height
+                    ctx.moveTo(0, barrierHeightPx);
+                    ctx.lineTo(wellStart, barrierHeightPx);
+                    ctx.lineTo(wellStart, wellHeight);
+                    ctx.lineTo(wellEnd, wellHeight);
+                    ctx.lineTo(wellEnd, barrierHeightPx);
+                    ctx.lineTo(width, barrierHeightPx);
+                    
+                    // Fill barrier regions
+                    ctx.fillStyle = 'rgba(255, 71, 87, 0.2)';
+                    ctx.fillRect(0, 0, wellStart, barrierHeightPx);
+                    ctx.fillRect(wellEnd, 0, width - wellEnd, barrierHeightPx);
+                    
+                } else if (this.potentialShape === 1) { // Harmonic
+                    for (let x = 0; x < width; x++) {
+                        const normalizedX = (x - width/2) / (width/4);
+                        const y = wellHeight - (normalizedX * normalizedX * wellHeight / 4) + barrierHeightPx;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                } else if (this.potentialShape === 2) { // Double well
+                    const center = width / 2;
+                    const barrierWidth = width * 0.05;
+                    ctx.moveTo(0, barrierHeightPx);
+                    ctx.lineTo(wellStart, barrierHeightPx);
+                    ctx.lineTo(wellStart, wellHeight);
+                    ctx.lineTo(center - barrierWidth, wellHeight);
+                    ctx.lineTo(center - barrierWidth, wellHeight - barrierHeightPx);
+                    ctx.lineTo(center + barrierWidth, wellHeight - barrierHeightPx);
+                    ctx.lineTo(center + barrierWidth, wellHeight);
+                    ctx.lineTo(wellEnd, wellHeight);
+                    ctx.lineTo(wellEnd, barrierHeightPx);
+                    ctx.lineTo(width, barrierHeightPx);
+                    
+                    // Fill central barrier
+                    ctx.fillStyle = 'rgba(255, 71, 87, 0.3)';
+                    ctx.fillRect(center - barrierWidth, wellHeight - barrierHeightPx, 
+                                barrierWidth * 2, barrierHeightPx);
+                }
+                
+                ctx.stroke();
+                
+                // Add barrier height label
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '12px monospace';
+                ctx.fillText(`Barrier: ${this.barrierHeight.toFixed(1)}`, width * 0.02, 20);
+            }
+
+            // Frequency Mode Selection
+            setFrequencyMode(mode) {
+                this.frequencyMode = mode;
+                
+                // Update visual feedback
+                document.querySelectorAll('.frequency-mode').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.freq === mode);
+                });
+                
+                console.log(`Frequency mode set to: ${mode}`);
+            }
+
+            // Enhanced Measurement Functions
+            performWeakMeasurement() {
+                // Weak measurement doesn't completely collapse the wavefunction
+                if (this.superpositionStates.length > 0 && this.measurementStrength < 1.0) {
+                    // Partial collapse based on measurement strength
+                    const partialCollapse = Math.random() < this.measurementStrength;
+                    if (partialCollapse) {
+                        const measuredState = this.superpositionStates[
+                            Math.floor(Math.random() * this.superpositionStates.length)
+                        ];
+                        this.playWeakMeasurementSound(measuredState);
+                    }
+                } else {
+                    this.performQuantumMeasurement();
+                }
+            }
+
+            async playWeakMeasurementSound(stateIndex) {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const energy = this.energyLevels[stateIndex];
+                const frequency = this.energyToFrequency(energy);
+                const { osc, gain } = this.createOscillator(frequency);
+                
+                // Weak measurement = partial amplitude
+                const amplitude = 0.1 * this.measurementStrength;
+                
+                gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+                
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 0.6);
+                
+                this.animateParticle(stateIndex);
+            }
+
+            toggleContinuousMeasurement() {
+                this.isContinuousMeasuring = !this.isContinuousMeasuring;
+                const button = document.getElementById('continuousMeasureButton');
+                
+                if (this.isContinuousMeasuring) {
+                    button.classList.add('active');
+                    button.textContent = 'Stop Continuous';
+                    this.startContinuousMeasurement();
+                } else {
+                    button.classList.remove('active');
+                    button.textContent = 'Continuous';
+                    this.stopContinuousMeasurement();
+                }
+            }
+
+            startContinuousMeasurement() {
+                this.measurementInterval = setInterval(() => {
+                    if (Math.random() < 0.3) { // Random measurement events
+                        this.performWeakMeasurement();
+                    }
+                }, 500);
+            }
+
+            stopContinuousMeasurement() {
+                if (this.measurementInterval) {
+                    clearInterval(this.measurementInterval);
+                    this.measurementInterval = null;
+                }
+            }
+
+            // Enhanced Scientific Analysis
+            calculateTunnelingProbability() {
+                if (this.potentialShape === 0 || this.potentialShape === 2) {
+                    // Simple square barrier tunneling
+                    const energy = this.energyLevels[0]; // Use ground state energy
+                    if (energy < this.barrierHeight) {
+                        const penetrationFactor = Math.sqrt(2 * this.mass * (this.barrierHeight - energy));
+                        const transmission = Math.exp(-2 * penetrationFactor * (this.wellWidth / 20));
+                        return Math.min(100, transmission * 100);
+                    }
+                }
+                return 0;
+            }
+
+            updateScientificAnalysis() {
+                const analysisContainer = document.getElementById('analysisResults');
+                if (!analysisContainer) return;
+                
+                const energySpacing = [];
+                for (let i = 1; i < this.energyLevels.length; i++) {
+                    energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
+                }
+                
+                const avgSpacing = energySpacing.length > 0 ? 
+                    (energySpacing.reduce((a,b) => a+b, 0) / energySpacing.length).toFixed(3) : '0';
+                
+                const degeneracy = this.calculateDegeneracy();
+                const tunnelingProb = this.calculateTunnelingProbability();
+                
+                const elements = {
+                    'energyCount': this.energyLevels.length,
+                    'avgSpacing': avgSpacing,
+                    'maxQuantum': this.energyLevels.length,
+                    'degeneracy': degeneracy,
+                    'tunnelingProb': tunnelingProb.toFixed(2)
+                };
+                
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    }
+                });
+            }
+
+            async initAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                }
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabName);
+                });
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.toggle('active', content.id === tabName);
+                });
+                
+                // Redraw visualization for the new tab
+                setTimeout(() => {
+                    this.setupCanvas();
+                    this.drawVisualization();
+                }, 100);
+            }
+
+            setupCanvas() {
+                const canvases = [
+                    document.getElementById('wavefunctionCanvas'),
+                    document.getElementById('explorerCanvas'),
+                    document.getElementById('sequencerCanvas')
+                ];
+                
+                canvases.forEach(canvas => {
+                    if (canvas) {
+                        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+                        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+                        const ctx = canvas.getContext('2d');
+                        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                    }
+                });
+            }
+
+            calculateEnergyLevels() {
+                const numLevels = 8;
+                const levels = [];
+                
+                if (this.potentialShape === 0) { // Square well
+                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
+                    for (let n = 1; n <= numLevels; n++) {
+                        levels.push(constant * n ** 2);
+                    }
+                } else if (this.potentialShape === 1) { // Harmonic oscillator
+                    const omega = 2 * Math.PI / this.wellWidth;
+                    for (let n = 0; n < numLevels; n++) {
+                        levels.push(this.hbar * omega * (n + 0.5));
+                    }
+                } else if (this.potentialShape === 2) { // Double well
+                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * (this.wellWidth/2) ** 2);
+                    for (let n = 1; n <= numLevels; n++) {
+                        const baseLevel = constant * n ** 2;
+                        levels.push(baseLevel);
+                        if (n <= 4) levels.push(baseLevel * 1.1); // Slight splitting
+                    }
+                } else {
+                    // Default to particle in box
+                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
+                    for (let n = 1; n <= numLevels; n++) {
+                        levels.push(constant * n ** 2);
+                    }
+                }
+                
+                return levels.slice(0, numLevels);
+            }
+
+            calculateWavefunctions() {
+                const functions = [];
+                const points = 200;
+                
+                for (let i = 0; i < this.energyLevels.length; i++) {
+                    const wavefunction = [];
+                    const n = i + 1;
+                    
+                    for (let x = 0; x < points; x++) {
+                        const normalizedX = (x / points) * this.wellWidth;
+                        let amplitude;
+                        
+                        if (this.potentialShape === 0) { // Square well
+                            amplitude = Math.sqrt(2 / this.wellWidth) * 
+                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                        } else if (this.potentialShape === 1) { // Harmonic
+                            const xi = normalizedX - this.wellWidth / 2;
+                            amplitude = Math.exp(-xi * xi / (this.wellWidth / 4)) * 
+                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                        } else {
+                            amplitude = Math.sqrt(2 / this.wellWidth) * 
+                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                        }
+                        
+                        wavefunction.push(amplitude);
+                    }
+                    functions.push(wavefunction);
+                }
+                
+                return functions;
+            }
+
+            updatePhysics() {
+                this.energyLevels = this.calculateEnergyLevels();
+                this.wavefunctions = this.calculateWavefunctions();
+                this.updateEnergyLevelDisplay();
+                this.updateScientificAnalysis();
+                this.drawVisualization();
+            }
+
+            updateScientificAnalysis() {
+                const analysisContainer = document.getElementById('analysisResults');
+                if (!analysisContainer) return;
+                
+                const energySpacing = [];
+                for (let i = 1; i < this.energyLevels.length; i++) {
+                    energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
+                }
+                
+                const avgSpacing = energySpacing.length > 0 ? 
+                    (energySpacing.reduce((a,b) => a+b, 0) / energySpacing.length).toFixed(3) : '0';
+                
+                const degeneracy = this.calculateDegeneracy();
+                
+                const elements = {
+                    'energyCount': this.energyLevels.length,
+                    'avgSpacing': avgSpacing,
+                    'maxQuantum': this.energyLevels.length,
+                    'degeneracy': degeneracy
+                };
+                
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    }
+                });
+            }
+
+            updateEnergyLevelDisplay() {
+                const container = document.getElementById('energyLevels');
+                container.innerHTML = '';
+                
+                this.energyLevels.forEach((energy, index) => {
+                    const levelEl = document.createElement('div');
+                    levelEl.className = 'energy-level';
+                    levelEl.textContent = `E${index + 1}: ${energy.toFixed(2)}`;
+                    levelEl.addEventListener('click', () => this.playLevel(index));
+                    container.appendChild(levelEl);
+                });
+            }
+
+            drawVisualization() {
+                const activeTab = document.querySelector('.tab-content.active').id;
+                let canvas;
+                
+                if (activeTab === 'explorer') {
+                    canvas = document.getElementById('explorerCanvas');
+                } else if (activeTab === 'sequencer') {
+                    canvas = document.getElementById('sequencerCanvas');
+                } else {
+                    canvas = document.getElementById('wavefunctionCanvas');
+                }
+                
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+                
+                // Clear canvas
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, width, height);
+                
+                if (activeTab === 'sequencer') {
+                    this.drawSequencerVisualization(ctx, width, height);
+                } else {
+                    // Draw potential well with enhanced barrier visualization
+                    this.drawEnhancedPotentialWell(ctx, width, height);
+                    
+                    // Draw wavefunctions
+                    this.drawWavefunctions(ctx, width, height);
+                    
+                    // Draw energy levels
+                    this.drawEnergyLevels(ctx, width, height);
+                }
+            }
+
+            drawPotentialWell(ctx, width, height) {
+                ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const wellHeight = height * 0.7;
+                const wellStart = width * 0.1;
+                const wellEnd = width * 0.9;
+                
+                if (this.potentialShape === 0) { // Square well
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(wellStart, 0);
+                    ctx.lineTo(wellStart, wellHeight);
+                    ctx.lineTo(wellEnd, wellHeight);
+                    ctx.lineTo(wellEnd, 0);
+                    ctx.lineTo(width, 0);
+                } else if (this.potentialShape === 1) { // Harmonic
+                    for (let x = 0; x < width; x++) {
+                        const normalizedX = (x - width/2) / (width/4);
+                        const y = wellHeight - (normalizedX * normalizedX * wellHeight / 4);
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                } else if (this.potentialShape === 2) { // Double well
+                    const center = width / 2;
+                    const barrierWidth = width * 0.05;
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(wellStart, 0);
+                    ctx.lineTo(wellStart, wellHeight);
+                    ctx.lineTo(center - barrierWidth, wellHeight);
+                    ctx.lineTo(center - barrierWidth, wellHeight * 0.3);
+                    ctx.lineTo(center + barrierWidth, wellHeight * 0.3);
+                    ctx.lineTo(center + barrierWidth, wellHeight);
+                    ctx.lineTo(wellEnd, wellHeight);
+                    ctx.lineTo(wellEnd, 0);
+                    ctx.lineTo(width, 0);
+                }
+                
+                ctx.stroke();
+            }
+
+            drawWavefunctions(ctx, width, height) {
+                if (this.wavefunctions.length === 0) return;
+                
+                const colors = [
+                    'rgba(255, 71, 87, 0.8)',
+                    'rgba(0, 212, 255, 0.8)',
+                    'rgba(157, 78, 221, 0.8)',
+                    'rgba(255, 184, 0, 0.8)',
+                    'rgba(46, 213, 115, 0.8)',
+                    'rgba(255, 118, 117, 0.8)',
+                    'rgba(116, 185, 255, 0.8)',
+                    'rgba(162, 155, 254, 0.8)'
+                ];
+                
+                this.wavefunctions.forEach((wavefunction, index) => {
+                    if (index >= 3) return; // Only show first 3 for clarity
+                    
+                    ctx.strokeStyle = colors[index];
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    const centerY = height * (0.8 - index * 0.15);
+                    const amplitude = height * 0.05;
+                    
+                    wavefunction.forEach((value, i) => {
+                        const x = (i / wavefunction.length) * width * 0.8 + width * 0.1;
+                        const y = centerY - value * amplitude;
+                        
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    });
+                    
+                    ctx.stroke();
+                });
+            }
+
+            drawEnergyLevels(ctx, width, height) {
+                const maxEnergy = Math.max(...this.energyLevels);
+                
+                this.energyLevels.forEach((energy, index) => {
+                    const y = height - (energy / maxEnergy) * height * 0.8;
+                    
+                    ctx.strokeStyle = `rgba(0, 212, 255, ${0.3 + index * 0.1})`;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(width * 0.05, y);
+                    ctx.lineTo(width * 0.95, y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Level label
+                    ctx.fillStyle = 'rgba(0, 212, 255, 0.8)';
+                    ctx.font = '10px monospace';
+                    ctx.fillText(`n=${index + 1}`, width * 0.02, y - 2);
+                });
+            }
+
+            editPotentialWell(e) {
+                const canvas = document.getElementById('wavefunctionCanvas');
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Simple potential editing - adjust well width based on horizontal position
+                const newWidth = Math.max(20, Math.min(200, (x / rect.width) * 180 + 20));
+                this.wellWidth = newWidth;
+                
+                // Update slider to reflect change
+                document.getElementById('wellWidth').value = newWidth;
+                document.getElementById('wellWidthValue').textContent = newWidth.toFixed(0);
+                
+                this.updatePhysics();
+            }
+
+            energyToFrequency(energy, baseFreq = 110) {
+                return baseFreq * Math.pow(2, Math.log2(energy / this.energyLevels[0]));
+            }
+
+            createOscillator(frequency, type = 'sine') {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                
+                const types = ['sine', 'square', 'sawtooth', 'triangle'];
+                osc.type = types[this.synthMode] || 'sine';
+                
+                // Add quantum uncertainty to frequency if not fully quantized
+                const uncertainty = (1 - this.quantization) * 0.05;
+                const detuneAmount = (Math.random() - 0.5) * uncertainty * 100;
+                osc.detune.setValueAtTime(detuneAmount, this.audioContext.currentTime);
+                
+                osc.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                return { osc, gain };
+            }
+
+            async playLevel(levelIndex) {
+                if (!this.audioContext) {
+                    await this.initAudioContext();
+                }
+                
+                const energy = this.energyLevels[levelIndex];
+                const frequency = this.energyToFrequency(energy);
+                const { osc, gain } = this.createOscillator(frequency);
+                
+                // Add wavefunction-based timbre modulation
+                const wavefunction = this.wavefunctions[levelIndex];
+                const complexity = this.calculateWavefunctionComplexity(wavefunction);
+                
+                gain.gain.setValueAtTime(0.3 * complexity, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
+                
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 1.2);
+                
+                // Visual feedback
+                this.animateParticle(levelIndex);
+                this.highlightEnergyLevel(levelIndex);
+            }
+
+            calculateWavefunctionComplexity(wavefunction) {
+                if (!wavefunction || wavefunction.length === 0) return 0.5;
+                
+                let complexity = 0;
+                for (let i = 1; i < wavefunction.length; i++) {
+                    complexity += Math.abs(wavefunction[i] - wavefunction[i-1]);
+                }
+                return Math.min(1, complexity / wavefunction.length);
+            }
+
+            animateParticle(levelIndex) {
+                const container = document.getElementById('particleContainer');
+                const particle = document.createElement('div');
+                particle.className = 'quantum-particle';
+                
+                const maxEnergy = Math.max(...this.energyLevels);
+                const energy = this.energyLevels[levelIndex];
+                const yPosition = (1 - energy / maxEnergy) * 80;
+                
+                particle.style.bottom = `${yPosition}%`;
+                particle.style.left = `${Math.random() * 90}%`;
+                particle.style.opacity = '1';
+                
+                container.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.style.opacity = '0';
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 300);
+                }, 800);
+            }
+
+            highlightEnergyLevel(levelIndex) {
+                const levels = document.querySelectorAll('.energy-level');
+                if (levels[levelIndex]) {
+                    levels[levelIndex].classList.add('playing');
+                    setTimeout(() => {
+                        levels[levelIndex].classList.remove('playing');
+                    }, 1000);
+                }
+            }
+
+            async exciteSystemWithCurrentMode() {
+                if (this.isDecaying) return;
+                
+                switch (this.currentQuantumMode) {
+                    case 'cascade':
+                        return this.exciteSystem();
+                    case 'superposition':
+                        return this.playSuperposition();
+                    case 'entanglement':
+                        return this.playEntangledStates();
+                    case 'tunneling':
+                        return this.playTunnelingBeats();
+                    default:
+                        return this.exciteSystem();
+                }
+            }
+
+            async exciteSystem() {
+                if (this.isDecaying) return;
+                this.isDecaying = true;
+                
+                // Play excitation sound
+                const { osc: exciteOsc, gain: exciteGain } = this.createOscillator(1000, 'sawtooth');
+                exciteOsc.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.1);
+                exciteGain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                exciteGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.1);
+                exciteOsc.start(this.audioContext.currentTime);
+                exciteOsc.stop(this.audioContext.currentTime + 0.15);
+                
+                // Decay cascade
+                let currentLevel = this.energyLevels.length - 1;
+                
+                const decay = () => {
+                    if (currentLevel < 0) {
+                        this.isDecaying = false;
+                        return;
+                    }
+                    
+                    this.playLevel(currentLevel);
+                    
+                    // Quantum jump probability
+                    const jumpSize = Math.random() < 0.7 ? 1 : Math.floor(Math.random() * 3) + 1;
+                    currentLevel -= jumpSize;
+                    
+                    if (currentLevel >= 0) {
+                        setTimeout(decay, this.decayRate);
+                    } else {
+                        this.isDecaying = false;
+                    }
+                };
+                
+                setTimeout(decay, 100);
+            }
+
+            loadPreset(presetName) {
+                this.currentPreset = presetName;
+                
+                switch (presetName) {
+                    case 'particle-box':
+                        this.potentialShape = 0;
+                        this.wellWidth = 100;
+                        this.barrierHeight = 5;
+                        break;
+                    case 'harmonic':
+                        this.potentialShape = 1;
+                        this.wellWidth = 120;
+                        this.barrierHeight = 3;
+                        break;
+                    case 'double-well':
+                        this.potentialShape = 2;
+                        this.wellWidth = 150;
+                        this.barrierHeight = 7;
+                        break;
+                    case 'step':
+                        this.potentialShape = 3;
+                        this.wellWidth = 80;
+                        this.barrierHeight = 8;
+                        break;
+                }
+                
+                // Update UI
+                document.getElementById('wellWidth').value = this.wellWidth;
+                document.getElementById('wellWidthValue').textContent = this.wellWidth;
+                document.getElementById('potentialShape').value = this.potentialShape;
+                document.getElementById('barrierHeight').value = this.barrierHeight;
+                document.getElementById('barrierHeightValue').textContent = this.barrierHeight.toFixed(1);
+                
+                this.updatePhysics();
+            }
+
+            toggleRecording() {
+                if (!this.isRecording) {
+                    this.startRecording();
+                } else {
+                    this.stopRecording();
+                }
+            }
+
+            async startRecording() {
+                if (!this.audioContext) {
+                    await this.initAudioContext();
+                }
+                
+                try {
+                    // Note: This may not work in artifact environment due to permissions
+                    // but will work when deployed to GitHub Pages or similar
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        } 
+                    });
+                    this.mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    this.recordedChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `quantum-sonification-${Date.now()}.webm`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        // Stop all tracks
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    document.getElementById('recordButton').textContent = 'Stop Recording';
+                    document.getElementById('recordingIndicator').classList.add('active');
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    
+                    let errorMsg = 'Recording failed. ';
+                    if (error.name === 'NotAllowedError') {
+                        errorMsg += 'Microphone permission denied. When deployed to a proper web server (like GitHub Pages), please allow microphone access to enable recording.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMsg += 'No microphone found.';
+                    } else {
+                        errorMsg += 'Please check microphone permissions and try again.';
+                    }
+                    
+                    alert(errorMsg);
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    
+                    document.getElementById('recordButton').textContent = 'Record';
+                    document.getElementById('recordingIndicator').classList.remove('active');
+                }
+            }
+
+            analyzeSystem() {
+                // Demonstrate scientific utility by analyzing current system
+                const analysis = {
+                    energySpacing: [],
+                    quantumNumber: this.energyLevels.length,
+                    systemType: ['Square Well', 'Harmonic Oscillator', 'Double Well', 'Step Potential'][this.potentialShape],
+                    degeneracy: this.calculateDegeneracy()
+                };
+                
+                for (let i = 1; i < this.energyLevels.length; i++) {
+                    analysis.energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
+                }
+                
+                alert(`System Analysis:
+Type: ${analysis.systemType}
+Quantum States: ${analysis.quantumNumber}
+Energy Spacing Pattern: ${analysis.energySpacing.slice(0,3).map(s => s.toFixed(2)).join(', ')}...
+Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.energySpacing.length).toFixed(2)}`);
+            }
+
+            calculateDegeneracy() {
+                // Simple degeneracy calculation for demo
+                const uniqueEnergies = [...new Set(this.energyLevels.map(e => Math.round(e * 100) / 100))];
+                return this.energyLevels.length - uniqueEnergies.length;
+            }
+
+            compareStates() {
+                // Play two different energy levels for comparison
+                if (this.energyLevels.length >= 2) {
+                    this.playLevel(0);
+                    setTimeout(() => this.playLevel(this.energyLevels.length - 1), 500);
+                }
+            }
+
+            startVisualizationLoop() {
+                const animate = () => {
+                    this.drawVisualization();
+                    requestAnimationFrame(animate);
+                };
+                animate();
+            }
+
+            // New Quantum Modes
+            setQuantumMode(mode) {
+                this.currentQuantumMode = mode;
+                
+                // Update visual feedback
+                document.querySelectorAll('[data-mode]').forEach(btn => {
+                    btn.style.background = btn.dataset.mode === mode ? 
+                        'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+                    btn.style.borderColor = btn.dataset.mode === mode ? 
+                        '#00d4ff' : 'rgba(255, 255, 255, 0.2)';
+                });
+                
+                console.log(`Quantum mode set to: ${mode}`);
+            }
+
+            async exciteSystemWithMode() {
+                if (this.isDecaying) return;
+                
+                console.log(`Executing quantum mode: ${this.currentQuantumMode}`);
+                
+                switch (this.currentQuantumMode) {
+                    case 'cascade':
+                        return this.exciteSystem();
+                    case 'superposition':
+                        return this.playSuperposition();
+                    case 'entanglement':
+                        return this.playEntangledStates();
+                    case 'tunneling':
+                        return this.playTunnelingBeats();
+                    default:
+                        return this.exciteSystem();
+                }
+            }
+
+            async playSuperposition() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                // Play multiple energy levels simultaneously with interference
+                const numStates = Math.min(4, this.energyLevels.length);
+                const activeStates = [];
+                
+                for (let i = 0; i < numStates; i++) {
+                    const levelIndex = Math.floor(Math.random() * this.energyLevels.length);
+                    const energy = this.energyLevels[levelIndex];
+                    const frequency = this.energyToFrequency(energy);
+                    
+                    const { osc, gain } = this.createOscillator(frequency);
+                    const amplitude = 0.15 / numStates; // Distribute amplitude
+                    
+                    gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                    
+                    osc.start(this.audioContext.currentTime);
+                    osc.stop(this.audioContext.currentTime + 2.2);
+                    
+                    activeStates.push(levelIndex);
+                    this.animateParticle(levelIndex);
+                }
+                
+                this.superpositionStates = activeStates;
+            }
+
+            async playEntangledStates() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                // Create two "entangled" oscillators
+                const level1 = Math.floor(this.energyLevels.length / 3);
+                const level2 = this.energyLevels.length - 1 - level1;
+                
+                const freq1 = this.energyToFrequency(this.energyLevels[level1]);
+                const freq2 = this.energyToFrequency(this.energyLevels[level2]);
+                
+                const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
+                const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
+                
+                // Entanglement: when one changes, the other responds oppositely
+                gain1.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gain2.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                
+                // Create correlated modulation
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                lfo.frequency.setValueAtTime(0.5, this.audioContext.currentTime);
+                lfoGain.gain.setValueAtTime(10, this.audioContext.currentTime);
+                
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc1.detune);
+                lfoGain.connect(osc2.detune);
+                
+                osc1.start(this.audioContext.currentTime);
+                osc2.start(this.audioContext.currentTime);
+                lfo.start(this.audioContext.currentTime);
+                
+                osc1.stop(this.audioContext.currentTime + 3);
+                osc2.stop(this.audioContext.currentTime + 3);
+                lfo.stop(this.audioContext.currentTime + 3);
+                
+                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 3);
+                gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 3);
+                
+                this.animateParticle(level1);
+                this.animateParticle(level2);
+            }
+
+            async playTunnelingBeats() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                // Create beat frequencies from closely spaced energy levels
+                const level1 = 2;
+                const level2 = 3;
+                
+                if (level2 >= this.energyLevels.length) return;
+                
+                const freq1 = this.energyToFrequency(this.energyLevels[level1]);
+                const freq2 = freq1 * 1.02; // Slight detuning for beats
+                
+                const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
+                const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
+                
+                gain1.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                
+                // Add tunneling-style amplitude modulation
+                const tremolo = this.audioContext.createOscillator();
+                const tremoloGain = this.audioContext.createGain();
+                tremolo.frequency.setValueAtTime(Math.abs(freq2 - freq1), this.audioContext.currentTime);
+                tremoloGain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                
+                tremolo.connect(tremoloGain);
+                tremoloGain.connect(gain1.gain);
+                tremoloGain.connect(gain2.gain);
+                
+                osc1.start(this.audioContext.currentTime);
+                osc2.start(this.audioContext.currentTime);
+                tremolo.start(this.audioContext.currentTime);
+                
+                const duration = 4;
+                osc1.stop(this.audioContext.currentTime + duration);
+                osc2.stop(this.audioContext.currentTime + duration);
+                tremolo.stop(this.audioContext.currentTime + duration);
+                
+                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+            }
+
+            // Profile Management
+            saveProfile() {
+                const profile = {
+                    name: `Quantum Profile ${new Date().toLocaleString()}`,
+                    timestamp: Date.now(),
+                    parameters: {
+                        wellWidth: this.wellWidth,
+                        quantization: this.quantization,
+                        decayRate: this.decayRate,
+                        synthMode: this.synthMode,
+                        potentialShape: this.potentialShape,
+                        barrierHeight: this.barrierHeight,
+                        currentPreset: this.currentPreset,
+                        currentQuantumMode: this.currentQuantumMode,
+                        // New Phase 1 parameters
+                        baseFrequency: this.baseFrequency,
+                        frequencyMode: this.frequencyMode,
+                        measurementStrength: this.measurementStrength
+                    },
+                    energyLevels: [...this.energyLevels],
+                    metadata: {
+                        version: '0.1.0',
+                        type: 'quantum-sonification-profile'
+                    }
+                };
+                
+                // Save to localStorage
+                const profiles = JSON.parse(localStorage.getItem('quantumProfiles') || '[]');
+                profiles.push(profile);
+                localStorage.setItem('quantumProfiles', JSON.stringify(profiles));
+                
+                // Download as file
+                const blob = new Blob([JSON.stringify(profile, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quantum-profile-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert('Profile saved to downloads and browser cache!');
+            }
+
+            async loadProfileFromFile(file) {
+                if (!file) return;
+                
+                try {
+                    const text = await file.text();
+                    const profile = JSON.parse(text);
+                    
+                    if (profile.metadata?.type === 'quantum-sonification-profile') {
+                        this.loadProfileData(profile);
+                        alert(`Loaded profile: ${profile.name}`);
+                    } else {
+                        alert('Invalid profile file format');
+                    }
+                } catch (error) {
+                    alert('Error loading profile: ' + error.message);
+                }
+            }
+
+            loadProfileData(profile) {
+                const params = profile.parameters;
+                
+                // Restore parameters
+                this.wellWidth = params.wellWidth;
+                this.quantization = params.quantization;
+                this.decayRate = params.decayRate;
+                this.synthMode = params.synthMode;
+                this.potentialShape = params.potentialShape;
+                this.barrierHeight = params.barrierHeight;
+                this.currentPreset = params.currentPreset;
+                this.currentQuantumMode = params.currentQuantumMode || 'cascade';
+                
+                // Restore new Phase 1 parameters
+                this.baseFrequency = params.baseFrequency || 110;
+                this.frequencyMode = params.frequencyMode || 'linear';
+                this.measurementStrength = params.measurementStrength || 1.0;
+                
+                // Update UI
+                this.updateAllSliders();
+                this.setQuantumMode(this.currentQuantumMode);
+                this.setFrequencyMode(this.frequencyMode);
+                this.updatePhysics();
+            }
+
+            updateAllSliders() {
+                const sliders = [
+                    ['wellWidth', this.wellWidth],
+                    ['quantization', this.quantization * 100],
+                    ['decayRate', this.decayRate],
+                    ['synthMode', this.synthMode],
+                    ['potentialShape', this.potentialShape],
+                    ['barrierHeight', this.barrierHeight],
+                    ['baseFrequency', this.baseFrequency],
+                    ['measurementStrength', this.measurementStrength * 100]
+                ];
+                
+                sliders.forEach(([id, value]) => {
+                    const slider = document.getElementById(id);
+                    const display = document.getElementById(id + 'Value');
+                    if (slider) {
+                        slider.value = value;
+                        if (display) {
+                            if (id === 'quantization') {
+                                display.textContent = value + '%';
+                            } else if (id === 'decayRate') {
+                                display.textContent = value + 'ms';
+                            } else if (id === 'synthMode') {
+                                const modes = ['Sine', 'Square', 'Sawtooth', 'Triangle'];
+                                display.textContent = modes[value];
+                            } else if (id === 'potentialShape') {
+                                const shapes = ['Square Well', 'Harmonic', 'Double Well', 'Step', 'Custom'];
+                                display.textContent = shapes[value];
+                            } else if (id === 'measurementStrength') {
+                                display.textContent = value + '%';
+                            } else {
+                                display.textContent = value;
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Quantum Measurement Tools
+            performQuantumMeasurement() {
+                // Simulate quantum measurement collapse
+                if (this.superpositionStates.length > 0) {
+                    // Collapse to random state
+                    const collapsedState = this.superpositionStates[
+                        Math.floor(Math.random() * this.superpositionStates.length)
+                    ];
+                    this.playLevel(collapsedState);
+                    this.superpositionStates = [collapsedState];
+                    
+                    alert(`Quantum measurement collapsed superposition to state n=${collapsedState + 1}`);
+                } else {
+                    // Perform measurement on random state
+                    const randomState = Math.floor(Math.random() * this.energyLevels.length);
+                    this.playLevel(randomState);
+                    alert(`Measured quantum state: n=${randomState + 1}, E=${this.energyLevels[randomState].toFixed(3)}`);
+                }
+            }
+
+            simulateDecoherence() {
+                this.isDecoherent = !this.isDecoherent;
+                const button = document.getElementById('decoherenceButton');
+                
+                if (this.isDecoherent) {
+                    // Transition to classical behavior
+                    this.quantization = 0.3;
+                    document.getElementById('quantization').value = 30;
+                    document.getElementById('quantizationValue').textContent = '30%';
+                    button.textContent = 'Restore Coherence';
+                    button.style.background = 'linear-gradient(45deg, #ff4757, #c44569)';
+                    
+                    // Play decoherent sound
+                    this.playDecoherentSound();
+                } else {
+                    // Restore quantum behavior
+                    this.quantization = 1.0;
+                    document.getElementById('quantization').value = 100;
+                    document.getElementById('quantizationValue').textContent = '100%';
+                    button.textContent = 'Decoherence';
+                    button.style.background = 'linear-gradient(45deg, #9d4edd, #7b2cbf)';
+                }
+            }
+
+            async playDecoherentSound() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const { osc, gain } = this.createOscillator(440, 'sawtooth');
+                
+                // Add noise to simulate decoherence
+                const noise = this.audioContext.createBufferSource();
+                const buffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 2, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = (Math.random() - 0.5) * 0.1;
+                }
+                
+                noise.buffer = buffer;
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                
+                noise.connect(noiseGain);
+                noiseGain.connect(this.audioContext.destination);
+                
+                gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                
+                osc.start(this.audioContext.currentTime);
+                noise.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 2.2);
+                noise.stop(this.audioContext.currentTime + 2.2);
+            }
+
+            // Sequencer Functions
+            setSequenceType(type) {
+                this.sequenceType = type;
+                
+                // Update visual feedback
+                document.querySelectorAll('.sequence-type').forEach(btn => {
+                    btn.style.background = btn.dataset.seq === type ? 
+                        'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+                });
+                
+                // Generate new sequence when type changes
+                this.generateQuantumSequence();
+            }
+
+            generateQuantumSequence() {
+                this.currentSequence = [];
+                
+                switch (this.sequenceType) {
+                    case 'quantum-walk':
+                        this.currentSequence = this.generateQuantumWalk();
+                        break;
+                    case 'spin-chain':
+                        this.currentSequence = this.generateSpinChain();
+                        break;
+                    case 'tunneling':
+                        this.currentSequence = this.generateTunnelingRhythm();
+                        break;
+                    case 'interference':
+                        this.currentSequence = this.generateInterferenceBeat();
+                        break;
+                }
+                
+                this.displaySequence();
+                this.drawVisualization();
+            }
+
+            generateQuantumWalk() {
+                const sequence = [];
+                let position = Math.floor(this.energyLevels.length / 2); // Start in middle
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    // Quantum random walk
+                    const step = Math.random() < this.walkProbability ? 1 : -1;
+                    position = Math.max(0, Math.min(this.energyLevels.length - 1, position + step));
+                    
+                    sequence.push({
+                        energyLevel: position,
+                        frequency: this.energyToFrequency(this.energyLevels[position]),
+                        duration: this.evolutionSpeed,
+                        amplitude: 0.3
+                    });
+                }
+                
+                return sequence;
+            }
+
+            generateSpinChain() {
+                const sequence = [];
+                let spinState = Math.random() < 0.5; // Start with random spin
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    // Spin flip probability based on quantum coupling
+                    if (Math.random() < 0.3) {
+                        spinState = !spinState;
+                    }
+                    
+                    const energyLevel = spinState ? 
+                        Math.floor(this.energyLevels.length * 0.75) : 
+                        Math.floor(this.energyLevels.length * 0.25);
+                    
+                    sequence.push({
+                        energyLevel: energyLevel,
+                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                        duration: this.evolutionSpeed * (spinState ? 0.7 : 1.3),
+                        amplitude: spinState ? 0.4 : 0.2,
+                        spin: spinState
+                    });
+                }
+                
+                return sequence;
+            }
+
+            generateTunnelingRhythm() {
+                const sequence = [];
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    // Tunneling probability creates irregular rhythm
+                    const tunnelingProb = Math.exp(-this.barrierHeight * Math.random());
+                    const shouldTunnel = Math.random() < tunnelingProb;
+                    
+                    if (shouldTunnel) {
+                        const energyLevel = Math.floor(Math.random() * this.energyLevels.length);
+                        sequence.push({
+                            energyLevel: energyLevel,
+                            frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                            duration: this.evolutionSpeed * 0.5,
+                            amplitude: 0.3,
+                            tunneled: true
+                        });
+                    } else {
+                        // Add rest or very quiet note
+                        sequence.push({
+                            energyLevel: -1,
+                            frequency: 0,
+                            duration: this.evolutionSpeed,
+                            amplitude: 0,
+                            tunneled: false
+                        });
+                    }
+                }
+                
+                return sequence;
+            }
+
+            generateInterferenceBeat() {
+                const sequence = [];
+                const baseFreq = this.energyToFrequency(this.energyLevels[2]);
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const phase = (i / this.sequenceLength) * 2 * Math.PI;
+                    const interference = Math.sin(phase) * Math.cos(phase * 3);
+                    
+                    const energyLevel = Math.floor((interference + 1) * 0.5 * (this.energyLevels.length - 1));
+                    
+                    sequence.push({
+                        energyLevel: energyLevel,
+                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                        duration: this.evolutionSpeed,
+                        amplitude: Math.abs(interference) * 0.4,
+                        interference: interference
+                    });
+                }
+                
+                return sequence;
+            }
+
+            displaySequence() {
+                const display = document.getElementById('sequenceDisplay');
+                if (!display) return;
+                
+                let displayText = `${this.sequenceType.toUpperCase()} (${this.currentSequence.length} steps):\n`;
+                
+                this.currentSequence.forEach((step, i) => {
+                    if (step.energyLevel >= 0) {
+                        displayText += `${i+1}: E${step.energyLevel + 1}(${step.frequency.toFixed(1)}Hz) `;
+                    } else {
+                        displayText += `${i+1}: REST `;
+                    }
+                    
+                    if ((i + 1) % 8 === 0) displayText += '\n';
+                });
+                
+                display.textContent = displayText;
+            }
+
+            async playQuantumSequence() {
+                if (this.isSequencePlaying || this.currentSequence.length === 0) return;
+                
+                this.isSequencePlaying = true;
+                document.getElementById('playSequence').textContent = 'Playing...';
+                
+                const playStep = async (stepIndex) => {
+                    if (!this.isSequencePlaying || stepIndex >= this.currentSequence.length) {
+                        if (this.sequenceLoop && this.isSequencePlaying) {
+                            setTimeout(() => playStep(0), 100);
+                        } else {
+                            this.stopQuantumSequence();
+                        }
+                        return;
+                    }
+                    
+                    const step = this.currentSequence[stepIndex];
+                    
+                    if (step.energyLevel >= 0 && step.amplitude > 0) {
+                        this.playSequenceStep(step);
+                        this.highlightSequenceStep(stepIndex);
+                    }
+                    
+                    setTimeout(() => playStep(stepIndex + 1), step.duration);
+                };
+                
+                playStep(0);
+            }
+
+            playSequenceStep(step) {
+                const { osc, gain } = this.createOscillator(step.frequency);
+                
+                gain.gain.setValueAtTime(step.amplitude, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
+                
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + step.duration / 1000);
+                
+                // Visual feedback
+                if (step.energyLevel >= 0) {
+                    this.animateParticle(step.energyLevel);
+                }
+            }
+
+            highlightSequenceStep(stepIndex) {
+                // Could add visual highlighting of current step in the display
+                // For now, just console log for debugging
+                console.log(`Playing step ${stepIndex + 1}`);
+            }
+
+            stopQuantumSequence() {
+                this.isSequencePlaying = false;
+                document.getElementById('playSequence').textContent = 'Play';
+                
+                if (this.sequenceInterval) {
+                    clearInterval(this.sequenceInterval);
+                    this.sequenceInterval = null;
+                }
+            }
+
+            toggleSequenceLoop() {
+                this.sequenceLoop = !this.sequenceLoop;
+                const button = document.getElementById('loopSequence');
+                button.textContent = `Loop: ${this.sequenceLoop ? 'On' : 'Off'}`;
+                button.style.background = this.sequenceLoop ? 
+                    'rgba(0, 212, 255, 0.3)' : 'linear-gradient(45deg, #9d4edd, #7b2cbf)';
+            }
+
+            drawSequencerVisualization(ctx, width, height) {
+                if (this.currentSequence.length === 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Generate a sequence to see visualization', width / 2, height / 2);
+                    return;
+                }
+                
+                const stepWidth = width / this.currentSequence.length;
+                const maxEnergy = Math.max(...this.energyLevels);
+                
+                this.currentSequence.forEach((step, i) => {
+                    const x = i * stepWidth;
+                    const energy = step.energyLevel >= 0 ? this.energyLevels[step.energyLevel] : 0;
+                    const barHeight = (energy / maxEnergy) * height * 0.8;
+                    
+                    // Color based on sequence type
+                    let color;
+                    switch (this.sequenceType) {
+                        case 'quantum-walk':
+                            color = `hsl(${180 + energy * 20}, 70%, 50%)`;
+                            break;
+                        case 'spin-chain':
+                            color = step.spin ? '#ff4757' : '#3742fa';
+                            break;
+                        case 'tunneling':
+                            color = step.tunneled ? '#2ed573' : '#57606f';
+                            break;
+                        case 'interference':
+                            const hue = step.interference > 0 ? 200 : 300;
+                            color = `hsl(${hue}, 70%, ${50 + Math.abs(step.interference) * 30}%)`;
+                            break;
+                        default:
+                            color = '#00d4ff';
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, height - barHeight, stepWidth - 1, barHeight);
+                    
+                    // Step number
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.font = '10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText((i + 1).toString(), x + stepWidth / 2, height - 5);
+                });
+            }
+        }
+
+        // Initialize the app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.quantumApp = new QuantumSonificationApp();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                const app = window.quantumApp;
+                if (app) {
+                    app.setupCanvas();
+                    app.drawVisualization();
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
