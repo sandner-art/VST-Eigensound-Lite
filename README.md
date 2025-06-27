@@ -8,6 +8,7 @@
 
 > Transform quantum mechanical systems into interactive audio experiences. Explore energy levels, wavefunctions, and quantum phenomena through sound while maintaining scientific accuracy.
 
+
 ## What is This?
 
 Eigensound Lite is a test app for **dual-validity** sonification VST planned to translate quantum mechanics into sound, serving both **scientific analysis** and **artistic creation**. Built on real quantum calculations, it demonstrates how physical constraints can enhance rather than limit creative expression.
@@ -15,6 +16,8 @@ Eigensound Lite is a test app for **dual-validity** sonification VST planned to 
 Please note that 'Lite' does not mean a lesser version of an app. Eigensound Lite is an interactive testbed for research and concepts developed for a future, more advanced software suite, and it will be updated independently. The functions and uses will be different.
 
 **Key Innovation:** The same tool that helps physicists identify quantum states by ear also enables musicians to create compositions leveraging quantum phenomena in addition to traditional synthesis.
+
+![eigensound-screen-sm](https://github.com/user-attachments/assets/55ffc65e-278e-4a82-ac4a-712504583327)
 
 > Quantum systems are probabilistic, not random.
 
