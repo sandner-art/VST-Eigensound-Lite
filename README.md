@@ -12,6 +12,8 @@
 
 Eigensound Lite is a test app for **dual-validity** sonification VST planned to translate quantum mechanics into sound, serving both **scientific analysis** and **artistic creation**. Built on real quantum calculations, it demonstrates how physical constraints can enhance rather than limit creative expression.
 
+Please note that 'Lite' does not mean a lesser version of an app. Eigensound Lite is an interactive testbed for research and concepts developed for a future, more advanced software suite, and it will be updated independently. The functions and uses will be different.
+
 **Key Innovation:** The same tool that helps physicists identify quantum states by ear also enables musicians to create compositions leveraging quantum phenomena in addition to traditional synthesis.
 
 > Quantum systems are probabilistic, not random.
@@ -56,11 +58,11 @@ VST-Eigensound-Lite/
 
 ## Research Context
 
-This project implements the **"Dual-Validity Framework"** for scientific sonification, demonstrated through quantum mechanics. Our research shows:
+This project implements the **"Dual-Validity Framework"** for scientific sonification, demonstrated through quantum mechanics. Our research aims to explore:
 
-- **78% accuracy** in quantum state identification through audio alone
-- **40% improvement** in student quantum concept understanding
-- **Novel musical territories** impossible with traditional synthesis methods
+- **Accuracy** in quantum state identification through audio alone
+- **Improvement** in student quantum concept understanding
+- **Novel musical territories** in context of "quantum synthesis" generative methods
 
 **Research Paper:** [Sonification of Quantum Mechanics for Scientific Exploration and Artistic Expression](papers/P1/paper/)
 
@@ -112,7 +114,22 @@ If you use Eigensound Lite in research or education, please cite:
 
 ## 📄 License
 
-This project is released under **Creative Commons Attribution 4.0 International** to promote open science and artistic collaboration.
+This repository uses a dual-licensing approach:
+
+1.  **Written Content (Papers, Textual Explanations):**
+    *   All textual content, including research papers (`.md` files, `.pdf` generated from this text), textual descriptions, and this README, is licensed under the **Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0)**.
+    *   You can view a copy of this license here [LICENSE_RESOURCES](LICENSE_RESOURCES), read full text here: [https://creativecommons.org/licenses/by-sa/4.0/](https://creativecommons.org/licenses/by-sa/4.0/)
+    *   **Under this license, you are free to:**
+        *   **Share** — copy and redistribute the material in any medium or format.
+        *   **Adapt** — remix, transform, and build upon the material for any purpose, even commercially.
+    *   **Under the following terms:**
+        *   **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+        *   **ShareAlike** — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+2.  **Code Snippets (Illustrative Code, Scripts for Figures, Original Apps):**
+    *   All code snippets found within the `/code/` directory (e.g., Python scripts, conceptual simulation code, scripts for generating figures) and interactive apps are licensed under the [**Apache 2.0 License**](LICENSE).
+
+Please ensure you understand and comply with these licenses when using or contributing to this repository.
 
 ## 👨‍🔬 Author
 
@@ -127,9 +144,9 @@ This project is released under **Creative Commons Attribution 4.0 International*
 
 ## 🌟 Why Quantum Sonification?
 
-> *"The quantum world doesn't just look different—it sounds different too. By listening to quantum mechanics, we discover that the same mathematical constraints that govern atomic behavior can create beautiful music."*
+> *"The quantum world doesn't just look different—it may sound different too. By listening to quantum mechanics, we discover that the same mathematical constraints that govern atomic behavior can design interesting sound effects and music."*
 
-**Eigensound Lite proves that scientific rigor and artistic expression are not opposing forces, but complementary aspects of understanding reality.**
+**Eigensound Lite proves that scientific rigor and artistic expression are complementary aspects of understanding reality.**
 
 ---
 
