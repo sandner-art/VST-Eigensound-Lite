@@ -271,6 +271,11 @@
             transform: translateY(-1px);
         }
 
+        .preset-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+        }
+
         .info-panel {
             background: rgba(0, 0, 0, 0.3);
             padding: 1rem;
@@ -325,17 +330,6 @@
             border: 1px solid rgba(0, 212, 255, 0.3);
         }
 
-        .tooltip .tooltiptext.tooltip-right {
-            left: 105%;
-            margin-left: 0;
-        }
-
-        .tooltip .tooltiptext.tooltip-left {
-            right: 105%;
-            left: auto;
-            margin-left: 0;
-        }
-
         .tooltip .tooltiptext::after {
             content: "";
             position: absolute;
@@ -350,14 +344,6 @@
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
-        }
-
-        .frequency-controls {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .measurement-controls {
@@ -414,6 +400,12 @@
             cursor: crosshair;
         }
 
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 0.5rem;
@@ -437,7 +429,7 @@
     <div class="container">
         <div class="header">
             <h1>EIGENSOUND LITE</h1>
-            <div class="subtitle">Quantum Mechanics Sonification Platform</div>
+            <div class="subtitle">Quantum Mechanics Sonification Platform v0.2.0</div>
             <div class="tabs">
                 <div class="tab active" data-tab="synthesizer">Synthesizer</div>
                 <div class="tab" data-tab="explorer">Explorer</div>
@@ -451,7 +443,7 @@
         <!-- Synthesizer Tab -->
         <div class="tab-content active" id="synthesizer">
             <div class="preset-grid">
-                <div class="preset-btn" data-preset="particle-box">Particle in Box</div>
+                <div class="preset-btn active" data-preset="particle-box">Particle in Box</div>
                 <div class="preset-btn" data-preset="harmonic">Harmonic Oscillator</div>
                 <div class="preset-btn" data-preset="double-well">Double Well</div>
                 <div class="preset-btn" data-preset="step">Step Potential</div>
@@ -509,7 +501,7 @@
                 </div>
             </div>
 
-            <div class="frequency-controls">
+            <div class="control-group">
                 <div class="tooltip">
                     <label class="control-label">Frequency Mapping</label>
                     <span class="tooltiptext">Controls how quantum energy levels are mapped to audible frequencies. Essential for hearing low-energy states.</span>
@@ -542,11 +534,15 @@
             <div class="controls-grid">
                 <div class="control-group">
                     <label class="control-label">Quantum Mode</label>
-                    <div class="preset-grid" style="margin-bottom: 0;">
-                        <div class="preset-btn" data-mode="cascade">Energy Cascade</div>
-                        <div class="preset-btn" data-mode="superposition">Superposition</div>
-                        <div class="preset-btn" data-mode="entanglement">Entanglement</div>
-                        <div class="preset-btn" data-mode="tunneling">Tunneling Beats</div>
+                    <div class="preset-grid" style="margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                        <div class="preset-btn quantum-mode active" data-mode="cascade">Energy Cascade</div>
+                        <div class="preset-btn quantum-mode" data-mode="superposition">Superposition</div>
+                        <div class="preset-btn quantum-mode" data-mode="entanglement">Entanglement</div>
+                        <div class="preset-btn quantum-mode" data-mode="tunneling">Tunneling Beats</div>
+                        <div class="preset-btn quantum-mode" data-mode="coherence">Coherence</div>
+                        <div class="preset-btn quantum-mode" data-mode="interference">Interference</div>
+                        <div class="preset-btn quantum-mode" data-mode="phase-transition">Phase Transition</div>
+                        <div class="preset-btn quantum-mode" data-mode="revival">Quantum Revival</div>
                     </div>
                 </div>
                 <div class="control-group">
@@ -595,13 +591,23 @@
                         <div>Avg Spacing: <span id="avgSpacing">-</span></div>
                         <div>Quantum Number: <span id="maxQuantum">-</span></div>
                         <div>Degeneracy: <span id="degeneracy">-</span></div>
+                        <div>Tunneling Prob: <span id="tunnelingProb">-</span>%</div>
                     </div>
                 </div>
                 <div class="control-group">
-                    <label class="control-label">Measurement Tools</label>
-                    <div class="action-buttons" style="margin-bottom: 0;">
-                        <button class="btn btn-primary" id="measureButton" style="padding: 0.6rem; font-size: 0.9rem;">Quantum Measure</button>
-                        <button class="btn btn-secondary" id="decoherenceButton" style="padding: 0.6rem; font-size: 0.9rem;">Decoherence</button>
+                    <div class="tooltip">
+                        <label class="control-label">Measurement Strength</label>
+                        <span class="tooltiptext">Controls how much measurement disturbs the quantum system. 100% = complete collapse, lower values = partial measurement</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="measurementStrength" min="0" max="100" value="100">
+                        <div class="slider-value" id="measurementStrengthValue">100%</div>
+                    </div>
+                    <div class="measurement-controls">
+                        <button class="measurement-button" id="quantumMeasureButton">Quantum Measure</button>
+                        <button class="measurement-button" id="weakMeasureButton">Weak Measure</button>
+                        <button class="measurement-button" id="continuousMeasureButton">Continuous</button>
+                        <button class="measurement-button" id="decoherenceButton">Decoherence</button>
                     </div>
                 </div>
             </div>
@@ -627,7 +633,7 @@
                             <span class="tooltiptext">Different quantum phenomena generate unique musical patterns: walks create melodies, spins create rhythms, tunneling creates irregular beats</span>
                         </div>
                         <div class="preset-grid" style="margin-bottom: 0;">
-                            <div class="preset-btn sequence-type" data-seq="quantum-walk">Quantum Walk</div>
+                            <div class="preset-btn sequence-type active" data-seq="quantum-walk">Quantum Walk</div>
                             <div class="preset-btn sequence-type" data-seq="spin-chain">Spin Chain</div>
                             <div class="preset-btn sequence-type" data-seq="tunneling">Tunneling Rhythm</div>
                             <div class="preset-btn sequence-type" data-seq="interference">Interference Beat</div>
@@ -722,8 +728,8 @@
                 </div>
                 <div class="control-group">
                     <div class="tooltip">
-                        <label class="control-label">Synthesis Control</label>
-                        <span class="tooltiptext">Apply synthesizer quantum modes as modulation to sequencer patterns</span>
+                        <label class="control-label">Advanced Control</label>
+                        <span class="tooltiptext">Enhanced sequence generation and integration options</span>
                     </div>
                     <div class="measurement-controls">
                         <button class="measurement-button" id="enableStepControl">Enable Step Control</button>
@@ -751,12 +757,28 @@
                     <li><strong>Superposition:</strong> Multiple simultaneous states create rich harmonies</li>
                     <li><strong>Measurement Collapse:</strong> Observation changes the quantum state</li>
                     <li><strong>Entanglement:</strong> Correlated particles affect each other instantaneously</li>
+                    <li><strong>🆕 Coherence:</strong> Temperature-dependent quantum state stability</li>
+                    <li><strong>🆕 Interference:</strong> Wave interference patterns with thermal noise</li>
+                    <li><strong>🆕 Phase Transitions:</strong> Critical point phenomena at specific coupling values</li>
+                    <li><strong>🆕 Quantum Revival:</strong> Periodic wave packet reconstruction</li>
+                </ul>
+            </div>
+
+            <div class="info-panel">
+                <h4 style="margin-bottom: 0.5rem; color: #9d4edd;">New in v0.2.0:</h4>
+                <ul style="margin-left: 1rem; line-height: 1.6;">
+                    <li><strong>4 New Quantum Modes:</strong> Coherence, Interference, Phase Transition, Quantum Revival</li>
+                    <li><strong>Frequency Mapping System:</strong> 4 strategies to make all energy levels audible</li>
+                    <li><strong>Advanced Measurement Tools:</strong> Weak, continuous, and adjustable-strength measurements</li>
+                    <li><strong>Enhanced Parameters:</strong> Temperature, coupling strength, coherence time effects</li>
+                    <li><strong>Step Control Mode:</strong> Individual control over sequence steps</li>
+                    <li><strong>Synthesizer Integration:</strong> Apply quantum modes to sequencer patterns</li>
                 </ul>
             </div>
 
             <div class="info-panel">
                 <h4 style="margin-bottom: 0.5rem; color: #9d4edd;">Usage:</h4>
-                <p>Adjust the potential well shape by dragging on the visualization. Each configuration generates different energy levels and wavefunctions, resulting in unique sonic signatures that reflect the underlying quantum physics.</p>
+                <p>Adjust the potential well shape by dragging on the visualization. Each configuration generates different energy levels and wavefunctions, resulting in unique sonic signatures that reflect the underlying quantum physics. Use the new frequency mapping modes to ensure all quantum states are audible.</p>
             </div>
 
             <div class="info-panel" style="border-left-color: #9d4edd; margin-top: 2rem;">
@@ -802,9 +824,9 @@
                 this.entangledPair = null;
                 this.superpositionStates = [];
                 
-                // New frequency mapping state
+                // Frequency mapping state
                 this.baseFrequency = 110;
-                this.frequencyMode = 'linear'; // linear, log, octave, normalize
+                this.frequencyMode = 'linear';
                 
                 // Enhanced measurement state
                 this.measurementStrength = 1.0;
@@ -816,54 +838,99 @@
                 this.sequenceLength = 16;
                 this.walkProbability = 0.5;
                 this.evolutionSpeed = 500;
-                this.coherenceTime = 1000; // New parameter
+                this.coherenceTime = 1000;
                 this.currentSequence = [];
                 this.isSequencePlaying = false;
                 this.sequenceLoop = false;
                 this.sequenceInterval = null;
                 
-                // Phase 2: Medium Priority state
+                // Advanced parameters
                 this.stepControlEnabled = false;
-                this.stepExcitations = []; // Individual step control
-                this.temperature = 300; // Kelvin
+                this.stepExcitations = [];
+                this.temperature = 300;
                 this.couplingStrength = 1.0;
                 this.multiParticleMode = false;
-                this.decoherenceTime = 1000; // ms
-                this.relaxationTime = 500; // ms
+                this.decoherenceTime = 1000;
+                this.relaxationTime = 500;
                 this.synthModulationEnabled = false;
-                this.lastTemperature = 300; // For testing parameter effects
-                this.lastCouplingStrength = 1.0;
                 
+                // Initialize immediately
                 this.init();
             }
 
             init() {
-                this.setupEventListeners();
-                this.setupCanvas();
-                this.setupTooltipPositioning(); // Add tooltip positioning
-                this.updatePhysics();
-                this.setQuantumMode('cascade'); // Set default quantum mode
-                this.setSequenceType('quantum-walk'); // Set default sequence type
-                this.setFrequencyMode('linear'); // Set default frequency mode
-                this.startVisualizationLoop();
+                try {
+                    console.log('Initializing Eigensound Lite v0.2.0...');
+                    
+                    // Initialize physics first - CRITICAL
+                    this.calculateInitialPhysics();
+                    
+                    this.setupEventListeners();
+                    this.setupCanvas();
+                    this.setQuantumMode('cascade');
+                    this.setSequenceType('quantum-walk');
+                    this.setFrequencyMode('linear');
+                    this.loadPreset('particle-box');
+                    
+                    console.log('✅ Initialization complete!');
+                    console.log('Energy levels:', this.energyLevels.length);
+                    
+                } catch (error) {
+                    console.error('❌ Initialization failed:', error);
+                    alert('Failed to initialize Eigensound Lite. Please refresh the page.');
+                }
+            }
+
+            calculateInitialPhysics() {
+                // Force initial physics calculation
+                console.log('Calculating initial physics...');
                 
-                // Check feature completeness
-                setTimeout(() => {
-                    const isComplete = this.checkFeatureCompleteness();
-                    console.log('All Phase 2 features implemented:', isComplete);
-                }, 1000);
+                const numLevels = 8;
+                const levels = [];
+                
+                // Use default particle-in-box calculation
+                const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
+                for (let n = 1; n <= numLevels; n++) {
+                    levels.push(constant * n ** 2);
+                }
+                
+                this.energyLevels = levels;
+                this.wavefunctions = this.calculateWavefunctions();
+                
+                console.log('✅ Initial physics calculated:', this.energyLevels.length, 'energy levels');
+                
+                // Update displays
+                this.updateEnergyLevelDisplay();
+                this.updateScientificAnalysis();
+            }
+
+            async initAudioContext() {
+                if (!this.audioContext) {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        if (this.audioContext.state === 'suspended') {
+                            await this.audioContext.resume();
+                        }
+                        console.log('✅ Audio context initialized');
+                    } catch (error) {
+                        console.error('❌ Audio context failed:', error);
+                        throw error;
+                    }
+                }
             }
 
             setupEventListeners() {
+                console.log('Setting up event listeners...');
+                
                 // Tab switching
                 document.querySelectorAll('.tab').forEach(tab => {
                     tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
                 });
 
-                // Controls
+                // Parameter controls
                 this.setupSliderListener('wellWidth', (val) => {
                     this.wellWidth = parseFloat(val);
-                    this.syncParametersAcrossTabs();
+                    this.updatePhysics();
                 });
 
                 this.setupSliderListener('quantization', (val) => {
@@ -877,89 +944,41 @@
                 this.setupSliderListener('synthMode', (val) => {
                     this.synthMode = parseInt(val);
                     const modes = ['Sine', 'Square', 'Sawtooth', 'Triangle'];
-                    document.getElementById('synthModeValue').textContent = modes[val];
+                    const display = document.getElementById('synthModeValue');
+                    if (display) display.textContent = modes[val];
                 });
 
                 this.setupSliderListener('potentialShape', (val) => {
                     this.potentialShape = parseInt(val);
                     const shapes = ['Square Well', 'Harmonic', 'Double Well', 'Step', 'Custom'];
-                    document.getElementById('potentialShapeValue').textContent = shapes[val];
-                    this.syncParametersAcrossTabs();
+                    const display = document.getElementById('potentialShapeValue');
+                    if (display) display.textContent = shapes[val];
+                    this.updatePhysics();
                 });
 
                 this.setupSliderListener('barrierHeight', (val) => {
                     this.barrierHeight = parseFloat(val);
-                    this.syncParametersAcrossTabs();
+                    this.updatePhysics();
                 });
 
-                // Buttons
-                document.getElementById('exciteButton').addEventListener('click', () => {
-                    this.initAudioContext().then(() => this.exciteSystemWithCurrentMode());
+                this.setupSliderListener('baseFrequency', (val) => {
+                    this.baseFrequency = parseFloat(val);
                 });
 
-                document.getElementById('recordButton').addEventListener('click', () => {
-                    this.toggleRecording();
+                this.setupSliderListener('measurementStrength', (val) => {
+                    this.measurementStrength = parseFloat(val) / 100;
                 });
 
-                document.getElementById('analyzeButton').addEventListener('click', () => {
-                    this.analyzeSystem();
-                });
-
-                document.getElementById('compareButton').addEventListener('click', () => {
-                    this.compareStates();
-                });
-
-                // Presets and mode selection
-                document.querySelectorAll('.preset-btn').forEach(btn => {
-                    // Handle both preset selection and mode selection
-                    if (btn.dataset.preset) {
-                        btn.addEventListener('click', () => this.loadPreset(btn.dataset.preset));
-                    } else if (btn.dataset.mode) {
-                        btn.addEventListener('click', () => {
-                            console.log('Quantum mode clicked:', btn.dataset.mode);
-                            this.setQuantumMode(btn.dataset.mode);
-                        });
-                    } else if (btn.dataset.seq) {
-                        btn.addEventListener('click', () => this.setSequenceType(btn.dataset.seq));
-                    }
-                });
-
-                // Profile management
-                document.getElementById('saveProfile').addEventListener('click', () => {
-                    this.saveProfile();
-                });
-
-                document.getElementById('loadProfile').addEventListener('click', () => {
-                    document.getElementById('fileInput').click();
-                });
-
-                document.getElementById('fileInput').addEventListener('change', (e) => {
-                    this.loadProfileFromFile(e.target.files[0]);
-                });
-
-                // Explorer mode buttons
-                document.getElementById('measureButton').addEventListener('click', () => {
-                    this.performQuantumMeasurement();
-                });
-
-                document.getElementById('decoherenceButton').addEventListener('click', () => {
-                    this.simulateDecoherence();
-                });
-
-                // Sequencer controls
                 this.setupSliderListener('sequenceLength', (val) => {
                     this.sequenceLength = parseInt(val);
-                    // Regenerate step controls if enabled
                     if (this.stepControlEnabled) {
                         this.generateStepControls();
                     }
-                    // Regenerate sequence to show length change
                     this.generateQuantumSequence();
                 });
 
                 this.setupSliderListener('walkProbability', (val) => {
                     this.walkProbability = parseFloat(val) / 100;
-                    // Regenerate sequence to show effect
                     if (this.currentSequence.length > 0) {
                         this.generateQuantumSequence();
                     }
@@ -971,90 +990,165 @@
 
                 this.setupSliderListener('coherenceTime', (val) => {
                     this.coherenceTime = parseFloat(val);
-                    // Regenerate sequence to show coherence effect
                     if (this.currentSequence.length > 0) {
                         this.generateQuantumSequence();
                     }
                 });
 
-                document.getElementById('generateSequence').addEventListener('click', () => {
-                    this.generateQuantumSequence();
+                this.setupSliderListener('temperature', (val) => {
+                    this.temperature = parseFloat(val);
                 });
 
-                document.getElementById('playSequence').addEventListener('click', () => {
-                    this.initAudioContext().then(() => this.playQuantumSequence());
+                this.setupSliderListener('couplingStrength', (val) => {
+                    this.couplingStrength = parseFloat(val);
                 });
 
-                document.getElementById('stopSequence').addEventListener('click', () => {
-                    this.stopQuantumSequence();
+                // Main action buttons
+                const exciteButton = document.getElementById('exciteButton');
+                if (exciteButton) {
+                    exciteButton.addEventListener('click', () => {
+                        this.initAudioContext().then(() => this.exciteSystemWithCurrentMode());
+                    });
+                }
+
+                const recordButton = document.getElementById('recordButton');
+                if (recordButton) {
+                    recordButton.addEventListener('click', () => {
+                        this.toggleRecording();
+                    });
+                }
+
+                const analyzeButton = document.getElementById('analyzeButton');
+                if (analyzeButton) {
+                    analyzeButton.addEventListener('click', () => {
+                        this.analyzeSystem();
+                    });
+                }
+
+                const compareButton = document.getElementById('compareButton');
+                if (compareButton) {
+                    compareButton.addEventListener('click', () => {
+                        this.compareStates();
+                    });
+                }
+
+                // Preset buttons
+                document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+                    btn.addEventListener('click', () => this.loadPreset(btn.dataset.preset));
                 });
 
-                document.getElementById('loopSequence').addEventListener('click', () => {
-                    this.toggleSequenceLoop();
-                });
-
-                // Sequencer type selection
-                document.querySelectorAll('.sequence-type').forEach(btn => {
-                    btn.addEventListener('click', () => this.setSequenceType(btn.dataset.seq));
-                });
-
-                // Frequency mapping controls
-                this.setupSliderListener('baseFrequency', (val) => {
-                    this.baseFrequency = parseFloat(val);
-                });
-
-                // Frequency mode buttons - ensure they exist before adding listeners
-                const frequencyModeButtons = document.querySelectorAll('.frequency-mode');
-                frequencyModeButtons.forEach(btn => {
+                // Quantum mode buttons
+                document.querySelectorAll('.quantum-mode').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        console.log('Frequency mode clicked:', btn.dataset.freq);
+                        this.setQuantumMode(btn.dataset.mode);
+                    });
+                });
+
+                // Frequency mode buttons
+                document.querySelectorAll('.frequency-mode').forEach(btn => {
+                    btn.addEventListener('click', () => {
                         this.setFrequencyMode(btn.dataset.freq);
                     });
                 });
 
-                // Enhanced measurement controls - Check if elements exist first
-                this.setupSliderListener('measurementStrength', (val) => {
-                    this.measurementStrength = parseFloat(val) / 100;
+                // Sequence type buttons
+                document.querySelectorAll('.sequence-type').forEach(btn => {
+                    btn.addEventListener('click', () => this.setSequenceType(btn.dataset.seq));
                 });
 
-                const weakMeasureBtn = document.getElementById('weakMeasureButton');
-                if (weakMeasureBtn) {
-                    weakMeasureBtn.addEventListener('click', () => {
-                        this.performWeakMeasurement();
-                    });
-                }
+                // Measurement buttons
+                const measureButtons = [
+                    ['quantumMeasureButton', () => this.performQuantumMeasurement()],
+                    ['weakMeasureButton', () => this.performWeakMeasurement()],
+                    ['continuousMeasureButton', () => this.toggleContinuousMeasurement()],
+                    ['decoherenceButton', () => this.simulateDecoherence()]
+                ];
 
-                const continuousBtn = document.getElementById('continuousMeasureButton');
-                if (continuousBtn) {
-                    continuousBtn.addEventListener('click', () => {
-                        this.toggleContinuousMeasurement();
-                    });
-                }
-
-                // Canvas interaction for potential well editing
-                const canvas = document.getElementById('wavefunctionCanvas');
-                let isDrawing = false;
-                
-                const handlePointerStart = (e) => {
-                    isDrawing = true;
-                    this.editPotentialWell(e);
-                };
-                
-                const handlePointerMove = (e) => {
-                    if (isDrawing) {
-                        this.editPotentialWell(e);
+                measureButtons.forEach(([id, handler]) => {
+                    const button = document.getElementById(id);
+                    if (button) {
+                        button.addEventListener('click', handler);
                     }
-                };
-                
-                const handlePointerEnd = () => {
-                    isDrawing = false;
-                    this.updatePhysics();
-                };
+                });
 
-                canvas.addEventListener('pointerdown', handlePointerStart);
-                canvas.addEventListener('pointermove', handlePointerMove);
-                canvas.addEventListener('pointerup', handlePointerEnd);
-                canvas.addEventListener('pointerleave', handlePointerEnd);
+                // Sequencer controls
+                const sequencerButtons = [
+                    ['generateSequence', () => this.generateQuantumSequence()],
+                    ['playSequence', () => this.initAudioContext().then(() => this.playQuantumSequence())],
+                    ['stopSequence', () => this.stopQuantumSequence()],
+                    ['loopSequence', () => this.toggleSequenceLoop()]
+                ];
+
+                sequencerButtons.forEach(([id, handler]) => {
+                    const button = document.getElementById(id);
+                    if (button) {
+                        button.addEventListener('click', handler);
+                    }
+                });
+
+                // Advanced controls
+                const advancedButtons = [
+                    ['enableStepControl', () => this.toggleStepControl()],
+                    ['multiParticleMode', () => this.toggleMultiParticleMode()],
+                    ['synthModulationMode', () => this.toggleSynthModulation()],
+                    ['testAdvancedParams', () => this.testAdvancedParameters()]
+                ];
+
+                advancedButtons.forEach(([id, handler]) => {
+                    const button = document.getElementById(id);
+                    if (button) {
+                        button.addEventListener('click', handler);
+                    }
+                });
+
+                // Profile management
+                const saveButton = document.getElementById('saveProfile');
+                if (saveButton) {
+                    saveButton.addEventListener('click', () => this.saveProfile());
+                }
+
+                const loadButton = document.getElementById('loadProfile');
+                if (loadButton) {
+                    loadButton.addEventListener('click', () => {
+                        document.getElementById('fileInput').click();
+                    });
+                }
+
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) {
+                    fileInput.addEventListener('change', (e) => {
+                        this.loadProfileFromFile(e.target.files[0]);
+                    });
+                }
+
+                // Canvas interaction
+                const canvas = document.getElementById('wavefunctionCanvas');
+                if (canvas) {
+                    let isDrawing = false;
+                    
+                    const handlePointerStart = (e) => {
+                        isDrawing = true;
+                        this.editPotentialWell(e);
+                    };
+                    
+                    const handlePointerMove = (e) => {
+                        if (isDrawing) {
+                            this.editPotentialWell(e);
+                        }
+                    };
+                    
+                    const handlePointerEnd = () => {
+                        isDrawing = false;
+                        this.updatePhysics();
+                    };
+
+                    canvas.addEventListener('pointerdown', handlePointerStart);
+                    canvas.addEventListener('pointermove', handlePointerMove);
+                    canvas.addEventListener('pointerup', handlePointerEnd);
+                    canvas.addEventListener('pointerleave', handlePointerEnd);
+                }
+
+                console.log('✅ Event listeners setup complete');
             }
 
             setupSliderListener(id, callback) {
@@ -1062,7 +1156,6 @@
                 const valueDisplay = document.getElementById(id + 'Value');
                 
                 if (!slider) {
-                    // Don't warn for measurement strength as it's only in Explorer tab
                     if (id !== 'measurementStrength') {
                         console.warn(`Slider element with id '${id}' not found`);
                     }
@@ -1073,7 +1166,6 @@
                     const value = e.target.value;
                     callback(value);
                     
-                    // Update display
                     if (valueDisplay) {
                         if (id === 'quantization' || id === 'walkProbability' || id === 'measurementStrength') {
                             valueDisplay.textContent = value + '%';
@@ -1088,201 +1180,242 @@
                 });
             }
 
-            // Dynamic tooltip positioning
-            setupTooltipPositioning() {
-                document.addEventListener('mouseover', (e) => {
-                    if (e.target.closest('.tooltip')) {
-                        const tooltip = e.target.closest('.tooltip');
-                        const tooltipText = tooltip.querySelector('.tooltiptext');
-                        if (tooltipText) {
-                            const rect = tooltip.getBoundingClientRect();
-                            const screenWidth = window.innerWidth;
-                            
-                            // Reset positioning classes
-                            tooltipText.classList.remove('tooltip-left', 'tooltip-right');
-                            
-                            // If tooltip would extend beyond left edge
-                            if (rect.left < 150) {
-                                tooltipText.classList.add('tooltip-right');
-                            }
-                            // If tooltip would extend beyond right edge
-                            else if (rect.right > screenWidth - 150) {
-                                tooltipText.classList.add('tooltip-left');
+            switchTab(tabName) {
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabName);
+                });
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.toggle('active', content.id === tabName);
+                });
+                
+                setTimeout(() => {
+                    this.setupCanvas();
+                    this.drawVisualization();
+                }, 100);
+            }
+
+            setupCanvas() {
+                const canvases = [
+                    document.getElementById('wavefunctionCanvas'),
+                    document.getElementById('explorerCanvas'),
+                    document.getElementById('sequencerCanvas')
+                ];
+                
+                canvases.forEach(canvas => {
+                    if (canvas) {
+                        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+                        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+                        const ctx = canvas.getContext('2d');
+                        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                    }
+                });
+            }
+
+            // FIXED: Complete frequency mapping implementation
+            energyToFrequency(energy) {
+                if (!this.energyLevels || this.energyLevels.length === 0) {
+                    console.warn('No energy levels available for frequency mapping');
+                    return this.baseFrequency;
+                }
+                
+                const baseFreq = this.baseFrequency;
+                const minEnergy = Math.min(...this.energyLevels);
+                const maxEnergy = Math.max(...this.energyLevels);
+                
+                switch (this.frequencyMode) {
+                    case 'linear':
+                        return baseFreq * (energy / this.energyLevels[0]);
+                        
+                    case 'log':
+                        const ratio = energy / this.energyLevels[0];
+                        return baseFreq * Math.pow(2, Math.log2(Math.max(ratio, 0.1)));
+                        
+                    case 'octave':
+                        const normalizedEnergy = (energy - minEnergy) / (maxEnergy - minEnergy);
+                        return baseFreq * Math.pow(2, normalizedEnergy);
+                        
+                    case 'normalize':
+                        const freqSpan = baseFreq * 3;
+                        return baseFreq + (energy - minEnergy) / (maxEnergy - minEnergy) * freqSpan;
+                        
+                    default:
+                        return baseFreq * (energy / this.energyLevels[0]);
+                }
+            }
+
+            setFrequencyMode(mode) {
+                this.frequencyMode = mode;
+                
+                document.querySelectorAll('.frequency-mode').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.freq === mode);
+                });
+                
+                console.log(`Frequency mode set to: ${mode}`);
+            }
+
+            setQuantumMode(mode) {
+                this.currentQuantumMode = mode;
+                
+                document.querySelectorAll('.quantum-mode').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === mode);
+                });
+                
+                console.log(`Quantum mode set to: ${mode}`);
+            }
+
+            setSequenceType(type) {
+                this.sequenceType = type;
+                
+                document.querySelectorAll('.sequence-type').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.seq === type);
+                });
+                
+                this.generateQuantumSequence();
+            }
+
+            calculateEnergyLevels() {
+                const numLevels = 8;
+                const levels = [];
+                
+                try {
+                    if (this.potentialShape === 0) { // Square well
+                        const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
+                        for (let n = 1; n <= numLevels; n++) {
+                            levels.push(constant * n ** 2);
+                        }
+                    } else if (this.potentialShape === 1) { // Harmonic oscillator
+                        const omega = 2 * Math.PI / this.wellWidth;
+                        for (let n = 0; n < numLevels; n++) {
+                            levels.push(this.hbar * omega * (n + 0.5));
+                        }
+                    } else if (this.potentialShape === 2) { // Double well
+                        const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * (this.wellWidth/2) ** 2);
+                        for (let n = 1; n <= numLevels; n++) {
+                            const baseLevel = constant * n ** 2;
+                            levels.push(baseLevel);
+                            if (n <= 4) {
+                                const splitting = baseLevel * 0.1 * Math.exp(-this.barrierHeight);
+                                levels.push(baseLevel + splitting);
                             }
                         }
+                    } else { // Default to particle in box
+                        const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
+                        for (let n = 1; n <= numLevels; n++) {
+                            levels.push(constant * n ** 2);
+                        }
                     }
-                });
-            }
-
-            // PHASE 1: HIGH PRIORITY IMPLEMENTATIONS
-
-            // Frequency Mode Selection
-            setFrequencyMode(mode) {
-                this.frequencyMode = mode;
-                
-                // Update visual feedback
-                document.querySelectorAll('.frequency-mode').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.freq === mode);
-                });
-                
-                console.log(`Frequency mode set to: ${mode}`);
-            }
-
-            // Enhanced Potential Well Visualization with Barrier Height
-            drawEnhancedPotentialWell(ctx, width, height) {
-                ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                const wellHeight = height * 0.7;
-                const wellStart = width * 0.1;
-                const wellEnd = width * 0.9;
-                const barrierHeightPx = (this.barrierHeight / 10) * wellHeight * 0.8; // Scale barrier height
-                
-                if (this.potentialShape === 0) { // Square well
-                    // Draw well walls with barrier height
-                    ctx.moveTo(0, barrierHeightPx);
-                    ctx.lineTo(wellStart, barrierHeightPx);
-                    ctx.lineTo(wellStart, wellHeight);
-                    ctx.lineTo(wellEnd, wellHeight);
-                    ctx.lineTo(wellEnd, barrierHeightPx);
-                    ctx.lineTo(width, barrierHeightPx);
                     
-                    // Fill barrier regions
-                    ctx.fillStyle = 'rgba(255, 71, 87, 0.2)';
-                    ctx.fillRect(0, 0, wellStart, barrierHeightPx);
-                    ctx.fillRect(wellEnd, 0, width - wellEnd, barrierHeightPx);
+                    const result = levels.slice(0, numLevels);
+                    console.log('✅ Energy levels calculated:', result.length);
+                    return result;
                     
-                } else if (this.potentialShape === 1) { // Harmonic
-                    for (let x = 0; x < width; x++) {
-                        const normalizedX = (x - width/2) / (width/4);
-                        const y = wellHeight - (normalizedX * normalizedX * wellHeight / 4) + barrierHeightPx;
-                        if (x === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
+                } catch (error) {
+                    console.error('❌ Energy level calculation failed:', error);
+                    // Return default levels
+                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * 100 ** 2);
+                    for (let n = 1; n <= numLevels; n++) {
+                        levels.push(constant * n ** 2);
                     }
-                } else if (this.potentialShape === 2) { // Double well
-                    const center = width / 2;
-                    const barrierWidth = width * 0.05;
-                    ctx.moveTo(0, barrierHeightPx);
-                    ctx.lineTo(wellStart, barrierHeightPx);
-                    ctx.lineTo(wellStart, wellHeight);
-                    ctx.lineTo(center - barrierWidth, wellHeight);
-                    ctx.lineTo(center - barrierWidth, wellHeight - barrierHeightPx);
-                    ctx.lineTo(center + barrierWidth, wellHeight - barrierHeightPx);
-                    ctx.lineTo(center + barrierWidth, wellHeight);
-                    ctx.lineTo(wellEnd, wellHeight);
-                    ctx.lineTo(wellEnd, barrierHeightPx);
-                    ctx.lineTo(width, barrierHeightPx);
-                    
-                    // Fill central barrier
-                    ctx.fillStyle = 'rgba(255, 71, 87, 0.3)';
-                    ctx.fillRect(center - barrierWidth, wellHeight - barrierHeightPx, 
-                                barrierWidth * 2, barrierHeightPx);
+                    return levels;
                 }
-                
-                ctx.stroke();
-                
-                // Add barrier height label
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.font = '12px monospace';
-                ctx.fillText(`Barrier: ${this.barrierHeight.toFixed(1)}`, width * 0.02, 20);
             }
 
-            // Frequency Mode Selection
-            setFrequencyMode(mode) {
-                this.frequencyMode = mode;
+            calculateWavefunctions() {
+                const functions = [];
+                const points = 200;
                 
-                // Update visual feedback
-                document.querySelectorAll('.frequency-mode').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.freq === mode);
+                try {
+                    for (let i = 0; i < this.energyLevels.length; i++) {
+                        const wavefunction = [];
+                        const n = i + 1;
+                        
+                        for (let x = 0; x < points; x++) {
+                            const normalizedX = (x / points) * this.wellWidth;
+                            let amplitude;
+                            
+                            if (this.potentialShape === 0) {
+                                amplitude = Math.sqrt(2 / this.wellWidth) * 
+                                           Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                            } else if (this.potentialShape === 1) {
+                                const xi = normalizedX - this.wellWidth / 2;
+                                amplitude = Math.exp(-xi * xi / (this.wellWidth / 4)) * 
+                                           Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                            } else {
+                                amplitude = Math.sqrt(2 / this.wellWidth) * 
+                                           Math.sin(n * Math.PI * normalizedX / this.wellWidth);
+                            }
+                            
+                            wavefunction.push(amplitude);
+                        }
+                        functions.push(wavefunction);
+                    }
+                    
+                    console.log('✅ Wavefunctions calculated:', functions.length);
+                    return functions;
+                    
+                } catch (error) {
+                    console.error('❌ Wavefunction calculation failed:', error);
+                    return [];
+                }
+            }
+
+            updatePhysics() {
+                try {
+                    console.log('Updating physics...');
+                    this.energyLevels = this.calculateEnergyLevels();
+                    this.wavefunctions = this.calculateWavefunctions();
+                    this.updateEnergyLevelDisplay();
+                    this.updateScientificAnalysis();
+                    this.drawVisualization();
+                    console.log('✅ Physics updated');
+                } catch (error) {
+                    console.error('❌ Physics update failed:', error);
+                }
+            }
+
+            updateEnergyLevelDisplay() {
+                const container = document.getElementById('energyLevels');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                
+                if (this.energyLevels.length === 0) {
+                    container.innerHTML = '<div style="color: #ff4757;">No energy levels calculated</div>';
+                    return;
+                }
+                
+                this.energyLevels.forEach((energy, index) => {
+                    const levelEl = document.createElement('div');
+                    levelEl.className = 'energy-level';
+                    levelEl.textContent = `E${index + 1}: ${energy.toFixed(2)}`;
+                    levelEl.addEventListener('click', () => this.playLevel(index));
+                    container.appendChild(levelEl);
                 });
-                
-                console.log(`Frequency mode set to: ${mode}`);
-            }
-
-            // Enhanced Measurement Functions
-            performWeakMeasurement() {
-                // Weak measurement doesn't completely collapse the wavefunction
-                if (this.superpositionStates.length > 0 && this.measurementStrength < 1.0) {
-                    // Partial collapse based on measurement strength
-                    const partialCollapse = Math.random() < this.measurementStrength;
-                    if (partialCollapse) {
-                        const measuredState = this.superpositionStates[
-                            Math.floor(Math.random() * this.superpositionStates.length)
-                        ];
-                        this.playWeakMeasurementSound(measuredState);
-                    }
-                } else {
-                    this.performQuantumMeasurement();
-                }
-            }
-
-            async playWeakMeasurementSound(stateIndex) {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                const energy = this.energyLevels[stateIndex];
-                const frequency = this.energyToFrequency(energy);
-                const { osc, gain } = this.createOscillator(frequency);
-                
-                // Weak measurement = partial amplitude
-                const amplitude = 0.1 * this.measurementStrength;
-                
-                gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
-                
-                osc.start(this.audioContext.currentTime);
-                osc.stop(this.audioContext.currentTime + 0.6);
-                
-                this.animateParticle(stateIndex);
-            }
-
-            toggleContinuousMeasurement() {
-                this.isContinuousMeasuring = !this.isContinuousMeasuring;
-                const button = document.getElementById('continuousMeasureButton');
-                
-                if (this.isContinuousMeasuring) {
-                    button.classList.add('active');
-                    button.textContent = 'Stop Continuous';
-                    this.startContinuousMeasurement();
-                } else {
-                    button.classList.remove('active');
-                    button.textContent = 'Continuous';
-                    this.stopContinuousMeasurement();
-                }
-            }
-
-            startContinuousMeasurement() {
-                this.measurementInterval = setInterval(() => {
-                    if (Math.random() < 0.3) { // Random measurement events
-                        this.performWeakMeasurement();
-                    }
-                }, 500);
-            }
-
-            stopContinuousMeasurement() {
-                if (this.measurementInterval) {
-                    clearInterval(this.measurementInterval);
-                    this.measurementInterval = null;
-                }
-            }
-
-            // Enhanced Scientific Analysis
-            calculateTunnelingProbability() {
-                if (this.potentialShape === 0 || this.potentialShape === 2) {
-                    // Simple square barrier tunneling
-                    const energy = this.energyLevels[0]; // Use ground state energy
-                    if (energy < this.barrierHeight) {
-                        const penetrationFactor = Math.sqrt(2 * this.mass * (this.barrierHeight - energy));
-                        const transmission = Math.exp(-2 * penetrationFactor * (this.wellWidth / 20));
-                        return Math.min(100, transmission * 100);
-                    }
-                }
-                return 0;
             }
 
             updateScientificAnalysis() {
                 const analysisContainer = document.getElementById('analysisResults');
                 if (!analysisContainer) return;
+                
+                if (this.energyLevels.length === 0) {
+                    // Update with placeholder values
+                    const elements = {
+                        'energyCount': 0,
+                        'avgSpacing': '0',
+                        'maxQuantum': 0,
+                        'degeneracy': 0,
+                        'tunnelingProb': '0.00'
+                    };
+                    
+                    Object.entries(elements).forEach(([id, value]) => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.textContent = value;
+                        }
+                    });
+                    return;
+                }
                 
                 const energySpacing = [];
                 for (let i = 1; i < this.energyLevels.length; i++) {
@@ -1311,543 +1444,31 @@
                 });
             }
 
-            // Phase 2: Medium Priority Features Implementation
-
-            // Cross-tab parameter synchronization
-            syncParametersAcrossTabs() {
-                // Update visualization when parameters change
-                this.drawVisualization();
-                
-                // Update scientific analysis
-                this.updateScientificAnalysis();
-                
-                // Trigger physics recalculation
-                this.updatePhysics();
+            calculateDegeneracy() {
+                const uniqueEnergies = [...new Set(this.energyLevels.map(e => Math.round(e * 100) / 100))];
+                return this.energyLevels.length - uniqueEnergies.length;
             }
 
-            // Step-by-step excitation control
-            toggleStepControl() {
-                this.stepControlEnabled = !this.stepControlEnabled;
-                const button = document.getElementById('enableStepControl');
-                const stepControls = document.getElementById('stepControls');
-                
-                if (this.stepControlEnabled) {
-                    button.classList.add('active');
-                    button.textContent = 'Disable Step Control';
-                    if (stepControls) {
-                        stepControls.style.display = 'block';
-                        this.generateStepControls();
-                    }
-                } else {
-                    button.classList.remove('active');
-                    button.textContent = 'Enable Step Control';
-                    if (stepControls) {
-                        stepControls.style.display = 'none';
+            calculateTunnelingProbability() {
+                if (this.potentialShape === 0 || this.potentialShape === 2) {
+                    const energy = this.energyLevels[0];
+                    if (energy < this.barrierHeight) {
+                        const penetrationFactor = Math.sqrt(2 * this.mass * (this.barrierHeight - energy));
+                        const transmission = Math.exp(-2 * penetrationFactor * (this.wellWidth / 20));
+                        return Math.min(100, transmission * 100);
                     }
                 }
-                console.log('Step control enabled:', this.stepControlEnabled);
-            }
-
-            generateStepControls() {
-                const container = document.getElementById('sequenceSteps');
-                if (!container) {
-                    console.warn('sequenceSteps container not found');
-                    return;
-                }
-                
-                container.innerHTML = '';
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    const stepDiv = document.createElement('div');
-                    stepDiv.style.cssText = `
-                        padding: 0.5rem;
-                        background: rgba(0,0,0,0.3);
-                        border-radius: 6px;
-                        text-align: center;
-                        border: 1px solid rgba(255,255,255,0.1);
-                    `;
-                    
-                    stepDiv.innerHTML = `
-                        <div style="font-size: 0.7rem; margin-bottom: 0.25rem;">Step ${i+1}</div>
-                        <select id="step-${i}" style="width: 100%; font-size: 0.7rem; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333;">
-                            <option value="-1">Rest</option>
-                            ${this.energyLevels.map((e, idx) => `<option value="${idx}">E${idx+1}</option>`).join('')}
-                        </select>
-                        <div style="margin-top: 0.25rem;">
-                            <input type="checkbox" id="excite-${i}" style="margin-right: 0.25rem;">
-                            <label style="font-size: 0.6rem;">Excite</label>
-                        </div>
-                    `;
-                    
-                    container.appendChild(stepDiv);
-                    
-                    // Add event listeners for step controls
-                    setTimeout(() => {
-                        const select = document.getElementById(`step-${i}`);
-                        const checkbox = document.getElementById(`excite-${i}`);
-                        
-                        if (select) {
-                            select.addEventListener('change', () => {
-                                console.log(`Step ${i} level changed to:`, select.value);
-                                this.updateStepSequence();
-                            });
-                        }
-                        if (checkbox) {
-                            checkbox.addEventListener('change', () => {
-                                console.log(`Step ${i} excitation:`, checkbox.checked);
-                                this.updateStepSequence();
-                            });
-                        }
-                    }, 100);
-                }
-                
-                // Initialize step excitations array properly
-                this.stepExcitations = [];
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    this.stepExcitations.push({level: -1, excite: false});
-                }
-                console.log('Generated step controls for', this.sequenceLength, 'steps');
-            }
-
-            updateStepSequence() {
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    const select = document.getElementById(`step-${i}`);
-                    const checkbox = document.getElementById(`excite-${i}`);
-                    
-                    if (select && checkbox) {
-                        this.stepExcitations[i] = {
-                            level: parseInt(select.value),
-                            excite: checkbox.checked
-                        };
-                    }
-                }
-                
-                console.log('Updated step sequence:', this.stepExcitations);
-                
-                // Generate sequence based on step controls
-                this.generateSequenceFromSteps();
-            }
-
-            generateSequenceFromSteps() {
-                this.currentSequence = [];
-                
-                this.stepExcitations.forEach((step, i) => {
-                    if (step.level >= 0 && step.level < this.energyLevels.length) {
-                        const energy = this.energyLevels[step.level];
-                        const frequency = this.energyToFrequency(energy);
-                        
-                        this.currentSequence.push({
-                            energyLevel: step.level,
-                            frequency: frequency,
-                            duration: this.evolutionSpeed,
-                            amplitude: step.excite ? 0.4 : 0.2,
-                            customExcitation: step.excite
-                        });
-                    } else {
-                        // Rest step
-                        this.currentSequence.push({
-                            energyLevel: -1,
-                            frequency: 0,
-                            duration: this.evolutionSpeed,
-                            amplitude: 0
-                        });
-                    }
-                });
-                
-                this.displaySequence();
-                this.drawVisualization();
-            }
-
-            // Multi-particle mode
-            toggleMultiParticleMode() {
-                this.multiParticleMode = !this.multiParticleMode;
-                const button = document.getElementById('multiParticleMode');
-                
-                if (this.multiParticleMode) {
-                    button.classList.add('active');
-                    button.textContent = 'Single Particle';
-                    // Recalculate for two-particle system
-                    this.updatePhysics();
-                } else {
-                    button.classList.remove('active');
-                    button.textContent = 'Two-Particle Mode';
-                    // Return to single-particle
-                    this.updatePhysics();
-                }
-            }
-
-            // Advanced decoherence with temperature and coupling
-            simulateAdvancedDecoherence() {
-                const thermalEnergy = this.temperature * 8.617e-5; // kT in eV (Boltzmann constant)
-                const couplingEffect = this.couplingStrength;
-                
-                return {
-                    decoherenceRate: (thermalEnergy * couplingEffect) / this.decoherenceTime,
-                    relaxationRate: 1 / this.relaxationTime,
-                    thermalDistribution: this.calculateThermalDistribution()
-                };
-            }
-
-            calculateThermalDistribution() {
-                // Boltzmann distribution for thermal populations
-                const kT = this.temperature * 8.617e-5; // eV
-                const distribution = [];
-                
-                this.energyLevels.forEach(energy => {
-                    const population = Math.exp(-energy / kT);
-                    distribution.push(population);
-                });
-                
-                // Normalize
-                const total = distribution.reduce((sum, pop) => sum + pop, 0);
-                return distribution.map(pop => pop / total);
-            }
-
-            // Enhanced sequence generation with coherence time effects
-            generateQuantumWalk() {
-                const sequence = [];
-                let position = Math.floor(this.energyLevels.length / 2);
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    // Add thermal effects and coupling
-                    const thermalNoise = (Math.random() - 0.5) * this.temperature / 1000;
-                    const couplingModulation = Math.sin(i * this.couplingStrength) * 0.1;
-                    
-                    // Coherence time affects pattern stability
-                    const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
-                    const decoherenceNoise = (1 - coherenceFactor) * (Math.random() - 0.5) * 0.2;
-                    
-                    const step = Math.random() < (this.walkProbability + thermalNoise + decoherenceNoise) ? 1 : -1;
-                    position = Math.max(0, Math.min(this.energyLevels.length - 1, position + step));
-                    
-                    let amplitude = 0.3 * coherenceFactor; // Amplitude decreases with decoherence
-                    if (this.multiParticleMode) {
-                        // Two-particle correlation effects
-                        const correlation = Math.cos(i * this.couplingStrength * 2) * 0.1 + 0.1;
-                        amplitude *= (1 + correlation);
-                    }
-                    
-                    sequence.push({
-                        energyLevel: position,
-                        frequency: this.energyToFrequency(this.energyLevels[position]),
-                        duration: this.evolutionSpeed,
-                        amplitude: amplitude + couplingModulation,
-                        thermal: thermalNoise,
-                        coupling: couplingModulation,
-                        coherence: coherenceFactor
-                    });
-                }
-                
-                return sequence;
-            }
-
-            // Enhanced spin chain with coherence effects
-            generateSpinChain() {
-                const sequence = [];
-                let spinState = Math.random() < 0.5;
-                const thermalDist = this.calculateThermalDistribution();
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    // Coherence time affects spin coherence
-                    const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
-                    
-                    // Thermal spin flip probability
-                    const thermalFlipProb = this.temperature / 1000 * 0.1;
-                    const couplingFlipProb = this.couplingStrength * 0.1;
-                    const decoherenceFlipProb = (1 - coherenceFactor) * 0.2;
-                    
-                    if (Math.random() < (0.3 + thermalFlipProb + couplingFlipProb + decoherenceFlipProb)) {
-                        spinState = !spinState;
-                    }
-                    
-                    // Energy level selection based on thermal distribution
-                    let energyLevel;
-                    if (spinState) {
-                        energyLevel = this.selectFromThermalDistribution(thermalDist, 0.75);
-                    } else {
-                        energyLevel = this.selectFromThermalDistribution(thermalDist, 0.25);
-                    }
-                    
-                    let amplitude = (spinState ? 0.4 : 0.2) * coherenceFactor;
-                    if (this.multiParticleMode) {
-                        // Anti-correlation for two spins
-                        amplitude *= (1 + Math.sin(i * this.couplingStrength) * 0.2);
-                    }
-                    
-                    sequence.push({
-                        energyLevel: energyLevel,
-                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
-                        duration: this.evolutionSpeed * (spinState ? 0.7 : 1.3),
-                        amplitude: amplitude,
-                        spin: spinState,
-                        temperature: this.temperature,
-                        coherence: coherenceFactor
-                    });
-                }
-                
-                return sequence;
-            }
-
-            // Generate sequence from manual step controls
-            generateSequenceFromSteps() {
-                this.currentSequence = [];
-                
-                this.stepExcitations.forEach((step, i) => {
-                    if (step.level >= 0 && step.level < this.energyLevels.length) {
-                        const energy = this.energyLevels[step.level];
-                        const frequency = this.energyToFrequency(energy);
-                        
-                        // Apply coherence time effects even for manual sequences
-                        const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
-                        
-                        this.currentSequence.push({
-                            energyLevel: step.level,
-                            frequency: frequency,
-                            duration: this.evolutionSpeed,
-                            amplitude: (step.excite ? 0.4 : 0.2) * coherenceFactor,
-                            customExcitation: step.excite,
-                            coherence: coherenceFactor
-                        });
-                    } else {
-                        // Rest step
-                        this.currentSequence.push({
-                            energyLevel: -1,
-                            frequency: 0,
-                            duration: this.evolutionSpeed,
-                            amplitude: 0
-                        });
-                    }
-                });
-                
-                this.displaySequence();
-                this.drawVisualization();
-            }
-
-            // Check if all Phase 2 features are complete
-            checkFeatureCompleteness() {
-                const features = {
-                    stepControl: this.stepControlEnabled !== undefined,
-                    multiParticle: this.multiParticleMode !== undefined,
-                    temperature: this.temperature !== undefined,
-                    couplingStrength: this.couplingStrength !== undefined,
-                    coherenceTime: this.coherenceTime !== undefined,
-                    enhancedMeasurement: this.measurementStrength !== undefined,
-                    frequencyMapping: this.frequencyMode !== undefined,
-                    crossTabSync: typeof this.syncParametersAcrossTabs === 'function',
-                    synthModulation: this.synthModulationEnabled !== undefined,
-                    newQuantumModes: ['coherence', 'interference', 'phase-transition', 'revival'].every(mode => 
-                        typeof this[`play${mode.replace('-', '').replace(/^./, c => c.toUpperCase()).replace(/[A-Z]/g, (m, i) => i > 0 ? m : m)}Mode`] === 'function' || 
-                        typeof this[`playQuantum${mode.replace('-', '').replace(/^./, c => c.toUpperCase())}`] === 'function'
-                    )
-                };
-                
-                console.log('Feature completeness check:', features);
-                console.log('🎵 NEW QUANTUM MODES AVAILABLE:');
-                console.log('  - Coherence: Temperature-dependent quantum coherence/decoherence');
-                console.log('  - Interference: Wave interference with thermal noise and coupling');
-                console.log('  - Phase Transition: Critical point phenomena near coupling = 5.0');
-                console.log('  - Quantum Revival: Periodic wave packet reconstruction');
-                console.log('🔬 SCIENTIFIC CONTEXT FOR SYNTHESIZER-SEQUENCER INTEGRATION:');
-                console.log('  - Time-dependent Hamiltonians: External fields modulating quantum systems');
-                console.log('  - Quantum Control Theory: Precise manipulation of quantum states');
-                console.log('  - Pump-Probe Spectroscopy: Pump = sequencer, probe = synthesizer response');
-                console.log('  - Environmental Modulation: External quantum fields affecting evolution');
-                console.log('🎛️ ADVANCED PARAMETERS NOW FUNCTIONAL:');
-                console.log(`  - Temperature: ${this.temperature}K affects thermal distributions and decoherence`);
-                console.log(`  - Coupling: ${this.couplingStrength} controls inter-particle interactions`);
-                console.log(`  - Coherence Time: ${this.coherenceTime}ms controls quantum stability`);
-                
-                return Object.values(features).every(feature => feature === true);
-            }
-
-            selectFromThermalDistribution(distribution, bias) {
-                // Weighted random selection based on thermal distribution
-                const biasedDist = distribution.map((prob, i) => {
-                    const position = i / (distribution.length - 1);
-                    return prob * (1 + (position - bias) * 0.5);
-                });
-                
-                const total = biasedDist.reduce((sum, prob) => sum + prob, 0);
-                const normalizedDist = biasedDist.map(prob => prob / total);
-                
-                const random = Math.random();
-                let cumulative = 0;
-                
-                for (let i = 0; i < normalizedDist.length; i++) {
-                    cumulative += normalizedDist[i];
-                    if (random < cumulative) {
-                        return i;
-                    }
-                }
-                
-                return distribution.length - 1;
-            }
-
-            async initAudioContext() {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    if (this.audioContext.state === 'suspended') {
-                        await this.audioContext.resume();
-                    }
-                }
-            }
-
-            switchTab(tabName) {
-                // Update tab buttons
-                document.querySelectorAll('.tab').forEach(tab => {
-                    tab.classList.toggle('active', tab.dataset.tab === tabName);
-                });
-
-                // Update tab content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.toggle('active', content.id === tabName);
-                });
-                
-                // Redraw visualization for the new tab
-                setTimeout(() => {
-                    this.setupCanvas();
-                    this.drawVisualization();
-                }, 100);
-            }
-
-            setupCanvas() {
-                const canvases = [
-                    document.getElementById('wavefunctionCanvas'),
-                    document.getElementById('explorerCanvas'),
-                    document.getElementById('sequencerCanvas')
-                ];
-                
-                canvases.forEach(canvas => {
-                    if (canvas) {
-                        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-                        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-                        const ctx = canvas.getContext('2d');
-                        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-                    }
-                });
-            }
-
-            calculateEnergyLevels() {
-                const numLevels = 8;
-                const levels = [];
-                
-                if (this.potentialShape === 0) { // Square well
-                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
-                    for (let n = 1; n <= numLevels; n++) {
-                        levels.push(constant * n ** 2);
-                    }
-                } else if (this.potentialShape === 1) { // Harmonic oscillator
-                    const omega = 2 * Math.PI / this.wellWidth;
-                    for (let n = 0; n < numLevels; n++) {
-                        levels.push(this.hbar * omega * (n + 0.5));
-                    }
-                } else if (this.potentialShape === 2) { // Double well
-                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * (this.wellWidth/2) ** 2);
-                    for (let n = 1; n <= numLevels; n++) {
-                        const baseLevel = constant * n ** 2;
-                        levels.push(baseLevel);
-                        if (n <= 4) levels.push(baseLevel * 1.1); // Slight splitting
-                    }
-                } else {
-                    // Default to particle in box
-                    const constant = (Math.PI ** 2 * this.hbar ** 2) / (2 * this.mass * this.wellWidth ** 2);
-                    for (let n = 1; n <= numLevels; n++) {
-                        levels.push(constant * n ** 2);
-                    }
-                }
-                
-                return levels.slice(0, numLevels);
-            }
-
-            calculateWavefunctions() {
-                const functions = [];
-                const points = 200;
-                
-                for (let i = 0; i < this.energyLevels.length; i++) {
-                    const wavefunction = [];
-                    const n = i + 1;
-                    
-                    for (let x = 0; x < points; x++) {
-                        const normalizedX = (x / points) * this.wellWidth;
-                        let amplitude;
-                        
-                        if (this.potentialShape === 0) { // Square well
-                            amplitude = Math.sqrt(2 / this.wellWidth) * 
-                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
-                        } else if (this.potentialShape === 1) { // Harmonic
-                            const xi = normalizedX - this.wellWidth / 2;
-                            amplitude = Math.exp(-xi * xi / (this.wellWidth / 4)) * 
-                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
-                        } else {
-                            amplitude = Math.sqrt(2 / this.wellWidth) * 
-                                       Math.sin(n * Math.PI * normalizedX / this.wellWidth);
-                        }
-                        
-                        wavefunction.push(amplitude);
-                    }
-                    functions.push(wavefunction);
-                }
-                
-                return functions;
-            }
-
-            updatePhysics() {
-                this.energyLevels = this.calculateEnergyLevels();
-                this.wavefunctions = this.calculateWavefunctions();
-                this.updateEnergyLevelDisplay();
-                this.updateScientificAnalysis();
-                this.drawVisualization();
-            }
-
-            updateScientificAnalysis() {
-                const analysisContainer = document.getElementById('analysisResults');
-                if (!analysisContainer) return;
-                
-                const energySpacing = [];
-                for (let i = 1; i < this.energyLevels.length; i++) {
-                    energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
-                }
-                
-                const avgSpacing = energySpacing.length > 0 ? 
-                    (energySpacing.reduce((a,b) => a+b, 0) / energySpacing.length).toFixed(3) : '0';
-                
-                const degeneracy = this.calculateDegeneracy();
-                
-                const elements = {
-                    'energyCount': this.energyLevels.length,
-                    'avgSpacing': avgSpacing,
-                    'maxQuantum': this.energyLevels.length,
-                    'degeneracy': degeneracy
-                };
-                
-                Object.entries(elements).forEach(([id, value]) => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.textContent = value;
-                    }
-                });
-            }
-
-            updateEnergyLevelDisplay() {
-                const container = document.getElementById('energyLevels');
-                container.innerHTML = '';
-                
-                this.energyLevels.forEach((energy, index) => {
-                    const levelEl = document.createElement('div');
-                    levelEl.className = 'energy-level';
-                    levelEl.textContent = `E${index + 1}: ${energy.toFixed(2)}`;
-                    levelEl.addEventListener('click', () => this.playLevel(index));
-                    container.appendChild(levelEl);
-                });
+                return 0;
             }
 
             drawVisualization() {
-                const activeTab = document.querySelector('.tab-content.active').id;
-                let canvas;
+                const activeTab = document.querySelector('.tab-content.active');
+                if (!activeTab) return;
                 
-                if (activeTab === 'explorer') {
+                let canvas;
+                if (activeTab.id === 'explorer') {
                     canvas = document.getElementById('explorerCanvas');
-                } else if (activeTab === 'sequencer') {
+                } else if (activeTab.id === 'sequencer') {
                     canvas = document.getElementById('sequencerCanvas');
                 } else {
                     canvas = document.getElementById('wavefunctionCanvas');
@@ -1859,20 +1480,14 @@
                 const width = canvas.offsetWidth;
                 const height = canvas.offsetHeight;
                 
-                // Clear canvas
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
                 ctx.fillRect(0, 0, width, height);
                 
-                if (activeTab === 'sequencer') {
+                if (activeTab.id === 'sequencer') {
                     this.drawSequencerVisualization(ctx, width, height);
                 } else {
-                    // Draw potential well with enhanced barrier visualization
-                    this.drawEnhancedPotentialWell(ctx, width, height);
-                    
-                    // Draw wavefunctions
+                    this.drawPotentialWell(ctx, width, height);
                     this.drawWavefunctions(ctx, width, height);
-                    
-                    // Draw energy levels
                     this.drawEnergyLevels(ctx, width, height);
                 }
             }
@@ -1885,37 +1500,51 @@
                 const wellHeight = height * 0.7;
                 const wellStart = width * 0.1;
                 const wellEnd = width * 0.9;
+                const barrierHeightPx = (this.barrierHeight / 10) * wellHeight * 0.8;
                 
-                if (this.potentialShape === 0) { // Square well
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(wellStart, 0);
+                if (this.potentialShape === 0) {
+                    ctx.moveTo(0, barrierHeightPx);
+                    ctx.lineTo(wellStart, barrierHeightPx);
                     ctx.lineTo(wellStart, wellHeight);
                     ctx.lineTo(wellEnd, wellHeight);
-                    ctx.lineTo(wellEnd, 0);
-                    ctx.lineTo(width, 0);
-                } else if (this.potentialShape === 1) { // Harmonic
+                    ctx.lineTo(wellEnd, barrierHeightPx);
+                    ctx.lineTo(width, barrierHeightPx);
+                    
+                    ctx.fillStyle = 'rgba(255, 71, 87, 0.2)';
+                    ctx.fillRect(0, 0, wellStart, barrierHeightPx);
+                    ctx.fillRect(wellEnd, 0, width - wellEnd, barrierHeightPx);
+                    
+                } else if (this.potentialShape === 1) {
                     for (let x = 0; x < width; x++) {
                         const normalizedX = (x - width/2) / (width/4);
-                        const y = wellHeight - (normalizedX * normalizedX * wellHeight / 4);
+                        const y = wellHeight - (normalizedX * normalizedX * wellHeight / 4) + barrierHeightPx;
                         if (x === 0) ctx.moveTo(x, y);
                         else ctx.lineTo(x, y);
                     }
-                } else if (this.potentialShape === 2) { // Double well
+                } else if (this.potentialShape === 2) {
                     const center = width / 2;
                     const barrierWidth = width * 0.05;
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(wellStart, 0);
+                    ctx.moveTo(0, barrierHeightPx);
+                    ctx.lineTo(wellStart, barrierHeightPx);
                     ctx.lineTo(wellStart, wellHeight);
                     ctx.lineTo(center - barrierWidth, wellHeight);
-                    ctx.lineTo(center - barrierWidth, wellHeight * 0.3);
-                    ctx.lineTo(center + barrierWidth, wellHeight * 0.3);
+                    ctx.lineTo(center - barrierWidth, wellHeight - barrierHeightPx);
+                    ctx.lineTo(center + barrierWidth, wellHeight - barrierHeightPx);
                     ctx.lineTo(center + barrierWidth, wellHeight);
                     ctx.lineTo(wellEnd, wellHeight);
-                    ctx.lineTo(wellEnd, 0);
-                    ctx.lineTo(width, 0);
+                    ctx.lineTo(wellEnd, barrierHeightPx);
+                    ctx.lineTo(width, barrierHeightPx);
+                    
+                    ctx.fillStyle = 'rgba(255, 71, 87, 0.3)';
+                    ctx.fillRect(center - barrierWidth, wellHeight - barrierHeightPx, 
+                                barrierWidth * 2, barrierHeightPx);
                 }
                 
                 ctx.stroke();
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '12px monospace';
+                ctx.fillText(`Barrier: ${this.barrierHeight.toFixed(1)}`, width * 0.02, 20);
             }
 
             drawWavefunctions(ctx, width, height) {
@@ -1933,7 +1562,7 @@
                 ];
                 
                 this.wavefunctions.forEach((wavefunction, index) => {
-                    if (index >= 3) return; // Only show first 3 for clarity
+                    if (index >= 3) return;
                     
                     ctx.strokeStyle = colors[index];
                     ctx.lineWidth = 2;
@@ -1955,6 +1584,8 @@
             }
 
             drawEnergyLevels(ctx, width, height) {
+                if (this.energyLevels.length === 0) return;
+                
                 const maxEnergy = Math.max(...this.energyLevels);
                 
                 this.energyLevels.forEach((energy, index) => {
@@ -1969,32 +1600,58 @@
                     ctx.stroke();
                     ctx.setLineDash([]);
                     
-                    // Level label
                     ctx.fillStyle = 'rgba(0, 212, 255, 0.8)';
                     ctx.font = '10px monospace';
                     ctx.fillText(`n=${index + 1}`, width * 0.02, y - 2);
                 });
             }
 
+            drawSequencerVisualization(ctx, width, height) {
+                if (this.currentSequence.length === 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Generate a sequence to see visualization', width / 2, height / 2);
+                    return;
+                }
+                
+                const stepWidth = width / this.currentSequence.length;
+                const maxEnergy = Math.max(...this.energyLevels);
+                
+                this.currentSequence.forEach((step, i) => {
+                    const x = i * stepWidth;
+                    const energy = step.energyLevel >= 0 ? this.energyLevels[step.energyLevel] : 0;
+                    const barHeight = (energy / maxEnergy) * height * 0.8;
+                    
+                    let color = '#00d4ff';
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, height - barHeight, stepWidth - 1, barHeight);
+                    
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.font = '10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText((i + 1).toString(), x + stepWidth / 2, height - 5);
+                });
+            }
+
             editPotentialWell(e) {
                 const canvas = document.getElementById('wavefunctionCanvas');
+                if (!canvas) return;
+                
                 const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
                 
-                // Simple potential editing - adjust well width based on horizontal position
                 const newWidth = Math.max(20, Math.min(200, (x / rect.width) * 180 + 20));
                 this.wellWidth = newWidth;
                 
-                // Update slider to reflect change
-                document.getElementById('wellWidth').value = newWidth;
-                document.getElementById('wellWidthValue').textContent = newWidth.toFixed(0);
+                const slider = document.getElementById('wellWidth');
+                const display = document.getElementById('wellWidthValue');
+                
+                if (slider) slider.value = newWidth;
+                if (display) display.textContent = newWidth.toFixed(0);
                 
                 this.updatePhysics();
-            }
-
-            energyToFrequency(energy, baseFreq = 110) {
-                return baseFreq * Math.pow(2, Math.log2(energy / this.energyLevels[0]));
             }
 
             createOscillator(frequency, type = 'sine') {
@@ -2002,9 +1659,8 @@
                 const gain = this.audioContext.createGain();
                 
                 const types = ['sine', 'square', 'sawtooth', 'triangle'];
-                osc.type = types[this.synthMode] || 'sine';
+                osc.type = types[this.synthMode] || type;
                 
-                // Add quantum uncertainty to frequency if not fully quantized
                 const uncertainty = (1 - this.quantization) * 0.05;
                 const detuneAmount = (Math.random() - 0.5) * uncertainty * 100;
                 osc.detune.setValueAtTime(detuneAmount, this.audioContext.currentTime);
@@ -2022,37 +1678,29 @@
                     await this.initAudioContext();
                 }
                 
+                if (levelIndex >= this.energyLevels.length) {
+                    console.warn('Invalid level index:', levelIndex);
+                    return;
+                }
+                
                 const energy = this.energyLevels[levelIndex];
                 const frequency = this.energyToFrequency(energy);
                 const { osc, gain } = this.createOscillator(frequency);
                 
-                // Add wavefunction-based timbre modulation
-                const wavefunction = this.wavefunctions[levelIndex];
-                const complexity = this.calculateWavefunctionComplexity(wavefunction);
-                
-                gain.gain.setValueAtTime(0.3 * complexity, this.audioContext.currentTime);
+                gain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
                 
                 osc.start(this.audioContext.currentTime);
                 osc.stop(this.audioContext.currentTime + 1.2);
                 
-                // Visual feedback
                 this.animateParticle(levelIndex);
                 this.highlightEnergyLevel(levelIndex);
             }
 
-            calculateWavefunctionComplexity(wavefunction) {
-                if (!wavefunction || wavefunction.length === 0) return 0.5;
-                
-                let complexity = 0;
-                for (let i = 1; i < wavefunction.length; i++) {
-                    complexity += Math.abs(wavefunction[i] - wavefunction[i-1]);
-                }
-                return Math.min(1, complexity / wavefunction.length);
-            }
-
             animateParticle(levelIndex) {
                 const container = document.getElementById('particleContainer');
+                if (!container) return;
+                
                 const particle = document.createElement('div');
                 particle.className = 'quantum-particle';
                 
@@ -2111,285 +1759,6 @@
                 }
             }
 
-            // New Quantum Modes Implementation
-
-            async playCoherenceMode() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                // Demonstrate coherence vs decoherence
-                const numStates = 3;
-                const oscillators = [];
-                
-                for (let i = 0; i < numStates; i++) {
-                    const levelIndex = i + 1;
-                    const energy = this.energyLevels[levelIndex];
-                    const frequency = this.energyToFrequency(energy);
-                    
-                    const { osc, gain } = this.createOscillator(frequency);
-                    
-                    // Start coherent
-                    gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-                    
-                    // Add temperature-dependent decoherence
-                    const decoherenceRate = this.temperature / 1000;
-                    
-                    // Apply decoherence over time
-                    for (let t = 0; t < 3; t += 0.1) {
-                        const coherenceFactor = Math.exp(-decoherenceRate * t);
-                        const noiseAmount = (1 - coherenceFactor) * 20; // Detune amount
-                        
-                        osc.detune.setValueAtTime(
-                            (Math.random() - 0.5) * noiseAmount,
-                            this.audioContext.currentTime + t
-                        );
-                    }
-                    
-                    osc.start(this.audioContext.currentTime);
-                    osc.stop(this.audioContext.currentTime + 3);
-                    
-                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 3);
-                    
-                    oscillators.push({ osc, gain });
-                    this.animateParticle(levelIndex);
-                }
-            }
-
-            async playInterferenceMode() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                // Two interfering waves
-                const level1 = 2;
-                const level2 = 3;
-                
-                const freq1 = this.energyToFrequency(this.energyLevels[level1]);
-                const freq2 = freq1 * (1 + this.couplingStrength * 0.01); // Slight detuning based on coupling
-                
-                const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
-                const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
-                
-                // Create beating pattern
-                const beatFreq = Math.abs(freq2 - freq1);
-                
-                gain1.gain.setValueAtTime(0.15, this.audioContext.currentTime);
-                gain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
-                
-                // Modulate based on temperature (thermal fluctuations)
-                const thermalModulation = this.audioContext.createOscillator();
-                const thermalGain = this.audioContext.createGain();
-                thermalModulation.frequency.setValueAtTime(this.temperature / 100, this.audioContext.currentTime);
-                thermalGain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
-                
-                thermalModulation.connect(thermalGain);
-                thermalGain.connect(gain1.gain);
-                thermalGain.connect(gain2.gain);
-                
-                osc1.start(this.audioContext.currentTime);
-                osc2.start(this.audioContext.currentTime);
-                thermalModulation.start(this.audioContext.currentTime);
-                
-                const duration = 4;
-                osc1.stop(this.audioContext.currentTime + duration);
-                osc2.stop(this.audioContext.currentTime + duration);
-                thermalModulation.stop(this.audioContext.currentTime + duration);
-                
-                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                
-                console.log(`Interference mode: beat frequency = ${beatFreq.toFixed(2)} Hz, thermal modulation = ${this.temperature/100} Hz`);
-            }
-
-            async playPhaseTransition() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                // Simulate quantum phase transition at critical coupling strength
-                const criticalCoupling = 5.0;
-                const transitionSharpness = Math.abs(this.couplingStrength - criticalCoupling);
-                
-                if (transitionSharpness < 1.0) {
-                    // Near critical point - dramatic changes
-                    const numOscillators = 5;
-                    for (let i = 0; i < numOscillators; i++) {
-                        const levelIndex = Math.floor(Math.random() * this.energyLevels.length);
-                        const energy = this.energyLevels[levelIndex];
-                        const frequency = this.energyToFrequency(energy);
-                        
-                        const { osc, gain } = this.createOscillator(frequency);
-                        
-                        // Critical fluctuations
-                        const fluctuationRate = 10 + Math.random() * 20;
-                        const fluctuationDepth = 50 * (1 - transitionSharpness);
-                        
-                        osc.detune.setValueAtTime(0, this.audioContext.currentTime);
-                        for (let t = 0; t < 2; t += 0.05) {
-                            const detune = Math.sin(fluctuationRate * t) * fluctuationDepth;
-                            osc.detune.setValueAtTime(detune, this.audioContext.currentTime + t);
-                        }
-                        
-                        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
-                        
-                        osc.start(this.audioContext.currentTime + i * 0.1);
-                        osc.stop(this.audioContext.currentTime + 2.2);
-                        
-                        this.animateParticle(levelIndex);
-                    }
-                } else {
-                    // Away from critical point - stable phase
-                    this.exciteSystem();
-                }
-                
-                console.log(`Phase transition mode: coupling = ${this.couplingStrength}, critical distance = ${transitionSharpness.toFixed(2)}`);
-            }
-
-            async playQuantumRevival() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                // Quantum revival - periodic reconstruction of wave packet
-                const revivalTime = 2.0; // seconds
-                const fundamentalFreq = this.energyToFrequency(this.energyLevels[0]);
-                
-                // Create multiple frequency components that will revive
-                const components = [1, 2, 3, 4, 5]; // Harmonic numbers
-                
-                components.forEach((n, index) => {
-                    const frequency = fundamentalFreq * n;
-                    const { osc, gain } = this.createOscillator(frequency);
-                    
-                    // Each component has slightly different phase evolution
-                    const phaseEvolutionRate = n * this.couplingStrength;
-                    
-                    gain.gain.setValueAtTime(0.15 / components.length, this.audioContext.currentTime);
-                    
-                    // Create revival pattern
-                    for (let t = 0; t < revivalTime; t += 0.1) {
-                        const revivalFactor = Math.abs(Math.cos(Math.PI * t / revivalTime));
-                        const amplitude = 0.15 * revivalFactor / components.length;
-                        gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime + t);
-                    }
-                    
-                    osc.start(this.audioContext.currentTime + index * 0.05);
-                    osc.stop(this.audioContext.currentTime + revivalTime + 0.1);
-                    
-                    this.animateParticle(index);
-                });
-                
-                console.log(`Quantum revival: revival time = ${revivalTime}s, components = ${components.length}`);
-            }
-
-            // Synthesizer Modulation of Sequencer
-            toggleSynthModulation() {
-                this.synthModulationEnabled = !this.synthModulationEnabled;
-                const button = document.getElementById('synthModulationMode');
-                
-                if (this.synthModulationEnabled) {
-                    button.classList.add('active');
-                    button.textContent = 'Disable Synth Mod';
-                    console.log('Synthesizer modulation enabled for sequencer');
-                } else {
-                    button.classList.remove('active');
-                    button.textContent = 'Synth Modulation';
-                    console.log('Synthesizer modulation disabled');
-                }
-            }
-
-            // Test Advanced Parameters
-            testAdvancedParameters() {
-                console.log('Testing advanced parameters...');
-                console.log('Current temperature:', this.temperature, 'K');
-                console.log('Current coupling strength:', this.couplingStrength);
-                
-                // Play a test sequence showing parameter effects
-                this.playParameterDemonstration();
-            }
-
-            async playParameterDemonstration() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                // Play two tones showing temperature effect
-                const baseFreq = this.energyToFrequency(this.energyLevels[1]);
-                
-                // First tone: low temperature (stable)
-                const { osc: osc1, gain: gain1 } = this.createOscillator(baseFreq);
-                gain1.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
-                osc1.start(this.audioContext.currentTime);
-                osc1.stop(this.audioContext.currentTime + 1.1);
-                
-                // Second tone: current temperature (fluctuating)
-                setTimeout(() => {
-                    const { osc: osc2, gain: gain2 } = this.createOscillator(baseFreq);
-                    
-                    // Add temperature-dependent fluctuations
-                    const fluctuationRate = this.temperature / 100;
-                    const fluctuationDepth = this.temperature / 10;
-                    
-                    for (let t = 0; t < 1; t += 0.05) {
-                        const detune = Math.sin(fluctuationRate * t * 2 * Math.PI) * fluctuationDepth;
-                        osc2.detune.setValueAtTime(detune, this.audioContext.currentTime + t);
-                    }
-                    
-                    gain2.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-                    gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
-                    osc2.start(this.audioContext.currentTime);
-                    osc2.stop(this.audioContext.currentTime + 1.1);
-                    
-                    console.log(`Parameter test: fluctuation rate = ${fluctuationRate.toFixed(2)} Hz, depth = ${fluctuationDepth.toFixed(1)} cents`);
-                }, 1200);
-            }
-
-            // Enhanced sequence generation with synthesizer modulation
-            playSequenceStep(step) {
-                if (step.energyLevel < 0 || step.amplitude <= 0) return;
-                
-                const { osc, gain } = this.createOscillator(step.frequency);
-                
-                let finalAmplitude = step.amplitude;
-                
-                // Apply synthesizer modulation if enabled
-                if (this.synthModulationEnabled) {
-                    // Use current quantum mode to modulate the sequence step
-                    switch (this.currentQuantumMode) {
-                        case 'superposition':
-                            // Add harmonic
-                            const harmonicFreq = step.frequency * 1.5;
-                            const { osc: harmOsc, gain: harmGain } = this.createOscillator(harmonicFreq);
-                            harmGain.gain.setValueAtTime(finalAmplitude * 0.3, this.audioContext.currentTime);
-                            harmGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
-                            harmOsc.start(this.audioContext.currentTime);
-                            harmOsc.stop(this.audioContext.currentTime + step.duration / 1000);
-                            break;
-                            
-                        case 'tunneling':
-                            // Random amplitude modulation
-                            if (Math.random() < 0.3) {
-                                finalAmplitude *= 0.1; // Tunneling suppression
-                            }
-                            break;
-                            
-                        case 'interference':
-                            // Add beating
-                            const beatOsc = this.audioContext.createOscillator();
-                            const beatGain = this.audioContext.createGain();
-                            beatOsc.frequency.setValueAtTime(5, this.audioContext.currentTime);
-                            beatGain.gain.setValueAtTime(finalAmplitude * 0.2, this.audioContext.currentTime);
-                            beatOsc.connect(beatGain);
-                            beatGain.connect(gain.gain);
-                            beatOsc.start(this.audioContext.currentTime);
-                            beatOsc.stop(this.audioContext.currentTime + step.duration / 1000);
-                            break;
-                    }
-                }
-                
-                gain.gain.setValueAtTime(finalAmplitude, this.audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
-                
-                osc.start(this.audioContext.currentTime);
-                osc.stop(this.audioContext.currentTime + step.duration / 1000);
-                
-                // Visual feedback
-                this.animateParticle(step.energyLevel);
-            }
-
             async exciteSystem() {
                 if (this.isDecaying) return;
                 this.isDecaying = true;
@@ -2413,7 +1782,6 @@
                     
                     this.playLevel(currentLevel);
                     
-                    // Quantum jump probability
                     const jumpSize = Math.random() < 0.7 ? 1 : Math.floor(Math.random() * 3) + 1;
                     currentLevel -= jumpSize;
                     
@@ -2427,202 +1795,9 @@
                 setTimeout(decay, 100);
             }
 
-            loadPreset(presetName) {
-                this.currentPreset = presetName;
-                
-                switch (presetName) {
-                    case 'particle-box':
-                        this.potentialShape = 0;
-                        this.wellWidth = 100;
-                        this.barrierHeight = 5;
-                        break;
-                    case 'harmonic':
-                        this.potentialShape = 1;
-                        this.wellWidth = 120;
-                        this.barrierHeight = 3;
-                        break;
-                    case 'double-well':
-                        this.potentialShape = 2;
-                        this.wellWidth = 150;
-                        this.barrierHeight = 7;
-                        break;
-                    case 'step':
-                        this.potentialShape = 3;
-                        this.wellWidth = 80;
-                        this.barrierHeight = 8;
-                        break;
-                }
-                
-                // Update UI
-                document.getElementById('wellWidth').value = this.wellWidth;
-                document.getElementById('wellWidthValue').textContent = this.wellWidth;
-                document.getElementById('potentialShape').value = this.potentialShape;
-                document.getElementById('barrierHeight').value = this.barrierHeight;
-                document.getElementById('barrierHeightValue').textContent = this.barrierHeight.toFixed(1);
-                
-                this.updatePhysics();
-            }
-
-            toggleRecording() {
-                if (!this.isRecording) {
-                    this.startRecording();
-                } else {
-                    this.stopRecording();
-                }
-            }
-
-            async startRecording() {
-                if (!this.audioContext) {
-                    await this.initAudioContext();
-                }
-                
-                try {
-                    // Note: This may not work in artifact environment due to permissions
-                    // but will work when deployed to GitHub Pages or similar
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false
-                        } 
-                    });
-                    this.mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'audio/webm;codecs=opus'
-                    });
-                    this.recordedChunks = [];
-                    
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-                    
-                    this.mediaRecorder.onstop = () => {
-                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `quantum-sonification-${Date.now()}.webm`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        
-                        // Stop all tracks
-                        stream.getTracks().forEach(track => track.stop());
-                    };
-                    
-                    this.mediaRecorder.start();
-                    this.isRecording = true;
-                    
-                    document.getElementById('recordButton').textContent = 'Stop Recording';
-                    document.getElementById('recordingIndicator').classList.add('active');
-                } catch (error) {
-                    console.error('Recording failed:', error);
-                    
-                    let errorMsg = 'Recording failed. ';
-                    if (error.name === 'NotAllowedError') {
-                        errorMsg += 'Microphone permission denied. When deployed to a proper web server (like GitHub Pages), please allow microphone access to enable recording.';
-                    } else if (error.name === 'NotFoundError') {
-                        errorMsg += 'No microphone found.';
-                    } else {
-                        errorMsg += 'Please check microphone permissions and try again.';
-                    }
-                    
-                    alert(errorMsg);
-                }
-            }
-
-            stopRecording() {
-                if (this.mediaRecorder && this.isRecording) {
-                    this.mediaRecorder.stop();
-                    this.isRecording = false;
-                    
-                    document.getElementById('recordButton').textContent = 'Record';
-                    document.getElementById('recordingIndicator').classList.remove('active');
-                }
-            }
-
-            analyzeSystem() {
-                // Demonstrate scientific utility by analyzing current system
-                const analysis = {
-                    energySpacing: [],
-                    quantumNumber: this.energyLevels.length,
-                    systemType: ['Square Well', 'Harmonic Oscillator', 'Double Well', 'Step Potential'][this.potentialShape],
-                    degeneracy: this.calculateDegeneracy()
-                };
-                
-                for (let i = 1; i < this.energyLevels.length; i++) {
-                    analysis.energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
-                }
-                
-                alert(`System Analysis:
-Type: ${analysis.systemType}
-Quantum States: ${analysis.quantumNumber}
-Energy Spacing Pattern: ${analysis.energySpacing.slice(0,3).map(s => s.toFixed(2)).join(', ')}...
-Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.energySpacing.length).toFixed(2)}`);
-            }
-
-            calculateDegeneracy() {
-                // Simple degeneracy calculation for demo
-                const uniqueEnergies = [...new Set(this.energyLevels.map(e => Math.round(e * 100) / 100))];
-                return this.energyLevels.length - uniqueEnergies.length;
-            }
-
-            compareStates() {
-                // Play two different energy levels for comparison
-                if (this.energyLevels.length >= 2) {
-                    this.playLevel(0);
-                    setTimeout(() => this.playLevel(this.energyLevels.length - 1), 500);
-                }
-            }
-
-            startVisualizationLoop() {
-                const animate = () => {
-                    this.drawVisualization();
-                    requestAnimationFrame(animate);
-                };
-                animate();
-            }
-
-            // New Quantum Modes
-            setQuantumMode(mode) {
-                this.currentQuantumMode = mode;
-                
-                // Update visual feedback
-                document.querySelectorAll('[data-mode]').forEach(btn => {
-                    btn.style.background = btn.dataset.mode === mode ? 
-                        'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
-                    btn.style.borderColor = btn.dataset.mode === mode ? 
-                        '#00d4ff' : 'rgba(255, 255, 255, 0.2)';
-                });
-                
-                console.log(`Quantum mode set to: ${mode}`);
-            }
-
-            async exciteSystemWithMode() {
-                if (this.isDecaying) return;
-                
-                console.log(`Executing quantum mode: ${this.currentQuantumMode}`);
-                
-                switch (this.currentQuantumMode) {
-                    case 'cascade':
-                        return this.exciteSystem();
-                    case 'superposition':
-                        return this.playSuperposition();
-                    case 'entanglement':
-                        return this.playEntangledStates();
-                    case 'tunneling':
-                        return this.playTunnelingBeats();
-                    default:
-                        return this.exciteSystem();
-                }
-            }
-
             async playSuperposition() {
                 if (!this.audioContext) await this.initAudioContext();
                 
-                // Play multiple energy levels simultaneously with interference
                 const numStates = Math.min(4, this.energyLevels.length);
                 const activeStates = [];
                 
@@ -2632,7 +1807,7 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                     const frequency = this.energyToFrequency(energy);
                     
                     const { osc, gain } = this.createOscillator(frequency);
-                    const amplitude = 0.15 / numStates; // Distribute amplitude
+                    const amplitude = 0.15 / numStates;
                     
                     gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
@@ -2650,7 +1825,6 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
             async playEntangledStates() {
                 if (!this.audioContext) await this.initAudioContext();
                 
-                // Create two "entangled" oscillators
                 const level1 = Math.floor(this.energyLevels.length / 3);
                 const level2 = this.energyLevels.length - 1 - level1;
                 
@@ -2660,11 +1834,9 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
                 const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
                 
-                // Entanglement: when one changes, the other responds oppositely
                 gain1.gain.setValueAtTime(0.2, this.audioContext.currentTime);
                 gain2.gain.setValueAtTime(0.1, this.audioContext.currentTime);
                 
-                // Create correlated modulation
                 const lfo = this.audioContext.createOscillator();
                 const lfoGain = this.audioContext.createGain();
                 lfo.frequency.setValueAtTime(0.5, this.audioContext.currentTime);
@@ -2692,14 +1864,13 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
             async playTunnelingBeats() {
                 if (!this.audioContext) await this.initAudioContext();
                 
-                // Create beat frequencies from closely spaced energy levels
                 const level1 = 2;
                 const level2 = 3;
                 
                 if (level2 >= this.energyLevels.length) return;
                 
                 const freq1 = this.energyToFrequency(this.energyLevels[level1]);
-                const freq2 = freq1 * 1.02; // Slight detuning for beats
+                const freq2 = freq1 * 1.02;
                 
                 const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
                 const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
@@ -2707,7 +1878,6 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 gain1.gain.setValueAtTime(0.15, this.audioContext.currentTime);
                 gain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
                 
-                // Add tunneling-style amplitude modulation
                 const tremolo = this.audioContext.createOscillator();
                 const tremoloGain = this.audioContext.createGain();
                 tremolo.frequency.setValueAtTime(Math.abs(freq2 - freq1), this.audioContext.currentTime);
@@ -2730,7 +1900,920 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
             }
 
-            // Profile Management
+            // NEW QUANTUM MODES
+            async playCoherenceMode() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const numStates = 3;
+                
+                for (let i = 0; i < numStates; i++) {
+                    const levelIndex = i + 1;
+                    if (levelIndex >= this.energyLevels.length) continue;
+                    
+                    const energy = this.energyLevels[levelIndex];
+                    const frequency = this.energyToFrequency(energy);
+                    
+                    const { osc, gain } = this.createOscillator(frequency);
+                    
+                    gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    
+                    const decoherenceRate = this.temperature / 1000;
+                    
+                    for (let t = 0; t < 3; t += 0.1) {
+                        const coherenceFactor = Math.exp(-decoherenceRate * t);
+                        const noiseAmount = (1 - coherenceFactor) * 20;
+                        
+                        osc.detune.setValueAtTime(
+                            (Math.random() - 0.5) * noiseAmount,
+                            this.audioContext.currentTime + t
+                        );
+                    }
+                    
+                    osc.start(this.audioContext.currentTime);
+                    osc.stop(this.audioContext.currentTime + 3);
+                    
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 3);
+                    
+                    this.animateParticle(levelIndex);
+                }
+            }
+
+            async playInterferenceMode() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const level1 = 2;
+                const level2 = 3;
+                
+                if (level2 >= this.energyLevels.length) return;
+                
+                const freq1 = this.energyToFrequency(this.energyLevels[level1]);
+                const freq2 = freq1 * (1 + this.couplingStrength * 0.01);
+                
+                const { osc: osc1, gain: gain1 } = this.createOscillator(freq1);
+                const { osc: osc2, gain: gain2 } = this.createOscillator(freq2);
+                
+                gain1.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                
+                const thermalModulation = this.audioContext.createOscillator();
+                const thermalGain = this.audioContext.createGain();
+                thermalModulation.frequency.setValueAtTime(this.temperature / 100, this.audioContext.currentTime);
+                thermalGain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
+                
+                thermalModulation.connect(thermalGain);
+                thermalGain.connect(gain1.gain);
+                thermalGain.connect(gain2.gain);
+                
+                osc1.start(this.audioContext.currentTime);
+                osc2.start(this.audioContext.currentTime);
+                thermalModulation.start(this.audioContext.currentTime);
+                
+                const duration = 4;
+                osc1.stop(this.audioContext.currentTime + duration);
+                osc2.stop(this.audioContext.currentTime + duration);
+                thermalModulation.stop(this.audioContext.currentTime + duration);
+                
+                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                
+                console.log(`Interference mode: thermal modulation = ${this.temperature/100} Hz`);
+            }
+
+            async playPhaseTransition() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const criticalCoupling = 5.0;
+                const transitionSharpness = Math.abs(this.couplingStrength - criticalCoupling);
+                
+                if (transitionSharpness < 1.0) {
+                    const numOscillators = 5;
+                    for (let i = 0; i < numOscillators; i++) {
+                        const levelIndex = Math.floor(Math.random() * this.energyLevels.length);
+                        const energy = this.energyLevels[levelIndex];
+                        const frequency = this.energyToFrequency(energy);
+                        
+                        const { osc, gain } = this.createOscillator(frequency);
+                        
+                        const fluctuationRate = 10 + Math.random() * 20;
+                        const fluctuationDepth = 50 * (1 - transitionSharpness);
+                        
+                        osc.detune.setValueAtTime(0, this.audioContext.currentTime);
+                        for (let t = 0; t < 2; t += 0.05) {
+                            const detune = Math.sin(fluctuationRate * t) * fluctuationDepth;
+                            osc.detune.setValueAtTime(detune, this.audioContext.currentTime + t);
+                        }
+                        
+                        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                        
+                        osc.start(this.audioContext.currentTime + i * 0.1);
+                        osc.stop(this.audioContext.currentTime + 2.2);
+                        
+                        this.animateParticle(levelIndex);
+                    }
+                } else {
+                    this.exciteSystem();
+                }
+                
+                console.log(`Phase transition mode: coupling = ${this.couplingStrength}, critical distance = ${transitionSharpness.toFixed(2)}`);
+            }
+
+            async playQuantumRevival() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const revivalTime = 2.0;
+                const fundamentalFreq = this.energyToFrequency(this.energyLevels[0]);
+                
+                const components = [1, 2, 3, 4, 5];
+                
+                components.forEach((n, index) => {
+                    const frequency = fundamentalFreq * n;
+                    const { osc, gain } = this.createOscillator(frequency);
+                    
+                    for (let t = 0; t < revivalTime; t += 0.1) {
+                        const revivalFactor = Math.abs(Math.cos(Math.PI * t / revivalTime));
+                        const amplitude = 0.15 * revivalFactor / components.length;
+                        gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime + t);
+                    }
+                    
+                    osc.start(this.audioContext.currentTime + index * 0.05);
+                    osc.stop(this.audioContext.currentTime + revivalTime + 0.1);
+                    
+                    this.animateParticle(Math.min(index, this.energyLevels.length - 1));
+                });
+                
+                console.log(`Quantum revival: revival time = ${revivalTime}s, components = ${components.length}`);
+            }
+
+            // MEASUREMENT FUNCTIONS
+            performQuantumMeasurement() {
+                if (this.superpositionStates.length > 0) {
+                    const collapsedState = this.superpositionStates[
+                        Math.floor(Math.random() * this.superpositionStates.length)
+                    ];
+                    this.playLevel(collapsedState);
+                    this.superpositionStates = [collapsedState];
+                    
+                    console.log(`Quantum measurement collapsed superposition to state n=${collapsedState + 1}`);
+                } else {
+                    const randomState = Math.floor(Math.random() * this.energyLevels.length);
+                    this.playLevel(randomState);
+                    console.log(`Measured quantum state: n=${randomState + 1}, E=${this.energyLevels[randomState].toFixed(3)}`);
+                }
+            }
+
+            async performWeakMeasurement() {
+                if (this.superpositionStates.length > 0 && this.measurementStrength < 1.0) {
+                    const partialCollapse = Math.random() < this.measurementStrength;
+                    if (partialCollapse) {
+                        const measuredState = this.superpositionStates[
+                            Math.floor(Math.random() * this.superpositionStates.length)
+                        ];
+                        this.playWeakMeasurementSound(measuredState);
+                    }
+                } else {
+                    this.performQuantumMeasurement();
+                }
+            }
+
+            async playWeakMeasurementSound(stateIndex) {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const energy = this.energyLevels[stateIndex];
+                const frequency = this.energyToFrequency(energy);
+                const { osc, gain } = this.createOscillator(frequency);
+                
+                const amplitude = 0.1 * this.measurementStrength;
+                
+                gain.gain.setValueAtTime(amplitude, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+                
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 0.6);
+                
+                this.animateParticle(stateIndex);
+            }
+
+            toggleContinuousMeasurement() {
+                this.isContinuousMeasuring = !this.isContinuousMeasuring;
+                const button = document.getElementById('continuousMeasureButton');
+                
+                if (this.isContinuousMeasuring) {
+                    button.classList.add('active');
+                    button.textContent = 'Stop Continuous';
+                    this.startContinuousMeasurement();
+                } else {
+                    button.classList.remove('active');
+                    button.textContent = 'Continuous';
+                    this.stopContinuousMeasurement();
+                }
+            }
+
+            startContinuousMeasurement() {
+                this.measurementInterval = setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        this.performWeakMeasurement();
+                    }
+                }, 500);
+            }
+
+            stopContinuousMeasurement() {
+                if (this.measurementInterval) {
+                    clearInterval(this.measurementInterval);
+                    this.measurementInterval = null;
+                }
+            }
+
+            simulateDecoherence() {
+                this.isDecoherent = !this.isDecoherent;
+                const button = document.getElementById('decoherenceButton');
+                
+                if (this.isDecoherent) {
+                    this.quantization = 0.3;
+                    const quantSlider = document.getElementById('quantization');
+                    const quantDisplay = document.getElementById('quantizationValue');
+                    if (quantSlider) quantSlider.value = 30;
+                    if (quantDisplay) quantDisplay.textContent = '30%';
+                    button.textContent = 'Restore Coherence';
+                    button.classList.add('active');
+                    
+                    this.playDecoherentSound();
+                } else {
+                    this.quantization = 1.0;
+                    const quantSlider = document.getElementById('quantization');
+                    const quantDisplay = document.getElementById('quantizationValue');
+                    if (quantSlider) quantSlider.value = 100;
+                    if (quantDisplay) quantDisplay.textContent = '100%';
+                    button.textContent = 'Decoherence';
+                    button.classList.remove('active');
+                }
+            }
+
+            async playDecoherentSound() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const { osc, gain } = this.createOscillator(440, 'sawtooth');
+                
+                const noise = this.audioContext.createBufferSource();
+                const buffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 2, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = (Math.random() - 0.5) * 0.1;
+                }
+                
+                noise.buffer = buffer;
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                
+                noise.connect(noiseGain);
+                noiseGain.connect(this.audioContext.destination);
+                
+                gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                
+                osc.start(this.audioContext.currentTime);
+                noise.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + 2.2);
+                noise.stop(this.audioContext.currentTime + 2.2);
+            }
+
+            // ADVANCED CONTROLS
+            toggleStepControl() {
+                this.stepControlEnabled = !this.stepControlEnabled;
+                const button = document.getElementById('enableStepControl');
+                const stepControls = document.getElementById('stepControls');
+                
+                if (this.stepControlEnabled) {
+                    button.classList.add('active');
+                    button.textContent = 'Disable Step Control';
+                    if (stepControls) {
+                        stepControls.style.display = 'block';
+                        this.generateStepControls();
+                    }
+                } else {
+                    button.classList.remove('active');
+                    button.textContent = 'Enable Step Control';
+                    if (stepControls) {
+                        stepControls.style.display = 'none';
+                    }
+                }
+                console.log('Step control enabled:', this.stepControlEnabled);
+            }
+
+            generateStepControls() {
+                const container = document.getElementById('sequenceSteps');
+                if (!container) {
+                    console.warn('sequenceSteps container not found');
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.style.cssText = `
+                        padding: 0.5rem;
+                        background: rgba(0,0,0,0.3);
+                        border-radius: 6px;
+                        text-align: center;
+                        border: 1px solid rgba(255,255,255,0.1);
+                    `;
+                    
+                    stepDiv.innerHTML = `
+                        <div style="font-size: 0.7rem; margin-bottom: 0.25rem;">Step ${i+1}</div>
+                        <select id="step-${i}" style="width: 100%; font-size: 0.7rem; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333;">
+                            <option value="-1">Rest</option>
+                            ${this.energyLevels.map((e, idx) => `<option value="${idx}">E${idx+1}</option>`).join('')}
+                        </select>
+                        <div style="margin-top: 0.25rem;">
+                            <input type="checkbox" id="excite-${i}" style="margin-right: 0.25rem;">
+                            <label style="font-size: 0.6rem;">Excite</label>
+                        </div>
+                    `;
+                    
+                    container.appendChild(stepDiv);
+                }
+                
+                setTimeout(() => {
+                    for (let i = 0; i < this.sequenceLength; i++) {
+                        const select = document.getElementById(`step-${i}`);
+                        const checkbox = document.getElementById(`excite-${i}`);
+                        
+                        if (select) {
+                            select.addEventListener('change', () => {
+                                this.updateStepSequence();
+                            });
+                        }
+                        if (checkbox) {
+                            checkbox.addEventListener('change', () => {
+                                this.updateStepSequence();
+                            });
+                        }
+                    }
+                }, 100);
+                
+                this.stepExcitations = [];
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    this.stepExcitations.push({level: -1, excite: false});
+                }
+                console.log('Generated step controls for', this.sequenceLength, 'steps');
+            }
+
+            updateStepSequence() {
+                if (!this.stepExcitations || this.stepExcitations.length !== this.sequenceLength) {
+                    this.stepExcitations = [];
+                    for (let i = 0; i < this.sequenceLength; i++) {
+                        this.stepExcitations.push({level: -1, excite: false});
+                    }
+                }
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const select = document.getElementById(`step-${i}`);
+                    const checkbox = document.getElementById(`excite-${i}`);
+                    
+                    if (select && checkbox) {
+                        this.stepExcitations[i] = {
+                            level: parseInt(select.value),
+                            excite: checkbox.checked
+                        };
+                    }
+                }
+                
+                console.log('Updated step sequence:', this.stepExcitations);
+                this.generateSequenceFromSteps();
+            }
+
+            generateSequenceFromSteps() {
+                this.currentSequence = [];
+                
+                this.stepExcitations.forEach((step, i) => {
+                    if (step.level >= 0 && step.level < this.energyLevels.length) {
+                        const energy = this.energyLevels[step.level];
+                        const frequency = this.energyToFrequency(energy);
+                        
+                        const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
+                        
+                        this.currentSequence.push({
+                            energyLevel: step.level,
+                            frequency: frequency,
+                            duration: this.evolutionSpeed,
+                            amplitude: (step.excite ? 0.4 : 0.2) * coherenceFactor,
+                            customExcitation: step.excite,
+                            coherence: coherenceFactor
+                        });
+                    } else {
+                        this.currentSequence.push({
+                            energyLevel: -1,
+                            frequency: 0,
+                            duration: this.evolutionSpeed,
+                            amplitude: 0
+                        });
+                    }
+                });
+                
+                this.displaySequence();
+                this.drawVisualization();
+            }
+
+            toggleMultiParticleMode() {
+                this.multiParticleMode = !this.multiParticleMode;
+                const button = document.getElementById('multiParticleMode');
+                
+                if (this.multiParticleMode) {
+                    button.classList.add('active');
+                    button.textContent = 'Single Particle';
+                    this.updatePhysics();
+                } else {
+                    button.classList.remove('active');
+                    button.textContent = 'Two-Particle Mode';
+                    this.updatePhysics();
+                }
+                console.log('Multi-particle mode:', this.multiParticleMode);
+            }
+
+            toggleSynthModulation() {
+                this.synthModulationEnabled = !this.synthModulationEnabled;
+                const button = document.getElementById('synthModulationMode');
+                
+                if (this.synthModulationEnabled) {
+                    button.classList.add('active');
+                    button.textContent = 'Disable Synth Mod';
+                    console.log('Synthesizer modulation enabled for sequencer');
+                } else {
+                    button.classList.remove('active');
+                    button.textContent = 'Synth Modulation';
+                    console.log('Synthesizer modulation disabled');
+                }
+            }
+
+            testAdvancedParameters() {
+                console.log('Testing advanced parameters...');
+                console.log('Current temperature:', this.temperature, 'K');
+                console.log('Current coupling strength:', this.couplingStrength);
+                
+                this.playParameterDemonstration();
+            }
+
+            async playParameterDemonstration() {
+                if (!this.audioContext) await this.initAudioContext();
+                
+                const baseFreq = this.energyToFrequency(this.energyLevels[1]);
+                
+                const { osc: osc1, gain: gain1 } = this.createOscillator(baseFreq);
+                gain1.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
+                osc1.start(this.audioContext.currentTime);
+                osc1.stop(this.audioContext.currentTime + 1.1);
+                
+                setTimeout(() => {
+                    const { osc: osc2, gain: gain2 } = this.createOscillator(baseFreq);
+                    
+                    const fluctuationRate = this.temperature / 100;
+                    const fluctuationDepth = this.temperature / 10;
+                    
+                    for (let t = 0; t < 1; t += 0.05) {
+                        const detune = Math.sin(fluctuationRate * t * 2 * Math.PI) * fluctuationDepth;
+                        osc2.detune.setValueAtTime(detune, this.audioContext.currentTime + t);
+                    }
+                    
+                    gain2.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1);
+                    osc2.start(this.audioContext.currentTime);
+                    osc2.stop(this.audioContext.currentTime + 1.1);
+                    
+                    console.log(`Parameter test: fluctuation rate = ${fluctuationRate.toFixed(2)} Hz, depth = ${fluctuationDepth.toFixed(1)} cents`);
+                }, 1200);
+            }
+
+            // SEQUENCER METHODS
+            generateQuantumSequence() {
+                if (this.stepControlEnabled && this.stepExcitations.length > 0) {
+                    this.generateSequenceFromSteps();
+                    return;
+                }
+                
+                this.currentSequence = [];
+                
+                console.log(`Generating ${this.sequenceType} with T=${this.temperature}K, coupling=${this.couplingStrength}, coherence=${this.coherenceTime}ms`);
+                
+                switch (this.sequenceType) {
+                    case 'quantum-walk':
+                        this.currentSequence = this.generateQuantumWalk();
+                        break;
+                    case 'spin-chain':
+                        this.currentSequence = this.generateSpinChain();
+                        break;
+                    case 'tunneling':
+                        this.currentSequence = this.generateTunnelingRhythm();
+                        break;
+                    case 'interference':
+                        this.currentSequence = this.generateInterferenceBeat();
+                        break;
+                }
+                
+                this.displaySequence();
+                this.drawVisualization();
+            }
+
+            generateQuantumWalk() {
+                const sequence = [];
+                let position = Math.floor(this.energyLevels.length / 2);
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const thermalNoise = (Math.random() - 0.5) * this.temperature / 1000;
+                    const couplingModulation = Math.sin(i * this.couplingStrength) * 0.1;
+                    
+                    const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
+                    const decoherenceNoise = (1 - coherenceFactor) * (Math.random() - 0.5) * 0.2;
+                    
+                    const step = Math.random() < (this.walkProbability + thermalNoise + decoherenceNoise) ? 1 : -1;
+                    position = Math.max(0, Math.min(this.energyLevels.length - 1, position + step));
+                    
+                    let amplitude = 0.3 * coherenceFactor;
+                    if (this.multiParticleMode) {
+                        const correlation = Math.cos(i * this.couplingStrength * 2) * 0.1 + 0.1;
+                        amplitude *= (1 + correlation);
+                    }
+                    
+                    sequence.push({
+                        energyLevel: position,
+                        frequency: this.energyToFrequency(this.energyLevels[position]),
+                        duration: this.evolutionSpeed,
+                        amplitude: amplitude + couplingModulation,
+                        thermal: thermalNoise,
+                        coupling: couplingModulation,
+                        coherence: coherenceFactor
+                    });
+                }
+                
+                return sequence;
+            }
+
+            generateSpinChain() {
+                const sequence = [];
+                let spinState = Math.random() < 0.5;
+                const thermalDist = this.calculateThermalDistribution();
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const coherenceFactor = Math.exp(-i * this.evolutionSpeed / this.coherenceTime);
+                    
+                    const thermalFlipProb = this.temperature / 1000 * 0.1;
+                    const couplingFlipProb = this.couplingStrength * 0.1;
+                    const decoherenceFlipProb = (1 - coherenceFactor) * 0.2;
+                    
+                    if (Math.random() < (0.3 + thermalFlipProb + couplingFlipProb + decoherenceFlipProb)) {
+                        spinState = !spinState;
+                    }
+                    
+                    let energyLevel;
+                    if (spinState) {
+                        energyLevel = this.selectFromThermalDistribution(thermalDist, 0.75);
+                    } else {
+                        energyLevel = this.selectFromThermalDistribution(thermalDist, 0.25);
+                    }
+                    
+                    let amplitude = (spinState ? 0.4 : 0.2) * coherenceFactor;
+                    if (this.multiParticleMode) {
+                        amplitude *= (1 + Math.sin(i * this.couplingStrength) * 0.2);
+                    }
+                    
+                    sequence.push({
+                        energyLevel: energyLevel,
+                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                        duration: this.evolutionSpeed * (spinState ? 0.7 : 1.3),
+                        amplitude: amplitude,
+                        spin: spinState,
+                        temperature: this.temperature,
+                        coherence: coherenceFactor
+                    });
+                }
+                
+                return sequence;
+            }
+
+            generateTunnelingRhythm() {
+                const sequence = [];
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const baseProb = Math.exp(-this.barrierHeight * Math.random());
+                    const thermalBoost = Math.exp(this.temperature / 1000);
+                    const couplingEffect = 1 + this.couplingStrength * 0.1;
+                    
+                    const tunnelingProb = baseProb * thermalBoost * couplingEffect * 0.1;
+                    const shouldTunnel = Math.random() < tunnelingProb;
+                    
+                    if (shouldTunnel) {
+                        const energyLevel = Math.floor(Math.random() * this.energyLevels.length);
+                        const amplitude = 0.2 + tunnelingProb * 0.3;
+                        
+                        sequence.push({
+                            energyLevel: energyLevel,
+                            frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                            duration: this.evolutionSpeed * (0.3 + Math.random() * 0.4),
+                            amplitude: amplitude,
+                            tunneled: true,
+                            tunnelingProb: tunnelingProb,
+                            thermal: thermalBoost > 1.5 ? (thermalBoost - 1) * 0.1 : 0
+                        });
+                    } else {
+                        sequence.push({
+                            energyLevel: -1,
+                            frequency: 0,
+                            duration: this.evolutionSpeed,
+                            amplitude: 0,
+                            tunneled: false
+                        });
+                    }
+                }
+                
+                console.log(`Tunneling rhythm: barrier=${this.barrierHeight}, temp boost=${Math.exp(this.temperature/1000).toFixed(2)}, events=${sequence.filter(s => s.tunneled).length}/${sequence.length}`);
+                return sequence;
+            }
+
+            generateInterferenceBeat() {
+                const sequence = [];
+                
+                for (let i = 0; i < this.sequenceLength; i++) {
+                    const phase = (i / this.sequenceLength) * 2 * Math.PI;
+                    
+                    const wave1 = Math.sin(phase);
+                    const wave2 = Math.cos(phase * (1 + this.couplingStrength * 0.1));
+                    const thermalNoise = (Math.random() - 0.5) * this.temperature / 1000;
+                    
+                    const interference = (wave1 + wave2) / 2 + thermalNoise;
+                    
+                    const energyLevel = Math.floor((Math.abs(interference) + 1) * 0.5 * (this.energyLevels.length - 1));
+                    
+                    sequence.push({
+                        energyLevel: energyLevel,
+                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
+                        duration: this.evolutionSpeed,
+                        amplitude: (Math.abs(interference) * 0.3) + 0.1,
+                        interference: interference,
+                        thermal: thermalNoise,
+                        coupling: this.couplingStrength
+                    });
+                }
+                
+                return sequence;
+            }
+
+            calculateThermalDistribution() {
+                const kT = this.temperature * 8.617e-5;
+                const distribution = [];
+                
+                this.energyLevels.forEach(energy => {
+                    const population = Math.exp(-energy / kT);
+                    distribution.push(population);
+                });
+                
+                const total = distribution.reduce((sum, pop) => sum + pop, 0);
+                return distribution.map(pop => pop / total);
+            }
+
+            selectFromThermalDistribution(distribution, bias) {
+                const biasedDist = distribution.map((prob, i) => {
+                    const position = i / (distribution.length - 1);
+                    return prob * (1 + (position - bias) * 0.5);
+                });
+                
+                const total = biasedDist.reduce((sum, prob) => sum + prob, 0);
+                const normalizedDist = biasedDist.map(prob => prob / total);
+                
+                const random = Math.random();
+                let cumulative = 0;
+                
+                for (let i = 0; i < normalizedDist.length; i++) {
+                    cumulative += normalizedDist[i];
+                    if (random < cumulative) {
+                        return i;
+                    }
+                }
+                
+                return distribution.length - 1;
+            }
+
+            displaySequence() {
+                const display = document.getElementById('sequenceDisplay');
+                if (!display) return;
+                
+                let displayText = `${this.sequenceType.toUpperCase()} (${this.currentSequence.length} steps)\n`;
+                displayText += `T=${this.temperature}K, coupling=${this.couplingStrength}, coherence=${this.coherenceTime}ms\n`;
+                
+                if (this.synthModulationEnabled) {
+                    displayText += `🎵 Synth Modulation: ${this.currentQuantumMode}\n`;
+                }
+                
+                this.currentSequence.forEach((step, i) => {
+                    if (step.energyLevel >= 0) {
+                        let stepInfo = `${i+1}: E${step.energyLevel + 1}(${step.frequency.toFixed(1)}Hz)`;
+                        
+                        if (step.thermal && Math.abs(step.thermal) > 0.01) {
+                            stepInfo += ` 🌡️${step.thermal > 0 ? '+' : ''}${(step.thermal*1000).toFixed(0)}`;
+                        }
+                        if (step.coupling && Math.abs(step.coupling) > 0.01) {
+                            stepInfo += ` 🔗${step.coupling > 0 ? '+' : ''}${(step.coupling*100).toFixed(0)}%`;
+                        }
+                        if (step.coherence && step.coherence < 0.9) {
+                            stepInfo += ` 💫${(step.coherence*100).toFixed(0)}%`;
+                        }
+                        if (step.customExcitation) {
+                            stepInfo += ` ⚡`;
+                        }
+                        
+                        displayText += stepInfo + ' ';
+                    } else {
+                        displayText += `${i+1}: REST `;
+                    }
+                    
+                    if ((i + 1) % 4 === 0) displayText += '\n';
+                });
+                
+                display.textContent = displayText;
+            }
+
+            async playQuantumSequence() {
+                if (this.isSequencePlaying || this.currentSequence.length === 0) return;
+                
+                this.isSequencePlaying = true;
+                const playButton = document.getElementById('playSequence');
+                if (playButton) playButton.textContent = 'Playing...';
+                
+                console.log(`Playing sequence: ${this.currentSequence.length} steps, synth modulation: ${this.synthModulationEnabled}`);
+                
+                const playStep = async (stepIndex) => {
+                    if (!this.isSequencePlaying || stepIndex >= this.currentSequence.length) {
+                        if (this.sequenceLoop && this.isSequencePlaying) {
+                            setTimeout(() => playStep(0), 100);
+                        } else {
+                            this.stopQuantumSequence();
+                        }
+                        return;
+                    }
+                    
+                    const step = this.currentSequence[stepIndex];
+                    
+                    if (step.energyLevel >= 0 && step.amplitude > 0) {
+                        this.playSequenceStep(step);
+                    }
+                    
+                    setTimeout(() => playStep(stepIndex + 1), step.duration);
+                };
+                
+                playStep(0);
+            }
+
+            playSequenceStep(step) {
+                let finalAmplitude = step.amplitude;
+                
+                if (this.synthModulationEnabled) {
+                    switch (this.currentQuantumMode) {
+                        case 'superposition':
+                            const harmonicFreq = step.frequency * 1.5;
+                            const { osc: harmOsc, gain: harmGain } = this.createOscillator(harmonicFreq);
+                            harmGain.gain.setValueAtTime(finalAmplitude * 0.3, this.audioContext.currentTime);
+                            harmGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
+                            harmOsc.start(this.audioContext.currentTime);
+                            harmOsc.stop(this.audioContext.currentTime + step.duration / 1000);
+                            break;
+                            
+                        case 'tunneling':
+                            if (Math.random() < 0.3) {
+                                finalAmplitude *= 0.1;
+                            }
+                            break;
+                            
+                        case 'interference':
+                            const beatOsc = this.audioContext.createOscillator();
+                            const beatGain = this.audioContext.createGain();
+                            beatOsc.frequency.setValueAtTime(5, this.audioContext.currentTime);
+                            beatGain.gain.setValueAtTime(finalAmplitude * 0.2, this.audioContext.currentTime);
+                            beatOsc.connect(beatGain);
+                            beatGain.connect(this.audioContext.destination);
+                            beatOsc.start(this.audioContext.currentTime);
+                            beatOsc.stop(this.audioContext.currentTime + step.duration / 1000);
+                            break;
+                    }
+                }
+                
+                const { osc, gain } = this.createOscillator(step.frequency);
+                
+                gain.gain.setValueAtTime(finalAmplitude, this.audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
+                
+                osc.start(this.audioContext.currentTime);
+                osc.stop(this.audioContext.currentTime + step.duration / 1000);
+                
+                if (step.energyLevel >= 0) {
+                    this.animateParticle(step.energyLevel);
+                }
+            }
+
+            stopQuantumSequence() {
+                this.isSequencePlaying = false;
+                const playButton = document.getElementById('playSequence');
+                if (playButton) playButton.textContent = 'Play';
+                
+                if (this.sequenceInterval) {
+                    clearInterval(this.sequenceInterval);
+                    this.sequenceInterval = null;
+                }
+            }
+
+            toggleSequenceLoop() {
+                this.sequenceLoop = !this.sequenceLoop;
+                const button = document.getElementById('loopSequence');
+                if (button) {
+                    button.textContent = `Loop: ${this.sequenceLoop ? 'On' : 'Off'}`;
+                    button.classList.toggle('active', this.sequenceLoop);
+                }
+            }
+
+            // ANALYSIS TOOLS
+            analyzeSystem() {
+                const analysis = {
+                    energySpacing: [],
+                    quantumNumber: this.energyLevels.length,
+                    systemType: ['Square Well', 'Harmonic Oscillator', 'Double Well', 'Step Potential'][this.potentialShape],
+                    degeneracy: this.calculateDegeneracy(),
+                    tunnelingProb: this.calculateTunnelingProbability()
+                };
+                
+                for (let i = 1; i < this.energyLevels.length; i++) {
+                    analysis.energySpacing.push(this.energyLevels[i] - this.energyLevels[i-1]);
+                }
+                
+                alert(`System Analysis:
+Type: ${analysis.systemType}
+Quantum States: ${analysis.quantumNumber}
+Energy Spacing Pattern: ${analysis.energySpacing.slice(0,3).map(s => s.toFixed(2)).join(', ')}...
+Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.energySpacing.length).toFixed(2)}
+Tunneling Probability: ${analysis.tunnelingProb.toFixed(2)}%`);
+            }
+
+            compareStates() {
+                if (this.energyLevels.length >= 2) {
+                    this.playLevel(0);
+                    setTimeout(() => this.playLevel(this.energyLevels.length - 1), 500);
+                }
+            }
+
+            // PRESET MANAGEMENT
+            loadPreset(presetName) {
+                this.currentPreset = presetName;
+                
+                switch (presetName) {
+                    case 'particle-box':
+                        this.potentialShape = 0;
+                        this.wellWidth = 100;
+                        this.barrierHeight = 5;
+                        break;
+                    case 'harmonic':
+                        this.potentialShape = 1;
+                        this.wellWidth = 120;
+                        this.barrierHeight = 3;
+                        break;
+                    case 'double-well':
+                        this.potentialShape = 2;
+                        this.wellWidth = 150;
+                        this.barrierHeight = 7;
+                        break;
+                    case 'step':
+                        this.potentialShape = 3;
+                        this.wellWidth = 80;
+                        this.barrierHeight = 8;
+                        break;
+                }
+                
+                // Update UI
+                this.updateUIFromParameters();
+                
+                // Update preset button visual feedback
+                document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.preset === presetName);
+                });
+                
+                this.updatePhysics();
+            }
+
+            updateUIFromParameters() {
+                const updates = [
+                    ['wellWidth', this.wellWidth],
+                    ['potentialShape', this.potentialShape],
+                    ['barrierHeight', this.barrierHeight.toFixed(1)]
+                ];
+                
+                updates.forEach(([id, value]) => {
+                    const slider = document.getElementById(id);
+                    const display = document.getElementById(id + 'Value');
+                    if (slider) slider.value = value;
+                    if (display) display.textContent = value;
+                });
+            }
+
+            // PROFILE MANAGEMENT
             saveProfile() {
                 const profile = {
                     name: `Quantum Profile ${new Date().toLocaleString()}`,
@@ -2744,23 +2827,21 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                         barrierHeight: this.barrierHeight,
                         currentPreset: this.currentPreset,
                         currentQuantumMode: this.currentQuantumMode,
-                        // Phase 1 parameters
                         baseFrequency: this.baseFrequency,
                         frequencyMode: this.frequencyMode,
                         measurementStrength: this.measurementStrength,
-                        // Phase 2 parameters
                         temperature: this.temperature,
                         couplingStrength: this.couplingStrength,
                         stepControlEnabled: this.stepControlEnabled,
                         multiParticleMode: this.multiParticleMode,
                         decoherenceTime: this.decoherenceTime,
                         relaxationTime: this.relaxationTime,
-                        // Sequencer parameters
                         sequenceLength: this.sequenceLength,
                         walkProbability: this.walkProbability,
                         evolutionSpeed: this.evolutionSpeed,
                         coherenceTime: this.coherenceTime,
-                        sequenceType: this.sequenceType
+                        sequenceType: this.sequenceType,
+                        synthModulationEnabled: this.synthModulationEnabled
                     },
                     energyLevels: [...this.energyLevels],
                     stepExcitations: [...this.stepExcitations],
@@ -2770,12 +2851,6 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                     }
                 };
                 
-                // Save to localStorage
-                const profiles = JSON.parse(localStorage.getItem('quantumProfiles') || '[]');
-                profiles.push(profile);
-                localStorage.setItem('quantumProfiles', JSON.stringify(profiles));
-                
-                // Download as file
                 const blob = new Blob([JSON.stringify(profile, null, 2)], {
                     type: 'application/json'
                 });
@@ -2786,7 +2861,7 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 a.click();
                 URL.revokeObjectURL(url);
                 
-                alert('Profile saved to downloads and browser cache!');
+                alert('Profile saved to downloads!');
             }
 
             async loadProfileFromFile(file) {
@@ -2810,35 +2885,12 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
             loadProfileData(profile) {
                 const params = profile.parameters;
                 
-                // Restore parameters
-                this.wellWidth = params.wellWidth;
-                this.quantization = params.quantization;
-                this.decayRate = params.decayRate;
-                this.synthMode = params.synthMode;
-                this.potentialShape = params.potentialShape;
-                this.barrierHeight = params.barrierHeight;
-                this.currentPreset = params.currentPreset;
-                this.currentQuantumMode = params.currentQuantumMode || 'cascade';
-                
-                // Restore Phase 1 parameters
-                this.baseFrequency = params.baseFrequency || 110;
-                this.frequencyMode = params.frequencyMode || 'linear';
-                this.measurementStrength = params.measurementStrength || 1.0;
-                
-                // Restore Phase 2 parameters
-                this.temperature = params.temperature || 300;
-                this.couplingStrength = params.couplingStrength || 1.0;
-                this.stepControlEnabled = params.stepControlEnabled || false;
-                this.multiParticleMode = params.multiParticleMode || false;
-                this.decoherenceTime = params.decoherenceTime || 1000;
-                this.relaxationTime = params.relaxationTime || 500;
-                
-                // Restore sequencer parameters
-                this.sequenceLength = params.sequenceLength || 16;
-                this.walkProbability = params.walkProbability || 0.5;
-                this.evolutionSpeed = params.evolutionSpeed || 500;
-                this.coherenceTime = params.coherenceTime || 1000;
-                this.sequenceType = params.sequenceType || 'quantum-walk';
+                // Restore all parameters
+                Object.keys(params).forEach(key => {
+                    if (this.hasOwnProperty(key)) {
+                        this[key] = params[key];
+                    }
+                });
                 
                 // Restore step excitations if available
                 if (profile.stepExcitations) {
@@ -2850,14 +2902,6 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 this.setQuantumMode(this.currentQuantumMode);
                 this.setFrequencyMode(this.frequencyMode);
                 this.setSequenceType(this.sequenceType);
-                
-                // Update advanced UI states
-                if (this.stepControlEnabled) {
-                    this.toggleStepControl();
-                }
-                if (this.multiParticleMode) {
-                    this.toggleMultiParticleMode();
-                }
                 
                 this.updatePhysics();
             }
@@ -2906,406 +2950,98 @@ Average Spacing: ${(analysis.energySpacing.reduce((a,b) => a+b, 0) / analysis.en
                 });
             }
 
-            // Quantum Measurement Tools
-            performQuantumMeasurement() {
-                // Simulate quantum measurement collapse
-                if (this.superpositionStates.length > 0) {
-                    // Collapse to random state
-                    const collapsedState = this.superpositionStates[
-                        Math.floor(Math.random() * this.superpositionStates.length)
-                    ];
-                    this.playLevel(collapsedState);
-                    this.superpositionStates = [collapsedState];
-                    
-                    alert(`Quantum measurement collapsed superposition to state n=${collapsedState + 1}`);
+            // RECORDING FUNCTIONS
+            toggleRecording() {
+                if (!this.isRecording) {
+                    this.startRecording();
                 } else {
-                    // Perform measurement on random state
-                    const randomState = Math.floor(Math.random() * this.energyLevels.length);
-                    this.playLevel(randomState);
-                    alert(`Measured quantum state: n=${randomState + 1}, E=${this.energyLevels[randomState].toFixed(3)}`);
+                    this.stopRecording();
                 }
             }
 
-            simulateDecoherence() {
-                this.isDecoherent = !this.isDecoherent;
-                const button = document.getElementById('decoherenceButton');
-                
-                if (this.isDecoherent) {
-                    // Transition to classical behavior
-                    this.quantization = 0.3;
-                    document.getElementById('quantization').value = 30;
-                    document.getElementById('quantizationValue').textContent = '30%';
-                    button.textContent = 'Restore Coherence';
-                    button.style.background = 'linear-gradient(45deg, #ff4757, #c44569)';
-                    
-                    // Play decoherent sound
-                    this.playDecoherentSound();
-                } else {
-                    // Restore quantum behavior
-                    this.quantization = 1.0;
-                    document.getElementById('quantization').value = 100;
-                    document.getElementById('quantizationValue').textContent = '100%';
-                    button.textContent = 'Decoherence';
-                    button.style.background = 'linear-gradient(45deg, #9d4edd, #7b2cbf)';
-                }
-            }
-
-            async playDecoherentSound() {
-                if (!this.audioContext) await this.initAudioContext();
-                
-                const { osc, gain } = this.createOscillator(440, 'sawtooth');
-                
-                // Add noise to simulate decoherence
-                const noise = this.audioContext.createBufferSource();
-                const buffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 2, this.audioContext.sampleRate);
-                const data = buffer.getChannelData(0);
-                
-                for (let i = 0; i < data.length; i++) {
-                    data[i] = (Math.random() - 0.5) * 0.1;
+            async startRecording() {
+                if (!this.audioContext) {
+                    await this.initAudioContext();
                 }
                 
-                noise.buffer = buffer;
-                const noiseGain = this.audioContext.createGain();
-                noiseGain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
-                
-                noise.connect(noiseGain);
-                noiseGain.connect(this.audioContext.destination);
-                
-                gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
-                
-                osc.start(this.audioContext.currentTime);
-                noise.start(this.audioContext.currentTime);
-                osc.stop(this.audioContext.currentTime + 2.2);
-                noise.stop(this.audioContext.currentTime + 2.2);
-            }
-
-            // Sequencer Functions
-            setSequenceType(type) {
-                this.sequenceType = type;
-                
-                // Update visual feedback
-                document.querySelectorAll('.sequence-type').forEach(btn => {
-                    btn.style.background = btn.dataset.seq === type ? 
-                        'rgba(0, 212, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
-                });
-                
-                // Generate new sequence when type changes
-                this.generateQuantumSequence();
-            }
-
-            generateQuantumSequence() {
-                // Use step control if enabled, otherwise generate based on type
-                if (this.stepControlEnabled && this.stepExcitations.length > 0) {
-                    this.generateSequenceFromSteps();
-                    return;
-                }
-                
-                this.currentSequence = [];
-                
-                console.log(`Generating ${this.sequenceType} with T=${this.temperature}K, coupling=${this.couplingStrength}, coherence=${this.coherenceTime}ms`);
-                
-                switch (this.sequenceType) {
-                    case 'quantum-walk':
-                        this.currentSequence = this.generateQuantumWalk();
-                        break;
-                    case 'spin-chain':
-                        this.currentSequence = this.generateSpinChain();
-                        break;
-                    case 'tunneling':
-                        this.currentSequence = this.generateTunnelingRhythm();
-                        break;
-                    case 'interference':
-                        this.currentSequence = this.generateInterferenceBeat();
-                        break;
-                }
-                
-                this.displaySequence();
-                this.drawVisualization();
-            }
-
-            generateQuantumWalk() {
-                const sequence = [];
-                let position = Math.floor(this.energyLevels.length / 2); // Start in middle
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    // Quantum random walk
-                    const step = Math.random() < this.walkProbability ? 1 : -1;
-                    position = Math.max(0, Math.min(this.energyLevels.length - 1, position + step));
-                    
-                    sequence.push({
-                        energyLevel: position,
-                        frequency: this.energyToFrequency(this.energyLevels[position]),
-                        duration: this.evolutionSpeed,
-                        amplitude: 0.3
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        } 
                     });
-                }
-                
-                return sequence;
-            }
-
-            generateSpinChain() {
-                const sequence = [];
-                let spinState = Math.random() < 0.5; // Start with random spin
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    // Spin flip probability based on quantum coupling
-                    if (Math.random() < 0.3) {
-                        spinState = !spinState;
-                    }
-                    
-                    const energyLevel = spinState ? 
-                        Math.floor(this.energyLevels.length * 0.75) : 
-                        Math.floor(this.energyLevels.length * 0.25);
-                    
-                    sequence.push({
-                        energyLevel: energyLevel,
-                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
-                        duration: this.evolutionSpeed * (spinState ? 0.7 : 1.3),
-                        amplitude: spinState ? 0.4 : 0.2,
-                        spin: spinState
+                    this.mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
                     });
-                }
-                
-                return sequence;
-            }
-
-            generateTunnelingRhythm() {
-                const sequence = [];
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    // Enhanced tunneling probability with temperature and coupling effects
-                    const baseProb = Math.exp(-this.barrierHeight * Math.random());
-                    const thermalBoost = Math.exp(this.temperature / 1000); // Thermal activation
-                    const couplingEffect = 1 + this.couplingStrength * 0.1;
+                    this.recordedChunks = [];
                     
-                    const tunnelingProb = baseProb * thermalBoost * couplingEffect * 0.1; // Normalize
-                    const shouldTunnel = Math.random() < tunnelingProb;
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
                     
-                    if (shouldTunnel) {
-                        const energyLevel = Math.floor(Math.random() * this.energyLevels.length);
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `quantum-sonification-${Date.now()}.webm`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
                         
-                        // Amplitude depends on tunneling "ease"
-                        const amplitude = 0.2 + tunnelingProb * 0.3;
-                        
-                        sequence.push({
-                            energyLevel: energyLevel,
-                            frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
-                            duration: this.evolutionSpeed * (0.3 + Math.random() * 0.4),
-                            amplitude: amplitude,
-                            tunneled: true,
-                            tunnelingProb: tunnelingProb,
-                            thermal: thermalBoost > 1.5 ? (thermalBoost - 1) * 0.1 : 0
-                        });
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    const recordButton = document.getElementById('recordButton');
+                    if (recordButton) recordButton.textContent = 'Stop Recording';
+                    const indicator = document.getElementById('recordingIndicator');
+                    if (indicator) indicator.classList.add('active');
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    
+                    let errorMsg = 'Recording failed. ';
+                    if (error.name === 'NotAllowedError') {
+                        errorMsg += 'Microphone permission denied. Please allow microphone access to enable recording.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMsg += 'No microphone found.';
                     } else {
-                        // Add rest or very quiet note
-                        sequence.push({
-                            energyLevel: -1,
-                            frequency: 0,
-                            duration: this.evolutionSpeed,
-                            amplitude: 0,
-                            tunneled: false
-                        });
-                    }
-                }
-                
-                console.log(`Tunneling rhythm: barrier=${this.barrierHeight}, temp boost=${Math.exp(this.temperature/1000).toFixed(2)}, events=${sequence.filter(s => s.tunneled).length}/${sequence.length}`);
-                return sequence;
-            }
-
-            generateInterferenceBeat() {
-                const sequence = [];
-                const baseFreq = this.energyToFrequency(this.energyLevels[2]);
-                
-                for (let i = 0; i < this.sequenceLength; i++) {
-                    const phase = (i / this.sequenceLength) * 2 * Math.PI;
-                    
-                    // Enhanced interference with temperature and coupling
-                    const wave1 = Math.sin(phase);
-                    const wave2 = Math.cos(phase * (1 + this.couplingStrength * 0.1));
-                    const thermalNoise = (Math.random() - 0.5) * this.temperature / 1000;
-                    
-                    const interference = (wave1 + wave2) / 2 + thermalNoise;
-                    
-                    const energyLevel = Math.floor((Math.abs(interference) + 1) * 0.5 * (this.energyLevels.length - 1));
-                    
-                    sequence.push({
-                        energyLevel: energyLevel,
-                        frequency: this.energyToFrequency(this.energyLevels[energyLevel]),
-                        duration: this.evolutionSpeed,
-                        amplitude: (Math.abs(interference) * 0.3) + 0.1,
-                        interference: interference,
-                        thermal: thermalNoise,
-                        coupling: this.couplingStrength
-                    });
-                }
-                
-                return sequence;
-            }
-
-            displaySequence() {
-                const display = document.getElementById('sequenceDisplay');
-                if (!display) return;
-                
-                let displayText = `${this.sequenceType.toUpperCase()} (${this.currentSequence.length} steps)\n`;
-                displayText += `T=${this.temperature}K, coupling=${this.couplingStrength}, coherence=${this.coherenceTime}ms\n`;
-                
-                if (this.synthModulationEnabled) {
-                    displayText += `🎵 Synth Modulation: ${this.currentQuantumMode}\n`;
-                }
-                
-                this.currentSequence.forEach((step, i) => {
-                    if (step.energyLevel >= 0) {
-                        let stepInfo = `${i+1}: E${step.energyLevel + 1}(${step.frequency.toFixed(1)}Hz)`;
-                        
-                        // Add thermal/coupling indicators
-                        if (step.thermal && Math.abs(step.thermal) > 0.01) {
-                            stepInfo += ` 🌡️${step.thermal > 0 ? '+' : ''}${(step.thermal*1000).toFixed(0)}`;
-                        }
-                        if (step.coupling && Math.abs(step.coupling) > 0.01) {
-                            stepInfo += ` 🔗${step.coupling > 0 ? '+' : ''}${(step.coupling*100).toFixed(0)}%`;
-                        }
-                        if (step.coherence && step.coherence < 0.9) {
-                            stepInfo += ` 💫${(step.coherence*100).toFixed(0)}%`;
-                        }
-                        if (step.customExcitation) {
-                            stepInfo += ` ⚡`;
-                        }
-                        
-                        displayText += stepInfo + ' ';
-                    } else {
-                        displayText += `${i+1}: REST `;
+                        errorMsg += 'Please check microphone permissions and try again.';
                     }
                     
-                    if ((i + 1) % 4 === 0) displayText += '\n';
-                });
-                
-                display.textContent = displayText;
-            }
-
-            async playQuantumSequence() {
-                if (this.isSequencePlaying || this.currentSequence.length === 0) return;
-                
-                this.isSequencePlaying = true;
-                document.getElementById('playSequence').textContent = 'Playing...';
-                
-                console.log(`Playing sequence: ${this.currentSequence.length} steps, synth modulation: ${this.synthModulationEnabled}`);
-                
-                const playStep = async (stepIndex) => {
-                    if (!this.isSequencePlaying || stepIndex >= this.currentSequence.length) {
-                        if (this.sequenceLoop && this.isSequencePlaying) {
-                            setTimeout(() => playStep(0), 100);
-                        } else {
-                            this.stopQuantumSequence();
-                        }
-                        return;
-                    }
-                    
-                    const step = this.currentSequence[stepIndex];
-                    
-                    if (step.energyLevel >= 0 && step.amplitude > 0) {
-                        this.playSequenceStep(step);
-                        this.highlightSequenceStep(stepIndex);
-                    }
-                    
-                    setTimeout(() => playStep(stepIndex + 1), step.duration);
-                };
-                
-                playStep(0);
-            }
-
-            playSequenceStep(step) {
-                const { osc, gain } = this.createOscillator(step.frequency);
-                
-                gain.gain.setValueAtTime(step.amplitude, this.audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + step.duration / 1000 * 0.8);
-                
-                osc.start(this.audioContext.currentTime);
-                osc.stop(this.audioContext.currentTime + step.duration / 1000);
-                
-                // Visual feedback
-                if (step.energyLevel >= 0) {
-                    this.animateParticle(step.energyLevel);
+                    alert(errorMsg);
                 }
             }
 
-            highlightSequenceStep(stepIndex) {
-                // Could add visual highlighting of current step in the display
-                // For now, just console log for debugging
-                console.log(`Playing step ${stepIndex + 1}`);
-            }
-
-            stopQuantumSequence() {
-                this.isSequencePlaying = false;
-                document.getElementById('playSequence').textContent = 'Play';
-                
-                if (this.sequenceInterval) {
-                    clearInterval(this.sequenceInterval);
-                    this.sequenceInterval = null;
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    
+                    const recordButton = document.getElementById('recordButton');
+                    if (recordButton) recordButton.textContent = 'Record';
+                    const indicator = document.getElementById('recordingIndicator');
+                    if (indicator) indicator.classList.remove('active');
                 }
-            }
-
-            toggleSequenceLoop() {
-                this.sequenceLoop = !this.sequenceLoop;
-                const button = document.getElementById('loopSequence');
-                button.textContent = `Loop: ${this.sequenceLoop ? 'On' : 'Off'}`;
-                button.style.background = this.sequenceLoop ? 
-                    'rgba(0, 212, 255, 0.3)' : 'linear-gradient(45deg, #9d4edd, #7b2cbf)';
-            }
-
-            drawSequencerVisualization(ctx, width, height) {
-                if (this.currentSequence.length === 0) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                    ctx.font = '16px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Generate a sequence to see visualization', width / 2, height / 2);
-                    return;
-                }
-                
-                const stepWidth = width / this.currentSequence.length;
-                const maxEnergy = Math.max(...this.energyLevels);
-                
-                this.currentSequence.forEach((step, i) => {
-                    const x = i * stepWidth;
-                    const energy = step.energyLevel >= 0 ? this.energyLevels[step.energyLevel] : 0;
-                    const barHeight = (energy / maxEnergy) * height * 0.8;
-                    
-                    // Color based on sequence type
-                    let color;
-                    switch (this.sequenceType) {
-                        case 'quantum-walk':
-                            color = `hsl(${180 + energy * 20}, 70%, 50%)`;
-                            break;
-                        case 'spin-chain':
-                            color = step.spin ? '#ff4757' : '#3742fa';
-                            break;
-                        case 'tunneling':
-                            color = step.tunneled ? '#2ed573' : '#57606f';
-                            break;
-                        case 'interference':
-                            const hue = step.interference > 0 ? 200 : 300;
-                            color = `hsl(${hue}, 70%, ${50 + Math.abs(step.interference) * 30}%)`;
-                            break;
-                        default:
-                            color = '#00d4ff';
-                    }
-                    
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x, height - barHeight, stepWidth - 1, barHeight);
-                    
-                    // Step number
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.font = '10px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText((i + 1).toString(), x + stepWidth / 2, height - 5);
-                });
             }
         }
 
         // Initialize the app when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            window.quantumApp = new QuantumSonificationApp();
+            try {
+                window.quantumApp = new QuantumSonificationApp();
+                console.log('✅ Eigensound Lite successfully initialized!');
+            } catch (error) {
+                console.error('❌ Failed to initialize app:', error);
+                alert('Failed to load Eigensound Lite. Please refresh the page.');
+            }
         });
 
         // Handle window resize
