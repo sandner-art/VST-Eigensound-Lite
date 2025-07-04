@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigensound GR/QM - Quantum-Relativistic Sound Synthesis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1e1e3f 50%, #000000 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header with Logo Support */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            max-height: 60px;
+            width: auto;
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: #94a3b8;
+        }
+
+        .version-info {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        /* Responsive Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #00d4ff;
+        }
+
+        /* Enhanced Control Panel */
+        .control-panel {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-record {
+            background: linear-gradient(45deg, #10b981, #047857);
+            color: white;
+        }
+
+        .btn-record.recording {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.8);
+            color: white;
+        }
+
+        .btn-accent {
+            background: linear-gradient(45deg, #a855f7, #7c3aed);
+            color: white;
+        }
+
+        /* Enhanced Preset Grid */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preset-btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            border: 2px solid transparent;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(45deg, #a855f7, #3b82f6);
+            border-color: #00d4ff;
+        }
+
+        .preset-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .preset-desc {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.3;
+        }
+
+        /* Enhanced Visualizations */
+        .visualization-panel {
+            grid-column: 1 / -1;
+        }
+
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .viz-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 150px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 120px;
+            border-radius: 4px;
+        }
+
+        /* Enhanced Physics State Indicators */
+        .physics-states {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .physics-states {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .state-group {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .state-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .state-label {
+            min-width: 80px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .state-value {
+            min-width: 40px;
+            font-size: 0.75rem;
+            text-align: right;
+            color: #e2e8f0;
+        }
+
+        /* Enhanced Parameter Controls */
+        .parameter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .param-item {
+            margin-bottom: 1rem;
+        }
+
+        .param-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .param-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            margin-bottom: 0.25rem;
+        }
+
+        .param-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .param-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .param-value {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: right;
+        }
+
+        /* Enhanced Info Panel */
+        .info-panel {
+            grid-column: 1 / -1;
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+        }
+
+        .info-section {
+            margin-bottom: 1rem;
+        }
+
+        .info-section h4 {
+            color: #10b981;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-section p {
+            color: #d1d5db;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        /* Enhanced Recording Panel */
+        .recording-panel {
+            grid-column: 1 / -1;
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+        }
+
+        .recording-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .header {
+                margin-bottom: 1rem;
+                padding: 0.75rem;
+            }
+
+            .main-grid {
+                gap: 1rem;
+            }
+
+            .panel {
+                padding: 1rem;
+            }
+
+            .control-buttons {
+                gap: 0.5rem;
+            }
+
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+                min-width: 100px;
+            }
+
+            .preset-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .viz-container {
+                grid-template-columns: 1fr;
+            }
+
+            canvas {
+                height: 100px;
+            }
+        }
+
+        /* Accessibility Improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .btn:focus,
+        .param-slider:focus,
+        .preset-btn:focus {
+            outline: 2px solid #00d4ff;
+            outline-offset: 2px;
+        }
+
+        /* Dark mode specific adjustments */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="version-info">
+        <div>Eigensound GR/QM v0.1.0</div>
+        <div>by Daniel Sandner</div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-logo">
+                <img src="logo.png" alt="Eigensound Logo" class="logo" style="display: none;" id="logo">
+                <div>
+                    <h1>Eigensound GR/QM</h1>
+                    <p>Quantum-Relativistic Sound Synthesis Explorer</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <div class="panel control-panel">
+                <h3>Control Center</h3>
+                
+                <div class="control-buttons">
+                    <button class="btn btn-primary" id="playBtn">
+                        <span id="playIcon">▶</span>
+                        <span id="playText">Play</span>
+                    </button>
+                    <button class="btn btn-record" id="recordBtn">
+                        <span>🎙</span>
+                        <span id="recordText">Record</span>
+                    </button>
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <span>↻</span>
+                        <span>Reset</span>
+                    </button>
+                    <button class="btn btn-accent" id="infoBtn">
+                        <span>ℹ</span>
+                        <span>Info</span>
+                    </button>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label" for="volumeSlider">Master Volume</label>
+                    <input type="range" class="param-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+                    <div class="param-value" id="volumeValue">50%</div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Normalization Mode</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary normalization-btn active" data-mode="adaptive">Adaptive</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="peak">Peak</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="rms">RMS</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="compressor">Compressor</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preset Selection -->
+            <div class="panel">
+                <h3>Physics Presets</h3>
+                <div class="preset-grid" id="presetGrid">
+                    <!-- Presets will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Quantum Parameters -->
+            <div class="panel">
+                <h3 style="color: #00d4ff;">Quantum Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="uncertaintySlider">Uncertainty Principle (ℏ)</label>
+                        <input type="range" class="param-slider" id="uncertaintySlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="uncertaintyValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="coherenceSlider">Coherence Time</label>
+                        <input type="range" class="param-slider" id="coherenceSlider" min="0" max="1" step="0.01" value="0.8">
+                        <div class="param-value" id="coherenceValue">0.80</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="entanglementSlider">Entanglement</label>
+                        <input type="range" class="param-slider" id="entanglementSlider" min="0" max="1" step="0.01" value="0.3">
+                        <div class="param-value" id="entanglementValue">0.30</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="wavePacketSlider">Wave Packet Width</label>
+                        <input type="range" class="param-slider" id="wavePacketSlider" min="0.1" max="2" step="0.01" value="0.6">
+                        <div class="param-value" id="wavePacketValue">0.60</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relativistic Parameters -->
+            <div class="panel">
+                <h3 style="color: #f59e0b;">Relativistic Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="curvatureSlider">Spacetime Curvature</label>
+                        <input type="range" class="param-slider" id="curvatureSlider" min="0" max="1" step="0.01" value="0.4">
+                        <div class="param-value" id="curvatureValue">0.40</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="dilationSlider">Time Dilation</label>
+                        <input type="range" class="param-slider" id="dilationSlider" min="0" max="1" step="0.01" value="0.2">
+                        <div class="param-value" id="dilationValue">0.20</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="redshiftSlider">Gravitational Redshift</label>
+                        <input type="range" class="param-slider" id="redshiftSlider" min="0" max="1" step="0.01" value="0.3">
+                        <div class="param-value" id="redshiftValue">0.30</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="horizonSlider">Event Horizon Effect</label>
+                        <input type="range" class="param-slider" id="horizonSlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="horizonValue">0.50</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sound Parameters -->
+            <div class="panel">
+                <h3 style="color: #10b981;">Sound Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="baseFreqSlider">Base Frequency (Hz)</label>
+                        <input type="range" class="param-slider" id="baseFreqSlider" min="100" max="1000" step="10" value="440">
+                        <div class="param-value" id="baseFreqValue">440Hz</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="harmonicsSlider">Harmonics</label>
+                        <input type="range" class="param-slider" id="harmonicsSlider" min="1" max="8" step="1" value="3">
+                        <div class="param-value" id="harmonicsValue">3</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="amplitudeSlider">Amplitude</label>
+                        <input type="range" class="param-slider" id="amplitudeSlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="amplitudeValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="filterQSlider">Filter Q</label>
+                        <input type="range" class="param-slider" id="filterQSlider" min="1" max="30" step="1" value="10">
+                        <div class="param-value" id="filterQValue">10</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Visualizations -->
+            <div class="panel visualization-panel">
+                <h3>Real-time Physics Visualization</h3>
+                <div class="viz-container">
+                    <div class="canvas-container">
+                        <canvas id="waveformCanvas" width="300" height="120"></canvas>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="spectrumCanvas" width="300" height="120"></canvas>
+                    </div>
+                </div>
+                
+                <div class="physics-states">
+                    <div class="state-group">
+                        <h4 style="color: #00d4ff;">Quantum State</h4>
+                        <div class="state-item">
+                            <span class="state-label">Uncertainty:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="uncertaintyBar" style="background: #00d4ff;"></div>
+                            </div>
+                            <span class="state-value" id="uncertaintyDisplay">50%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Coherence:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="coherenceBar" style="background: #10b981;"></div>
+                            </div>
+                            <span class="state-value" id="coherenceDisplay">80%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Entanglement:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="entanglementBar" style="background: #a855f7;"></div>
+                            </div>
+                            <span class="state-value" id="entanglementDisplay">30%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="state-group">
+                        <h4 style="color: #f59e0b;">Relativistic State</h4>
+                        <div class="state-item">
+                            <span class="state-label">Curvature:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="curvatureBar" style="background: #f59e0b;"></div>
+                            </div>
+                            <span class="state-value" id="curvatureDisplay">40%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Time Factor:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="dilationBar" style="background: #ef4444;"></div>
+                            </div>
+                            <span class="state-value" id="dilationDisplay">0.80</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Redshift:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="redshiftBar" style="background: #eab308;"></div>
+                            </div>
+                            <span class="state-value" id="redshiftDisplay">0.70</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel (hidden by default) -->
+        <div class="panel info-panel" id="infoPanel" style="display: none;">
+            <h3>Eigensound GR/QM Physics Guide</h3>
+            <div class="info-section">
+                <h4>Quantum Mechanics</h4>
+                <p><strong>Uncertainty Principle:</strong> Higher values create more chaotic, unpredictable sound patterns as quantum measurements become less precise.</p>
+                <p><strong>Coherence Time:</strong> Determines how long quantum states maintain their phase relationships before environmental decoherence.</p>
+                <p><strong>Entanglement:</strong> Correlates harmonic frequencies non-locally - changing one affects others instantaneously.</p>
+                <p><strong>Wave Packet Width:</strong> Controls the spatial extent of quantum wave functions, affecting interference patterns.</p>
+            </div>
+            <div class="info-section">
+                <h4>General Relativity</h4>
+                <p><strong>Spacetime Curvature:</strong> Creates frequency modulation simulating how curved spacetime affects wave propagation.</p>
+                <p><strong>Time Dilation:</strong> Slows temporal evolution, showing how time passes differently in gravitational fields.</p>
+                <p><strong>Gravitational Redshift:</strong> Lowers frequencies as if sounds are climbing out of gravitational wells.</p>
+                <p><strong>Event Horizon:</strong> Simulates extreme redshift effects near black hole boundaries.</p>
+            </div>
+            <div class="info-section">
+                <h4>Scientific Accuracy</h4>
+                <p>All effects are based on established physics equations, though simplified for real-time audio synthesis. The app demonstrates fundamental incompatibilities between quantum mechanics and general relativity.</p>
+            </div>
+        </div>
+
+        <!-- Recording Panel (hidden by default) -->
+        <div class="panel recording-panel" id="recordingPanel" style="display: none;">
+            <h3 style="color: #22c55e;">Audio Recording</h3>
+            <div class="recording-controls">
+                <audio controls id="audioPlayer" class="audio-player">
+                    Your browser does not support the audio element.
+                </audio>
+                <button class="btn btn-accent" id="downloadBtn">
+                    <span>💾</span>
+                    <span>Download</span>
+                </button>
+                <button class="btn btn-secondary" id="deleteBtn">
+                    <span>🗑</span>
+                    <span>Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Physics Presets with improved scientific accuracy
+        const PRESETS = {
+            'custom': {
+                name: 'Custom',
+                description: 'Design your own quantum-relativistic soundscape',
+                quantum: { uncertainty: 0.5, coherence: 0.8, entanglement: 0.3, wavePacketWidth: 0.6 },
+                gr: { curvature: 0.4, timeDilation: 0.2, redshift: 0.3, horizonEffect: 0.5 },
+                sound: { baseFreq: 440, harmonics: 3, amplitude: 0.5, filterQ: 10 }
+            },
+            'heisenberg': {
+                name: 'Heisenberg Uncertainty',
+                description: 'High uncertainty creates chaotic, unpredictable sound patterns',
+                quantum: { uncertainty: 0.9, coherence: 0.4, entanglement: 0.1, wavePacketWidth: 0.3 },
+                gr: { curvature: 0.1, timeDilation: 0.05, redshift: 0.05, horizonEffect: 0.1 },
+                sound: { baseFreq: 660, harmonics: 5, amplitude: 0.6, filterQ: 5 }
+            },
+            'schrodinger': {
+                name: 'Schrödinger Superposition',
+                description: 'Quantum superposition creates interference patterns in sound',
+                quantum: { uncertainty: 0.5, coherence: 0.9, entanglement: 0.7, wavePacketWidth: 0.8 },
+                gr: { curvature: 0.1, timeDilation: 0.02, redshift: 0.02, horizonEffect: 0.05 },
+                sound: { baseFreq: 330, harmonics: 4, amplitude: 0.4, filterQ: 15 }
+            },
+            'epr': {
+                name: 'EPR Entanglement',
+                description: 'Spooky action at a distance - harmonics respond instantaneously',
+                quantum: { uncertainty: 0.3, coherence: 0.95, entanglement: 0.95, wavePacketWidth: 0.7 },
+                gr: { curvature: 0.05, timeDilation: 0.01, redshift: 0.01, horizonEffect: 0.02 },
+                sound: { baseFreq: 220, harmonics: 6, amplitude: 0.45, filterQ: 20 }
+            },
+            'blackhole': {
+                name: 'Black Hole Horizon',
+                description: 'Extreme redshift and time dilation near the event horizon',
+                quantum: { uncertainty: 0.2, coherence: 0.6, entanglement: 0.2, wavePacketWidth: 0.5 },
+                gr: { curvature: 0.9, timeDilation: 0.8, redshift: 0.9, horizonEffect: 0.95 },
+                sound: { baseFreq: 110, harmonics: 2, amplitude: 0.3, filterQ: 8 }
+            },
+            'gravitational': {
+                name: 'Gravitational Waves',
+                description: 'Spacetime ripples create periodic frequency modulation',
+                quantum: { uncertainty: 0.1, coherence: 0.8, entanglement: 0.1, wavePacketWidth: 0.9 },
+                gr: { curvature: 0.7, timeDilation: 0.4, redshift: 0.3, horizonEffect: 0.2 },
+                sound: { baseFreq: 880, harmonics: 3, amplitude: 0.55, filterQ: 12 }
+            },
+            'decoherence': {
+                name: 'Quantum Decoherence',
+                description: 'Watch quantum coherence decay in real-time',
+                quantum: { uncertainty: 0.6, coherence: 0.3, entanglement: 0.4, wavePacketWidth: 0.4 },
+                gr: { curvature: 0.2, timeDilation: 0.1, redshift: 0.1, horizonEffect: 0.15 },
+                sound: { baseFreq: 523, harmonics: 4, amplitude: 0.5, filterQ: 6 }
+            },
+            'planck': {
+                name: 'Planck Scale',
+                description: 'Where quantum and gravitational effects become comparable',
+                quantum: { uncertainty: 0.8, coherence: 0.5, entanglement: 0.6, wavePacketWidth: 0.2 },
+                gr: { curvature: 0.8, timeDilation: 0.6, redshift: 0.7, horizonEffect: 0.8 },
+                sound: { baseFreq: 1760, harmonics: 8, amplitude: 0.7, filterQ: 25 }
+            }
+        };
+
+        // Enhanced Audio Engine with improved physics
+        class EnhancedAudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.oscillators = [];
+                this.gainNode = null;
+                this.filterNode = null;
+                this.analyserNode = null;
+                this.masterGain = null;
+                this.isPlaying = false;
+                this.isRecording = false;
+                this.time = 0;
+                this.animationId = null;
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                this.recordingStartTime = 0;
+                this.recordingDuration = 0;
+                this.currentPreset = 'custom';
+                this.normalizationMode = 'adaptive';
+                
+                // Physics state
+                this.quantumState = {
+                    uncertainty: 0.5,
+                    coherence: 0.8,
+                    entanglement: 0.3,
+                    wavePacketWidth: 0.6
+                };
+                
+                this.grState = {
+                    curvature: 0.4,
+                    timeDilation: 0.2,
+                    redshift: 0.3,
+                    horizonEffect: 0.5
+                };
+                
+                this.soundState = {
+                    baseFreq: 440,
+                    harmonics: 3,
+                    amplitude: 0.5,
+                    filterQ: 10
+                };
+                
+                this.masterVolume = 0.5;
+                this.volumeHistory = new Array(100).fill(0);
+                
+                // Visualization data
+                this.visualizationData = {
+                    waveform: new Array(128).fill(0),
+                    spectrum: new Array(64).fill(0),
+                    quantumState: { uncertainty: 0, coherence: 0, entanglement: 0 },
+                    relativisticState: { curvature: 0, dilation: 0, redshift: 0 }
+                };
+            }
+            
+            async init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create audio nodes
+                    this.analyserNode = this.audioContext.createAnalyser();
+                    this.analyserNode.fftSize = 1024;
+                    this.analyserNode.smoothingTimeConstant = 0.8;
+                    
+                    this.filterNode = this.audioContext.createBiquadFilter();
+                    this.filterNode.type = 'bandpass';
+                    this.filterNode.frequency.value = 1000;
+                    this.filterNode.Q.value = this.soundState.filterQ;
+                    
+                    this.gainNode = this.audioContext.createGain();
+                    this.gainNode.gain.value = 0;
+                    
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = this.masterVolume;
+                    
+                    // Connect audio graph
+                    this.filterNode.connect(this.analyserNode);
+                    this.analyserNode.connect(this.gainNode);
+                    this.gainNode.connect(this.masterGain);
+                    this.masterGain.connect(this.audioContext.destination);
+                    
+                    console.log('Audio engine initialized successfully');
+                } catch (error) {
+                    console.error('Audio engine initialization failed:', error);
+                    throw error;
+                }
+            }
+            
+            // Enhanced quantum wave function with better physics
+            quantumWaveFunction(t, x) {
+                const { uncertainty, coherence, wavePacketWidth } = this.quantumState;
+                const k = 2 * Math.PI / Math.max(wavePacketWidth, 0.1);
+                
+                // Improved decoherence model with environmental coupling
+                const environmentalCoupling = 0.01; // Coupling strength to environment
+                const temperature = 300; // Kelvin - room temperature
+                const kB = 1.38e-23; // Boltzmann constant (simplified)
+                
+                // Decoherence time depends on environmental factors
+                const decoherenceRate = environmentalCoupling * temperature * (1 - coherence);
+                const sigma = Math.max(uncertainty * Math.sqrt(1 + decoherenceRate * t), 0.01);
+                
+                // Gaussian wave packet with quantum uncertainty
+                const envelope = Math.exp(-Math.pow(x - t * 0.1, 2) / (2 * sigma * sigma));
+                const wave = Math.cos(k * x - 2 * Math.PI * t * 0.1);
+                const coherenceFactor = Math.exp(-t * decoherenceRate);
+                
+                // Add quantum fluctuations (zero-point energy)
+                const quantumNoise = (Math.random() - 0.5) * uncertainty * 0.1;
+                
+                return envelope * wave * coherenceFactor + quantumNoise;
+            }
+            
+            // Enhanced relativistic effects with proper physics
+            relativisticEffect(t, freq) {
+                const { curvature, timeDilation, redshift } = this.grState;
+                
+                // Gravitational time dilation: dt' = dt * sqrt(1 - 2GM/rc²)
+                const gravitationalPotential = timeDilation * 0.1;
+                const dilationFactor = Math.sqrt(1 - 2 * gravitationalPotential);
+                const adjustedTime = t * dilationFactor;
+                
+                // Gravitational redshift: ν' = ν * sqrt(1 - 2GM/rc²)
+                const redshiftFactor = Math.sqrt(1 - 2 * redshift * 0.1);
+                const adjustedFreq = freq * redshiftFactor;
+                
+                // Spacetime curvature creates frequency modulation
+                const curvatureModulation = Math.sin(adjustedTime * 0.05) * curvature * 0.1;
+                
+                return {
+                    frequency: adjustedFreq * (1 + curvatureModulation),
+                    timeScale: dilationFactor
+                };
+            }
+            
+            // Enhanced volume normalization
+            normalizeVolume(amplitudes, mode) {
+                const maxAmp = Math.max(...amplitudes);
+                const rms = Math.sqrt(amplitudes.reduce((sum, amp) => sum + amp * amp, 0) / amplitudes.length);
+                const avgAmp = amplitudes.reduce((sum, amp) => sum + Math.abs(amp), 0) / amplitudes.length;
+                
+                switch (mode) {
+                    case 'peak':
+                        return maxAmp > 0 ? amplitudes.map(amp => amp / maxAmp) : amplitudes;
+                    case 'rms':
+                        return rms > 0 ? amplitudes.map(amp => amp / (rms * 3)) : amplitudes;
+                    case 'adaptive':
+                        const target = Math.max(avgAmp, 0.1);
+                        return amplitudes.map(amp => amp / (target * 2));
+                    case 'compressor':
+                        const threshold = 0.7;
+                        const ratio = 0.3;
+                        return amplitudes.map(amp => {
+                            const absAmp = Math.abs(amp);
+                            if (absAmp > threshold) {
+                                const compressed = threshold + (absAmp - threshold) * ratio;
+                                return Math.sign(amp) * compressed;
+                            }
+                            return amp;
+                        });
+                    default:
+                        return amplitudes;
+                }
+            }
+            
+            // Enhanced sound synthesis
+            synthesizeSound() {
+                if (!this.audioContext || !this.isPlaying) return;
+                
+                const currentTime = this.audioContext.currentTime;
+                this.time += 0.016; // ~60fps update rate
+                
+                // Clear existing oscillators
+                this.oscillators.forEach(osc => {
+                    try {
+                        osc.stop(currentTime);
+                    } catch (e) {
+                        // Oscillator already stopped
+                    }
+                });
+                this.oscillators = [];
+                
+                const { baseFreq, harmonics } = this.soundState;
+                const amplitudes = [];
+                
+                // Generate harmonics with quantum and relativistic effects
+                for (let i = 1; i <= harmonics; i++) {
+                    const harmonic = Math.max(baseFreq * i, 20);
+                    
+                    // Apply quantum uncertainty to amplitude
+                    const quantumAmp = Math.abs(this.quantumWaveFunction(this.time, i));
+                    
+                    // Apply relativistic effects to frequency
+                    const { frequency: relFreq } = this.relativisticEffect(this.time, harmonic);
+                    const safeFreq = Math.min(Math.max(relFreq, 20), 20000);
+                    
+                    try {
+                        const osc = this.audioContext.createOscillator();
+                        const harmGain = this.audioContext.createGain();
+                        
+                        osc.frequency.setValueAtTime(safeFreq, currentTime);
+                        osc.type = 'sine';
+                        
+                        // Quantum entanglement effect
+                        const entanglementPhase = this.quantumState.entanglement * i * Math.PI / 4;
+                        const entanglementAmp = quantumAmp * (1 + 0.3 * Math.sin(this.time + entanglementPhase));
+                        
+                        amplitudes.push(entanglementAmp);
+                        
+                        // Apply normalization
+                        const normalizedAmps = this.normalizeVolume([entanglementAmp], this.normalizationMode);
+                        const finalAmp = Math.max(0, Math.min(1, normalizedAmps[0] * 0.15));
+                        
+                        harmGain.gain.setValueAtTime(finalAmp, currentTime);
+                        
+                        osc.connect(harmGain);
+                        harmGain.connect(this.filterNode);
+                        
+                        osc.start(currentTime);
+                        osc.stop(currentTime + 0.1);
+                        this.oscillators.push(osc);
+                    } catch (e) {
+                        console.warn('Audio synthesis error:', e);
+                    }
+                }
+                
+                // Update volume history
+                const avgAmplitude = amplitudes.reduce((sum, amp) => sum + Math.abs(amp), 0) / amplitudes.length;
+                this.volumeHistory.push(avgAmplitude);
+                if (this.volumeHistory.length > 100) {
+                    this.volumeHistory.shift();
+                }
+                
+                // Update visualization
+                this.updateVisualization();
+            }
+            
+            // Enhanced visualization update
+            updateVisualization() {
+                if (!this.analyserNode) return;
+                
+                const bufferLength = this.analyserNode.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                const waveformArray = new Float32Array(this.analyserNode.fftSize);
+                
+                this.analyserNode.getByteFrequencyData(dataArray);
+                this.analyserNode.getFloatTimeDomainData(waveformArray);
+                
+                // Process waveform (downsample)
+                const waveform = [];
+                const step = Math.floor(waveformArray.length / 128);
+                for (let i = 0; i < 128; i++) {
+                    waveform.push(waveformArray[i * step] || 0);
+                }
+                
+                // Process spectrum (downsample)
+                const spectrum = [];
+                const freqStep = Math.floor(dataArray.length / 64);
+                for (let i = 0; i < 64; i++) {
+                    spectrum.push((dataArray[i * freqStep] || 0) / 255);
+                }
+                
+                // Calculate current physics state
+                const quantumState = {
+                    uncertainty: this.quantumState.uncertainty,
+                    coherence: this.quantumState.coherence * Math.exp(-this.time * (1 - this.quantumState.coherence) * 0.005),
+                    entanglement: this.quantumState.entanglement
+                };
+                
+                const relativisticState = {
+                    curvature: this.grState.curvature,
+                    dilation: 1 - this.grState.timeDilation * 0.1,
+                    redshift: 1 - this.grState.redshift * 0.1
+                };
+                
+                this.visualizationData = {
+                    waveform,
+                    spectrum,
+                    quantumState,
+                    relativisticState
+                };
+            }
+            
+            // Animation loop
+            animate() {
+                this.synthesizeSound();
+                
+                if (this.isPlaying) {
+                    this.animationId = requestAnimationFrame(() => this.animate());
+                }
+            }
+            
+            // Control methods
+            async play() {
+                if (!this.audioContext) {
+                    await this.init();
+                }
+                
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+                
+                this.isPlaying = true;
+                this.animate();
+            }
+            
+            stop() {
+                this.isPlaying = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                this.oscillators.forEach(osc => {
+                    try {
+                        osc.stop();
+                    } catch (e) {
+                        // Already stopped
+                    }
+                });
+                this.oscillators = [];
+            }
+            
+            // Parameter updates
+            updateQuantumParams(params) {
+                this.quantumState = { ...this.quantumState, ...params };
+                this.currentPreset = 'custom';
+            }
+            
+            updateGRParams(params) {
+                this.grState = { ...this.grState, ...params };
+                this.currentPreset = 'custom';
+            }
+            
+            updateSoundParams(params) {
+                this.soundState = { ...this.soundState, ...params };
+                this.currentPreset = 'custom';
+                
+                // Update audio nodes
+                if (this.filterNode) {
+                    const currentTime = this.audioContext?.currentTime || 0;
+                    this.filterNode.frequency.setValueAtTime(
+                        Math.max(this.soundState.baseFreq * 2, 80), 
+                        currentTime
+                    );
+                    this.filterNode.Q.setValueAtTime(
+                        Math.max(this.soundState.filterQ, 0.1), 
+                        currentTime
+                    );
+                }
+            }
+            
+            updateMasterVolume(volume) {
+                this.masterVolume = Math.max(0, Math.min(1, volume));
+                if (this.masterGain) {
+                    const currentTime = this.audioContext?.currentTime || 0;
+                    this.masterGain.gain.setValueAtTime(this.masterVolume, currentTime);
+                }
+            }
+            
+            updateNormalizationMode(mode) {
+                this.normalizationMode = mode;
+            }
+            
+            // Preset management
+            loadPreset(presetKey) {
+                const preset = PRESETS[presetKey];
+                if (!preset) return;
+                
+                this.quantumState = { ...preset.quantum };
+                this.grState = { ...preset.gr };
+                this.soundState = { ...preset.sound };
+                this.currentPreset = presetKey;
+                this.time = 0;
+                
+                // Update audio nodes
+                if (this.filterNode) {
+                    const currentTime = this.audioContext?.currentTime || 0;
+                    this.filterNode.frequency.setValueAtTime(
+                        Math.max(this.soundState.baseFreq * 2, 80), 
+                        currentTime
+                    );
+                    this.filterNode.Q.setValueAtTime(
+                        Math.max(this.soundState.filterQ, 0.1), 
+                        currentTime
+                    );
+                }
+            }
+            
+            reset() {
+                this.loadPreset('custom');
+                this.time = 0;
+            }
+            
+            // Recording functionality
+            async startRecording() {
+                if (!this.audioContext) return;
+                
+                try {
+                    // Create media stream destination
+                    const destination = this.audioContext.createMediaStreamDestination();
+                    this.masterGain.connect(destination);
+                    
+                    // Create media recorder
+                    this.mediaRecorder = new MediaRecorder(destination.stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    
+                    this.recordedChunks = [];
+                    this.recordingStartTime = Date.now();
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(blob);
+                        
+                        // Show recording panel
+                        const recordingPanel = document.getElementById('recordingPanel');
+                        const audioPlayer = document.getElementById('audioPlayer');
+                        
+                        recordingPanel.style.display = 'block';
+                        audioPlayer.src = audioUrl;
+                        
+                        // Disconnect recording destination
+                        this.masterGain.disconnect(destination);
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    alert('Recording failed. Please ensure microphone permissions are granted.');
+                }
+            }
+            
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                }
+            }
+        }
+
+        // Enhanced UI Controller
+        class UIController {
+            constructor(engine) {
+                this.engine = engine;
+                this.setupEventListeners();
+                this.setupPresets();
+                this.setupVisualization();
+                this.updateUI();
+                this.setupLogo();
+            }
+            
+            setupLogo() {
+                const logo = document.getElementById('logo');
+                const img = new Image();
+                img.onload = () => {
+                    logo.style.display = 'block';
+                };
+                img.onerror = () => {
+                    logo.style.display = 'none';
+                };
+                img.src = 'logo.png';
+            }
+            
+            setupEventListeners() {
+                // Control buttons
+                document.getElementById('playBtn').addEventListener('click', () => this.togglePlay());
+                document.getElementById('recordBtn').addEventListener('click', () => this.toggleRecord());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('infoBtn').addEventListener('click', () => this.toggleInfo());
+                
+                // Volume control
+                document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                    this.engine.updateMasterVolume(parseFloat(e.target.value));
+                    this.updateUI();
+                });
+                
+                // Normalization buttons
+                document.querySelectorAll('.normalization-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.normalization-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.updateNormalizationMode(btn.dataset.mode);
+                    });
+                });
+                
+                // Parameter sliders
+                this.setupParameterSliders();
+                
+                // Recording controls
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadRecording());
+                document.getElementById('deleteBtn').addEventListener('click', () => this.deleteRecording());
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.togglePlay();
+                    }
+                });
+            }
+            
+            setupParameterSliders() {
+                const sliders = [
+                    { id: 'uncertaintySlider', param: 'uncertainty', type: 'quantum', display: 'uncertaintyValue' },
+                    { id: 'coherenceSlider', param: 'coherence', type: 'quantum', display: 'coherenceValue' },
+                    { id: 'entanglementSlider', param: 'entanglement', type: 'quantum', display: 'entanglementValue' },
+                    { id: 'wavePacketSlider', param: 'wavePacketWidth', type: 'quantum', display: 'wavePacketValue' },
+                    { id: 'curvatureSlider', param: 'curvature', type: 'gr', display: 'curvatureValue' },
+                    { id: 'dilationSlider', param: 'timeDilation', type: 'gr', display: 'dilationValue' },
+                    { id: 'redshiftSlider', param: 'redshift', type: 'gr', display: 'redshiftValue' },
+                    { id: 'horizonSlider', param: 'horizonEffect', type: 'gr', display: 'horizonValue' },
+                    { id: 'baseFreqSlider', param: 'baseFreq', type: 'sound', display: 'baseFreqValue' },
+                    { id: 'harmonicsSlider', param: 'harmonics', type: 'sound', display: 'harmonicsValue' },
+                    { id: 'amplitudeSlider', param: 'amplitude', type: 'sound', display: 'amplitudeValue' },
+                    { id: 'filterQSlider', param: 'filterQ', type: 'sound', display: 'filterQValue' }
+                ];
+                
+                sliders.forEach(({ id, param, type, display }) => {
+                    const slider = document.getElementById(id);
+                    slider.addEventListener('input', (e) => {
+                        const value = parseFloat(e.target.value);
+                        
+                        if (type === 'quantum') {
+                            this.engine.updateQuantumParams({ [param]: value });
+                        } else if (type === 'gr') {
+                            this.engine.updateGRParams({ [param]: value });
+                        } else if (type === 'sound') {
+                            this.engine.updateSoundParams({ [param]: value });
+                        }
+                        
+                        this.updateUI();
+                    });
+                });
+            }
+            
+            setupPresets() {
+                const presetGrid = document.getElementById('presetGrid');
+                
+                Object.entries(PRESETS).forEach(([key, preset]) => {
+                    const button = document.createElement('button');
+                    button.className = 'preset-btn';
+                    button.innerHTML = `
+                        <div class="preset-name">${preset.name}</div>
+                        <div class="preset-desc">${preset.description}</div>
+                    `;
+                    
+                    button.addEventListener('click', () => {
+                        this.engine.loadPreset(key);
+                        this.updateUI();
+                        this.updatePresetButtons();
+                    });
+                    
+                    presetGrid.appendChild(button);
+                });
+                
+                this.updatePresetButtons();
+            }
+            
+            updatePresetButtons() {
+                document.querySelectorAll('.preset-btn').forEach((btn, index) => {
+                    const presetKey = Object.keys(PRESETS)[index];
+                    btn.classList.toggle('active', presetKey === this.engine.currentPreset);
+                });
+            }
+            
+            setupVisualization() {
+                this.waveformCanvas = document.getElementById('waveformCanvas');
+                this.spectrumCanvas = document.getElementById('spectrumCanvas');
+                this.waveformCtx = this.waveformCanvas.getContext('2d');
+                this.spectrumCtx = this.spectrumCanvas.getContext('2d');
+                
+                this.startVisualizationLoop();
+            }
+            
+            startVisualizationLoop() {
+                const updateVisualizations = () => {
+                    this.drawWaveform();
+                    this.drawSpectrum();
+                    this.updatePhysicsStates();
+                    requestAnimationFrame(updateVisualizations);
+                };
+                
+                updateVisualizations();
+            }
+            
+            drawWaveform() {
+                const canvas = this.waveformCanvas;
+                const ctx = this.waveformCtx;
+                const data = this.engine.visualizationData.waveform;
+                
+                if (!data || data.length === 0) return;
+                
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw waveform
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const sliceWidth = width / data.length;
+                let x = 0;
+                
+                for (let i = 0; i < data.length; i++) {
+                    const v = Math.max(-1, Math.min(1, data[i]));
+                    const y = (v * height / 2) + height / 2;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                ctx.stroke();
+                
+                // Draw center line
+                ctx.strokeStyle = '#4b5563';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+                
+                // Add title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.fillText('Quantum Waveform', 10, 20);
+            }
+            
+            drawSpectrum() {
+                const canvas = this.spectrumCanvas;
+                const ctx = this.spectrumCtx;
+                const data = this.engine.visualizationData.spectrum;
+                
+                if (!data || data.length === 0) return;
+                
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw spectrum bars
+                const barWidth = width / data.length;
+                
+                for (let i = 0; i < data.length; i++) {
+                    const barHeight = Math.max(0, data[i] * height);
+                    const hue = (i / data.length) * 240; // Blue to red spectrum
+                    
+                    ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                    ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+                }
+                
+                // Add title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.fillText('Frequency Spectrum', 10, 20);
+            }
+            
+            updatePhysicsStates() {
+                const { quantumState, relativisticState } = this.engine.visualizationData;
+                
+                // Update quantum state indicators
+                document.getElementById('uncertaintyBar').style.width = `${quantumState.uncertainty * 100}%`;
+                document.getElementById('coherenceBar').style.width = `${quantumState.coherence * 100}%`;
+                document.getElementById('entanglementBar').style.width = `${quantumState.entanglement * 100}%`;
+                
+                document.getElementById('uncertaintyDisplay').textContent = `${Math.round(quantumState.uncertainty * 100)}%`;
+                document.getElementById('coherenceDisplay').textContent = `${Math.round(quantumState.coherence * 100)}%`;
+                document.getElementById('entanglementDisplay').textContent = `${Math.round(quantumState.entanglement * 100)}%`;
+                
+                // Update relativistic state indicators
+                document.getElementById('curvatureBar').style.width = `${relativisticState.curvature * 100}%`;
+                document.getElementById('dilationBar').style.width = `${relativisticState.dilation * 100}%`;
+                document.getElementById('redshiftBar').style.width = `${relativisticState.redshift * 100}%`;
+                
+                document.getElementById('curvatureDisplay').textContent = `${Math.round(relativisticState.curvature * 100)}%`;
+                document.getElementById('dilationDisplay').textContent = `${relativisticState.dilation.toFixed(2)}`;
+                document.getElementById('redshiftDisplay').textContent = `${relativisticState.redshift.toFixed(2)}`;
+            }
+            
+            updateUI() {
+                // Update all slider values and displays
+                const { quantumState, grState, soundState } = this.engine;
+                
+                document.getElementById('uncertaintySlider').value = quantumState.uncertainty;
+                document.getElementById('uncertaintyValue').textContent = quantumState.uncertainty.toFixed(2);
+                
+                document.getElementById('coherenceSlider').value = quantumState.coherence;
+                document.getElementById('coherenceValue').textContent = quantumState.coherence.toFixed(2);
+                
+                document.getElementById('entanglementSlider').value = quantumState.entanglement;
+                document.getElementById('entanglementValue').textContent = quantumState.entanglement.toFixed(2);
+                
+                document.getElementById('wavePacketSlider').value = quantumState.wavePacketWidth;
+                document.getElementById('wavePacketValue').textContent = quantumState.wavePacketWidth.toFixed(2);
+                
+                document.getElementById('curvatureSlider').value = grState.curvature;
+                document.getElementById('curvatureValue').textContent = grState.curvature.toFixed(2);
+                
+                document.getElementById('dilationSlider').value = grState.timeDilation;
+                document.getElementById('dilationValue').textContent = grState.timeDilation.toFixed(2);
+                
+                document.getElementById('redshiftSlider').value = grState.redshift;
+                document.getElementById('redshiftValue').textContent = grState.redshift.toFixed(2);
+                
+                document.getElementById('horizonSlider').value = grState.horizonEffect;
+                document.getElementById('horizonValue').textContent = grState.horizonEffect.toFixed(2);
+                
+                document.getElementById('baseFreqSlider').value = soundState.baseFreq;
+                document.getElementById('baseFreqValue').textContent = `${soundState.baseFreq}Hz`;
+                
+                document.getElementById('harmonicsSlider').value = soundState.harmonics;
+                document.getElementById('harmonicsValue').textContent = soundState.harmonics;
+                
+                document.getElementById('amplitudeSlider').value = soundState.amplitude;
+                document.getElementById('amplitudeValue').textContent = soundState.amplitude.toFixed(2);
+                
+                document.getElementById('filterQSlider').value = soundState.filterQ;
+                document.getElementById('filterQValue').textContent = soundState.filterQ;
+                
+                document.getElementById('volumeSlider').value = this.engine.masterVolume;
+                document.getElementById('volumeValue').textContent = `${Math.round(this.engine.masterVolume * 100)}%`;
+                
+                this.updatePresetButtons();
+            }
+            
+            togglePlay() {
+                if (this.engine.isPlaying) {
+                    this.engine.stop();
+                    document.getElementById('playIcon').textContent = '▶';
+                    document.getElementById('playText').textContent = 'Play';
+                } else {
+                    this.engine.play();
+                    document.getElementById('playIcon').textContent = '⏸';
+                    document.getElementById('playText').textContent = 'Pause';
+                }
+            }
+            
+            toggleRecord() {
+                if (this.engine.isRecording) {
+                    this.engine.stopRecording();
+                    document.getElementById('recordBtn').classList.remove('recording');
+                    document.getElementById('recordText').textContent = 'Record';
+                } else {
+                    if (this.engine.isPlaying) {
+                        this.engine.startRecording();
+                        document.getElementById('recordBtn').classList.add('recording');
+                        document.getElementById('recordText').textContent = 'Stop';
+                    } else {
+                        alert('Please start playing before recording.');
+                    }
+                }
+            }
+            
+            reset() {
+                this.engine.reset();
+                this.updateUI();
+            }
+            
+            toggleInfo() {
+                const infoPanel = document.getElementById('infoPanel');
+                const isVisible = infoPanel.style.display !== 'none';
+                infoPanel.style.display = isVisible ? 'none' : 'block';
+            }
+            
+            downloadRecording() {
+                const audioPlayer = document.getElementById('audioPlayer');
+                if (audioPlayer.src) {
+                    const link = document.createElement('a');
+                    link.href = audioPlayer.src;
+                    link.download = `eigensound-${this.engine.currentPreset}-${new Date().toISOString().slice(0, 19)}.webm`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+            
+            deleteRecording() {
+                const audioPlayer = document.getElementById('audioPlayer');
+                const recordingPanel = document.getElementById('recordingPanel');
+                
+                if (audioPlayer.src) {
+                    URL.revokeObjectURL(audioPlayer.src);
+                }
+                
+                audioPlayer.src = '';
+                recordingPanel.style.display = 'none';
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const engine = new EnhancedAudioEngine();
+                const ui = new UIController(engine);
+                
+                // Make engine available globally for debugging
+                window.eigensoundEngine = engine;
+                
+                console.log('Eigensound GR/QM v0.1.0 initialized successfully');
+                console.log('Created by Daniel Sandner');
+                
+            } catch (error) {
+                console.error('Failed to initialize Eigensound GR/QM:', error);
+                alert('Failed to initialize audio engine. Please check your browser compatibility.');
+            }
+        });
+    </script>
+</body>
+</html>
