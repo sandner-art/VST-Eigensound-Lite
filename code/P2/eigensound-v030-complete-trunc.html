@@ -1,0 +1,3807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eigensound | GR/QM - Quantum-Relativistic Sound Synthesis with Eigenmodes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1e1e3f 50%, #000000 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: #94a3b8;
+        }
+
+        .version-info {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .audio-status {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #00d4ff;
+        }
+
+        /* Enhanced Control Panel */
+        .control-panel {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            min-width: 120px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary.playing {
+            background: linear-gradient(45deg, #10b981, #047857);
+        }
+
+        .btn-record {
+            background: linear-gradient(45deg, #10b981, #047857);
+            color: white;
+        }
+
+        .btn-record.recording {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.8);
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(107, 114, 128, 1);
+            transform: translateY(-1px);
+        }
+
+        .btn-accent {
+            background: linear-gradient(45deg, #a855f7, #7c3aed);
+            color: white;
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn.active {
+            background: linear-gradient(45deg, #00d4ff, #0891b2);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Eigenmode Panel Styles */
+        .eigenmode-panel {
+            grid-column: 1 / -1;
+            background: rgba(255, 51, 153, 0.08);
+            border-left: 4px solid #ff3399;
+        }
+
+        .eigenmode-visualization {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .eigenmode-canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 200px;
+        }
+
+        /* Preset Grid */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .preset-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .preset-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .preset-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .preset-btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            border: 2px solid transparent;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(45deg, #a855f7, #3b82f6);
+            border-color: #00d4ff;
+        }
+
+        .preset-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .preset-desc {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.3;
+        }
+
+        /* Enhanced Visualization Panel */
+        .visualization-panel {
+            grid-column: 1 / -1;
+        }
+
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .viz-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 150px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 150px;
+            border-radius: 4px;
+            cursor: crosshair;
+        }
+
+        /* Physics State Indicators */
+        .physics-states {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .physics-states {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .state-group {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .state-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .state-label {
+            min-width: 80px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .state-value {
+            min-width: 40px;
+            font-size: 0.75rem;
+            text-align: right;
+            color: #e2e8f0;
+        }
+
+        /* Physics Interaction Display */
+        .physics-interactions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .physics-interactions {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .interaction-group {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .interaction-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .interaction-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .interaction-value {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* Parameter Controls */
+        .parameter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .param-item {
+            margin-bottom: 1rem;
+        }
+
+        .param-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .param-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            margin-bottom: 0.25rem;
+        }
+
+        .param-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .param-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #00d4ff, #a855f7);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .param-value {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: right;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            grid-column: 1 / -1;
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+        }
+
+        .info-section {
+            margin-bottom: 1rem;
+        }
+
+        .info-section h4 {
+            color: #10b981;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-section p {
+            color: #d1d5db;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        /* Recording Panel */
+        .recording-panel {
+            grid-column: 1 / -1;
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+        }
+
+        .recording-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Interactive Hover Effects */
+        .canvas-container:hover canvas {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .header {
+                margin-bottom: 1rem;
+                padding: 0.75rem;
+            }
+
+            .main-grid {
+                gap: 1rem;
+            }
+
+            .panel {
+                padding: 1rem;
+            }
+
+            .control-buttons {
+                gap: 0.5rem;
+            }
+
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+                min-width: 100px;
+            }
+
+            canvas {
+                height: 100px;
+            }
+
+            .preset-grid {
+                max-height: 400px;
+            }
+        }
+
+        /* Accessibility */
+        .btn:focus,
+        .param-slider:focus,
+        .preset-btn:focus {
+            outline: 2px solid #00d4ff;
+            outline-offset: 2px;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="version-info">
+        <div>eigensound gr/qm v0.3.0</div>
+        <div>by Daniel Sandner</div>
+    </div>
+
+    <div class="audio-status" id="audioStatus">
+        Audio Initializing...
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>eigensound | gr/qm</h1>
+                <p>Quantum-Relativistic Sound Synthesis with Eigenmode Resonance</p>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <div class="panel control-panel">
+                <h3>Control Center</h3>
+                
+                <div class="control-buttons">
+                    <button class="btn btn-primary" id="playBtn">
+                        <span id="playIcon">▶</span>
+                        <span id="playText">Play</span>
+                    </button>
+                    <button class="btn btn-record" id="recordBtn">
+                        <span>🎙</span>
+                        <span id="recordText">Record</span>
+                    </button>
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <span>↻</span>
+                        <span>Reset</span>
+                    </button>
+                    <button class="btn btn-secondary" id="testAudioBtn">
+                        <span>🔊</span>
+                        <span>Test Audio</span>
+                    </button>
+                    <button class="btn btn-secondary" id="initAudioBtn">
+                        <span>🔄</span>
+                        <span>Init Audio</span>
+                    </button>
+                    <button class="btn btn-accent" id="infoBtn">
+                        <span>ℹ</span>
+                        <span>Info</span>
+                    </button>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label" for="volumeSlider">Master Volume</label>
+                    <input type="range" class="param-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+                    <div class="param-value" id="volumeValue">50%</div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label" for="intensityBoostSlider">Intensity Boost</label>
+                    <input type="range" class="param-slider" id="intensityBoostSlider" min="1.0" max="1.25" step="0.01" value="1.0">
+                    <div class="param-value" id="intensityBoostValue">100%</div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label" for="dynamicRangeSlider">Dynamic Range</label>
+                    <input type="range" class="param-slider" id="dynamicRangeSlider" min="0.1" max="1.0" step="0.05" value="0.7">
+                    <div class="param-value" id="dynamicRangeValue">70%</div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Physics Mode</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary mode-btn active" data-mode="combined">Combined</button>
+                        <button class="btn btn-secondary mode-btn" data-mode="quantum">Quantum</button>
+                        <button class="btn btn-secondary mode-btn" data-mode="relativistic">Relativistic</button>
+                        <button class="btn btn-secondary mode-btn" data-mode="eigenmode">Eigenmode</button>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Normalization Mode</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary normalization-btn active" data-mode="adaptive">Adaptive</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="peak">Peak</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="rms">RMS</button>
+                        <button class="btn btn-secondary normalization-btn" data-mode="compressor">Compressor</button>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Waveform Type</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary waveform-btn active" data-waveform="sine">Sine</button>
+                        <button class="btn btn-secondary waveform-btn" data-waveform="triangle">Triangle</button>
+                        <button class="btn btn-secondary waveform-btn" data-waveform="sawtooth">Sawtooth</button>
+                        <button class="btn btn-secondary waveform-btn" data-waveform="square">Square</button>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Enhanced Evolution System</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary" id="evolutionBtn">
+                            <span>🌊</span>
+                            <span>Enable Evolution</span>
+                        </button>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="evolutionSpeedSlider">Evolution Speed</label>
+                        <input type="range" class="param-slider" id="evolutionSpeedSlider" min="0.01" max="1.0" step="0.01" value="0.1">
+                        <div class="param-value" id="evolutionSpeedValue">0.10</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="evolutionIntensitySlider">Evolution Intensity</label>
+                        <input type="range" class="param-slider" id="evolutionIntensitySlider" min="0.1" max="1.0" step="0.1" value="0.3">
+                        <div class="param-value" id="evolutionIntensityValue">0.3</div>
+                    </div>
+                    <div class="parameter-group">
+                        <label class="param-label">Evolution Type</label>
+                        <div class="control-buttons">
+                            <button class="btn btn-secondary evolution-type-btn active" data-type="drift">Drift</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="oscillation">Oscillation</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="chaos">Chaos</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="decay">Decay</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="growth">Growth</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="spiral">Spiral</button>
+                            <button class="btn btn-secondary evolution-type-btn" data-type="eigenshift">Eigenshift</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Export/Import</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-accent" id="exportBtn">
+                            <span>📤</span>
+                            <span>Export</span>
+                        </button>
+                        <label class="btn btn-accent" style="margin: 0;">
+                            <span>📥</span>
+                            <span>Import</span>
+                            <input type="file" accept=".json" id="importInput" style="display: none;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preset Selection -->
+            <div class="panel">
+                <h3>Physics Presets</h3>
+                <div class="preset-grid" id="presetGrid">
+                    <!-- Presets will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Quantum Parameters -->
+            <div class="panel">
+                <h3 style="color: #00d4ff;">Quantum Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="uncertaintySlider">Uncertainty Principle (ℏ)</label>
+                        <input type="range" class="param-slider" id="uncertaintySlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="uncertaintyValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="coherenceSlider">Coherence Time</label>
+                        <input type="range" class="param-slider" id="coherenceSlider" min="0" max="1" step="0.01" value="0.8">
+                        <div class="param-value" id="coherenceValue">0.80</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="entanglementSlider">Entanglement</label>
+                        <input type="range" class="param-slider" id="entanglementSlider" min="0" max="1" step="0.01" value="0.3">
+                        <div class="param-value" id="entanglementValue">0.30</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="wavePacketSlider">Wave Packet Width</label>
+                        <input type="range" class="param-slider" id="wavePacketSlider" min="0.1" max="2" step="0.01" value="0.6">
+                        <div class="param-value" id="wavePacketValue">0.60</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relativistic Parameters -->
+            <div class="panel">
+                <h3 style="color: #f59e0b;">Relativistic Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="curvatureSlider">Spacetime Curvature</label>
+                        <input type="range" class="param-slider" id="curvatureSlider" min="0" max="1" step="0.01" value="0.4">
+                        <div class="param-value" id="curvatureValue">0.40</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="dilationSlider">Time Dilation</label>
+                        <input type="range" class="param-slider" id="dilationSlider" min="0" max="1" step="0.01" value="0.2">
+                        <div class="param-value" id="dilationValue">0.20</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="redshiftSlider">Gravitational Redshift</label>
+                        <input type="range" class="param-slider" id="redshiftSlider" min="0" max="1" step="0.01" value="0.3">
+                        <div class="param-value" id="redshiftValue">0.30</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="horizonSlider">Event Horizon Effect</label>
+                        <input type="range" class="param-slider" id="horizonSlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="horizonValue">0.50</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Physics Parameters -->
+            <div class="panel">
+                <h3 style="color: #ec4899;">Advanced Physics</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="decoherenceSlider">Decoherence Rate</label>
+                        <input type="range" class="param-slider" id="decoherenceSlider" min="0" max="1" step="0.01" value="0.1">
+                        <div class="param-value" id="decoherenceValue">0.10</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="vacuumSlider">Vacuum Fluctuations</label>
+                        <input type="range" class="param-slider" id="vacuumSlider" min="0" max="1" step="0.01" value="0.2">
+                        <div class="param-value" id="vacuumValue">0.20</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="hawkingSlider">Hawking Radiation</label>
+                        <input type="range" class="param-slider" id="hawkingSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="hawkingValue">0.00</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="cosmicSlider">Cosmic Background</label>
+                        <input type="range" class="param-slider" id="cosmicSlider" min="0" max="1" step="0.01" value="0.15">
+                        <div class="param-value" id="cosmicValue">0.15</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="tunnelingSlider">Quantum Tunneling</label>
+                        <input type="range" class="param-slider" id="tunnelingSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="tunnelingValue">0.00</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="ripplesSlider">Spacetime Ripples</label>
+                        <input type="range" class="param-slider" id="ripplesSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="ripplesValue">0.00</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="darkEnergySlider">Dark Energy</label>
+                        <input type="range" class="param-slider" id="darkEnergySlider" min="0" max="1" step="0.01" value="0.05">
+                        <div class="param-value" id="darkEnergyValue">0.05</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="informationLossSlider">Information Loss</label>
+                        <input type="range" class="param-slider" id="informationLossSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="informationLossValue">0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sound Parameters -->
+            <div class="panel">
+                <h3 style="color: #10b981;">Sound Parameters</h3>
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="baseFreqSlider">Base Frequency (Hz)</label>
+                        <input type="range" class="param-slider" id="baseFreqSlider" min="100" max="1000" step="10" value="440">
+                        <div class="param-value" id="baseFreqValue">440Hz</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="harmonicsSlider">Harmonics</label>
+                        <input type="range" class="param-slider" id="harmonicsSlider" min="1" max="8" step="1" value="3">
+                        <div class="param-value" id="harmonicsValue">3</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="amplitudeSlider">Amplitude</label>
+                        <input type="range" class="param-slider" id="amplitudeSlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="amplitudeValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="filterQSlider">Filter Q</label>
+                        <input type="range" class="param-slider" id="filterQSlider" min="1" max="30" step="1" value="10">
+                        <div class="param-value" id="filterQValue">10</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eigenmode Control Panel -->
+            <div class="panel eigenmode-panel">
+                <h3 style="color: #ff3399;">Eigenmode Control</h3>
+                
+                <div class="eigenmode-visualization">
+                    <div class="eigenmode-canvas canvas-container">
+                        <canvas id="eigenmodeCanvas" width="300" height="180"></canvas>
+                    </div>
+                    <div class="eigenmode-canvas canvas-container">
+                        <canvas id="eigenspectrumCanvas" width="300" height="180"></canvas>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <div class="param-item">
+                        <label class="param-label" for="eigenmodeDensitySlider">
+                            <span class="tooltip">Eigenmode Density
+                                <span class="tooltiptext">Number of active resonant modes in the system</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="eigenmodeDensitySlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="eigenmodeDensityValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="eigenvalueSpreadingSlider">
+                            <span class="tooltip">Eigenvalue Spreading
+                                <span class="tooltiptext">Spectral distribution of eigenfrequencies</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="eigenvalueSpreadingSlider" min="0" max="1" step="0.01" value="0.3">
+                        <div class="param-value" id="eigenvalueSpreadingValue">0.30</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="eigenvectorCouplingSlider">
+                            <span class="tooltip">Eigenvector Coupling
+                                <span class="tooltiptext">Inter-mode coupling strength between eigenstates</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="eigenvectorCouplingSlider" min="0" max="1" step="0.01" value="0.4">
+                        <div class="param-value" id="eigenvectorCouplingValue">0.40</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="quantumEigenshiftSlider">
+                            <span class="tooltip">Quantum Eigenshift
+                                <span class="tooltiptext">Quantum corrections to classical eigenvalues</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="quantumEigenshiftSlider" min="0" max="1" step="0.01" value="0.2">
+                        <div class="param-value" id="quantumEigenshiftValue">0.20</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="eigenspaceRotationSlider">
+                            <span class="tooltip">Eigenspace Rotation
+                                <span class="tooltiptext">Rotation angle in the eigenspace basis</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="eigenspaceRotationSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="eigenspaceRotationValue">0.00</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="modalDampingSlider">
+                            <span class="tooltip">Modal Damping
+                                <span class="tooltiptext">Decay rate of eigenmode oscillations</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="modalDampingSlider" min="0" max="1" step="0.01" value="0.1">
+                        <div class="param-value" id="modalDampingValue">0.10</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="spectralFocusSlider">
+                            <span class="tooltip">Spectral Focus
+                                <span class="tooltiptext">Concentration of energy in specific eigenmodes</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="spectralFocusSlider" min="0" max="1" step="0.01" value="0.5">
+                        <div class="param-value" id="spectralFocusValue">0.50</div>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="nonlinearCouplingSlider">
+                            <span class="tooltip">Nonlinear Coupling
+                                <span class="tooltiptext">Strength of nonlinear interactions between modes</span>
+                            </span>
+                        </label>
+                        <input type="range" class="param-slider" id="nonlinearCouplingSlider" min="0" max="1" step="0.01" value="0.0">
+                        <div class="param-value" id="nonlinearCouplingValue">0.00</div>
+                    </div>
+                </div>
+
+                <div class="parameter-group">
+                    <label class="param-label">Eigenmode Geometry</label>
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary eigengeometry-btn active" data-geometry="sphere">Sphere</button>
+                        <button class="btn btn-secondary eigengeometry-btn" data-geometry="cube">Cube</button>
+                        <button class="btn btn-secondary eigengeometry-btn" data-geometry="torus">Torus</button>
+                        <button class="btn btn-secondary eigengeometry-btn" data-geometry="klein">Klein Bottle</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Parameter Relationship Visualization -->
+            <div class="panel visualization-panel">
+                <h3>Interactive Parameter Relationships & Physics Flow</h3>
+                <div class="viz-container">
+                    <div class="canvas-container">
+                        <canvas id="relationshipCanvas" width="400" height="250"></canvas>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="physicsFlowCanvas" width="400" height="250"></canvas>
+                    </div>
+                </div>
+                
+                <div class="physics-interactions">
+                    <div class="interaction-group">
+                        <h4 style="color: #00d4ff;">Quantum-Relativistic Coupling</h4>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Uncertainty × Curvature:</span>
+                            <div class="interaction-value" id="quantumGravityValue">0.20</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Entanglement × Redshift:</span>
+                            <div class="interaction-value" id="entanglementRedshiftValue">0.09</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Coherence × Time Dilation:</span>
+                            <div class="interaction-value" id="coherenceTimeValue">0.16</div>
+                        </div>
+                    </div>
+                    
+                    <div class="interaction-group">
+                        <h4 style="color: #ec4899;">Advanced Physics Impact</h4>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Hawking Temperature:</span>
+                            <div class="interaction-value" id="hawkingTempValue">0.35</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Tunneling Probability:</span>
+                            <div class="interaction-value" id="tunnelingProbValue">0.00</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Spacetime Distortion:</span>
+                            <div class="interaction-value" id="distortionValue">0.28</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="physics-interactions" style="margin-top: 1rem;">
+                    <div class="interaction-group">
+                        <h4 style="color: #ff3399;">Eigenmode Interactions</h4>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Dominant Eigenfrequency:</span>
+                            <div class="interaction-value" id="dominantEigenValue">220Hz</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Mode Coherence:</span>
+                            <div class="interaction-value" id="modeCoherenceValue">0.80</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Eigenspace Entropy:</span>
+                            <div class="interaction-value" id="eigenEntropyValue">0.35</div>
+                        </div>
+                    </div>
+                    
+                    <div class="interaction-group">
+                        <h4 style="color: #10b981;">System Metrics</h4>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Total Energy:</span>
+                            <div class="interaction-value" id="totalEnergyValue">0.65</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">Phase Coherence:</span>
+                            <div class="interaction-value" id="phaseCoherenceValue">0.72</div>
+                        </div>
+                        <div class="interaction-item">
+                            <span class="interaction-label">System Complexity:</span>
+                            <div class="interaction-value" id="complexityValue">0.48</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Visualizations -->
+            <div class="panel visualization-panel">
+                <h3>Real-time Physics Visualization</h3>
+                <div class="viz-container">
+                    <div class="canvas-container">
+                        <canvas id="waveformCanvas" width="300" height="120"></canvas>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="spectrumCanvas" width="300" height="120"></canvas>
+                    </div>
+                </div>
+                
+                <div class="physics-states">
+                    <div class="state-group">
+                        <h4 style="color: #00d4ff;">Quantum State</h4>
+                        <div class="state-item">
+                            <span class="state-label">Uncertainty:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="uncertaintyBar" style="background: #00d4ff;"></div>
+                            </div>
+                            <span class="state-value" id="uncertaintyDisplay">50%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Coherence:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="coherenceBar" style="background: #10b981;"></div>
+                            </div>
+                            <span class="state-value" id="coherenceDisplay">80%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Entanglement:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="entanglementBar" style="background: #a855f7;"></div>
+                            </div>
+                            <span class="state-value" id="entanglementDisplay">30%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="state-group">
+                        <h4 style="color: #f59e0b;">Relativistic State</h4>
+                        <div class="state-item">
+                            <span class="state-label">Curvature:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="curvatureBar" style="background: #f59e0b;"></div>
+                            </div>
+                            <span class="state-value" id="curvatureDisplay">40%</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Time Factor:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="dilationBar" style="background: #ef4444;"></div>
+                            </div>
+                            <span class="state-value" id="dilationDisplay">0.80</span>
+                        </div>
+                        <div class="state-item">
+                            <span class="state-label">Redshift:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="redshiftBar" style="background: #eab308;"></div>
+                            </div>
+                            <span class="state-value" id="redshiftDisplay">0.70</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel (hidden by default) -->
+        <div class="panel info-panel" id="infoPanel" style="display: none;">
+            <h3>Eigensound GR/QM Physics Guide</h3>
+            <div class="info-section">
+                <h4>Quantum Mechanics</h4>
+                <p><strong>Uncertainty Principle:</strong> Higher values create more chaotic, unpredictable sound patterns as quantum measurements become less precise.</p>
+                <p><strong>Coherence Time:</strong> Determines how long quantum states maintain their phase relationships before environmental decoherence.</p>
+                <p><strong>Entanglement:</strong> Correlates harmonic frequencies non-locally - changing one affects others instantaneously.</p>
+                <p><strong>Wave Packet Width:</strong> Controls the spatial extent of quantum wave functions, affecting interference patterns.</p>
+            </div>
+            <div class="info-section">
+                <h4>General Relativity</h4>
+                <p><strong>Spacetime Curvature:</strong> Creates frequency modulation simulating how curved spacetime affects wave propagation.</p>
+                <p><strong>Time Dilation:</strong> Slows temporal evolution, showing how time passes differently in gravitational fields.</p>
+                <p><strong>Gravitational Redshift:</strong> Lowers frequencies as if sounds are climbing out of gravitational wells.</p>
+                <p><strong>Event Horizon:</strong> Simulates extreme redshift effects near black hole boundaries.</p>
+            </div>
+            <div class="info-section">
+                <h4>Eigenmode Physics</h4>
+                <p><strong>Eigenmode Density:</strong> Controls how many natural resonant frequencies are active in the system.</p>
+                <p><strong>Eigenvalue Spreading:</strong> Determines the spectral distribution - closely spaced modes create beating patterns.</p>
+                <p><strong>Eigenvector Coupling:</strong> How strongly different modes interact and exchange energy.</p>
+                <p><strong>Quantum Eigenshift:</strong> Applies quantum corrections to classical eigenfrequencies.</p>
+                <p><strong>Modal Damping:</strong> How quickly each eigenmode loses energy - affects sustain and decay.</p>
+                <p><strong>Eigenspace Geometry:</strong> Different shapes have different eigenvalue spectra based on their symmetries.</p>
+            </div>
+            <div class="info-section">
+                <h4>Advanced Physics</h4>
+                <p><strong>Decoherence Rate:</strong> Controls how quickly quantum coherence is lost due to environmental interactions.</p>
+                <p><strong>Vacuum Fluctuations:</strong> Adds quantum noise from zero-point energy fluctuations in empty space.</p>
+                <p><strong>Hawking Radiation:</strong> Simulates thermal radiation from black holes, adding characteristic noise patterns.</p>
+                <p><strong>Cosmic Background:</strong> Incorporates subtle effects from the cosmic microwave background radiation.</p>
+                <p><strong>Quantum Tunneling:</strong> Probability of quantum particles passing through energy barriers, creating amplitude spikes.</p>
+                <p><strong>Spacetime Ripples:</strong> Gravitational wave distortions that modulate frequency and amplitude.</p>
+                <p><strong>Dark Energy:</strong> Cosmic expansion effects that subtly influence sound evolution over time.</p>
+                <p><strong>Information Loss:</strong> Black hole information paradox effects creating sudden amplitude changes.</p>
+            </div>
+            <div class="info-section">
+                <h4>Scientific Accuracy</h4>
+                <p>All effects are based on established physics equations, though simplified for real-time audio synthesis. The eigenmode system accurately models vibrational modes found in quantum systems and acoustic resonators.</p>
+            </div>
+        </div>
+
+        <!-- Recording Panel (hidden by default) -->
+        <div class="panel recording-panel" id="recordingPanel" style="display: none;">
+            <h3 style="color: #22c55e;">Audio Recording</h3>
+            <div class="recording-controls">
+                <audio controls id="audioPlayer" class="audio-player">
+                    Your browser does not support the audio element.
+                </audio>
+                <button class="btn btn-accent" id="downloadBtn">
+                    <span>💾</span>
+                    <span>Download</span>
+                </button>
+                <button class="btn btn-secondary" id="deleteBtn">
+                    <span>🗑</span>
+                    <span>Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // [Previous JavaScript code from eigensound_improved_v7-nf.html goes here]
+        // This includes all the classes: OscillatorPool, EigenmodeResonator, ParameterValidator, AudioEngine
+        // And the complete PRESETS object with all presets including eigenmode ones
+        
+        // Complete Physics Presets including new Eigenmode presets
+        const PRESETS = {
+            'custom': {
+                name: 'Custom',
+                description: 'Design your own quantum-relativistic soundscape',
+                quantum: { uncertainty: 0.5, coherence: 0.8, entanglement: 0.3, wavePacketWidth: 0.6 },
+                gr: { curvature: 0.4, timeDilation: 0.2, redshift: 0.3, horizonEffect: 0.5 },
+                sound: { baseFreq: 440, harmonics: 3, amplitude: 0.5, filterQ: 10 },
+                advanced: { decoherenceRate: 0.1, vacuumFluctuations: 0.2, hawkingRadiation: 0.0, cosmicBackground: 0.15, quantumTunneling: 0.0, spacetimeRipples: 0.0, darkEnergy: 0.05, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.5, eigenvalueSpreading: 0.3, eigenvectorCoupling: 0.4, quantumEigenshift: 0.2, eigenspaceRotation: 0.0, modalDamping: 0.1, spectralFocus: 0.5, nonlinearCoupling: 0.0 }
+            },
+            // Original presets
+            'heisenberg': {
+                name: 'Heisenberg Uncertainty',
+                description: 'High uncertainty creates chaotic, unpredictable sound patterns',
+                quantum: { uncertainty: 0.9, coherence: 0.4, entanglement: 0.1, wavePacketWidth: 0.3 },
+                gr: { curvature: 0.1, timeDilation: 0.05, redshift: 0.05, horizonEffect: 0.1 },
+                sound: { baseFreq: 660, harmonics: 5, amplitude: 0.6, filterQ: 5 },
+                advanced: { decoherenceRate: 0.8, vacuumFluctuations: 0.6, hawkingRadiation: 0.0, cosmicBackground: 0.1, quantumTunneling: 0.3, spacetimeRipples: 0.0, darkEnergy: 0.02, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.3, eigenvalueSpreading: 0.7, eigenvectorCoupling: 0.2, quantumEigenshift: 0.8, eigenspaceRotation: 0.5, modalDamping: 0.4, spectralFocus: 0.1, nonlinearCoupling: 0.1 }
+            },
+            'schrodinger': {
+                name: 'Schrödinger Superposition',
+                description: 'Quantum superposition creates interference patterns in sound',
+                quantum: { uncertainty: 0.5, coherence: 0.9, entanglement: 0.7, wavePacketWidth: 0.8 },
+                gr: { curvature: 0.1, timeDilation: 0.02, redshift: 0.02, horizonEffect: 0.05 },
+                sound: { baseFreq: 330, harmonics: 4, amplitude: 0.4, filterQ: 15 },
+                advanced: { decoherenceRate: 0.05, vacuumFluctuations: 0.3, hawkingRadiation: 0.0, cosmicBackground: 0.1, quantumTunneling: 0.6, spacetimeRipples: 0.0, darkEnergy: 0.01, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.5, eigenvalueSpreading: 0.1, eigenvectorCoupling: 0.6, quantumEigenshift: 0.3, eigenspaceRotation: 0.0, modalDamping: 0.05, spectralFocus: 0.6, nonlinearCoupling: 0.0 }
+            },
+            'epr': {
+                name: 'EPR Entanglement',
+                description: 'Spooky action at a distance - harmonics respond instantaneously',
+                quantum: { uncertainty: 0.3, coherence: 0.95, entanglement: 0.95, wavePacketWidth: 0.7 },
+                gr: { curvature: 0.05, timeDilation: 0.01, redshift: 0.01, horizonEffect: 0.02 },
+                sound: { baseFreq: 220, harmonics: 6, amplitude: 0.45, filterQ: 20 },
+                advanced: { decoherenceRate: 0.02, vacuumFluctuations: 0.1, hawkingRadiation: 0.0, cosmicBackground: 0.05, quantumTunneling: 0.1, spacetimeRipples: 0.0, darkEnergy: 0.01, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.7, eigenvalueSpreading: 0.2, eigenvectorCoupling: 0.9, quantumEigenshift: 0.1, eigenspaceRotation: 0.0, modalDamping: 0.02, spectralFocus: 0.5, nonlinearCoupling: 0.3 }
+            },
+            'blackhole': {
+                name: 'Black Hole Horizon',
+                description: 'Extreme redshift and time dilation near the event horizon',
+                quantum: { uncertainty: 0.2, coherence: 0.6, entanglement: 0.2, wavePacketWidth: 0.5 },
+                gr: { curvature: 0.9, timeDilation: 0.8, redshift: 0.9, horizonEffect: 0.95 },
+                sound: { baseFreq: 110, harmonics: 2, amplitude: 0.3, filterQ: 8 },
+                advanced: { decoherenceRate: 0.3, vacuumFluctuations: 0.2, hawkingRadiation: 0.7, cosmicBackground: 0.1, quantumTunneling: 0.0, spacetimeRipples: 0.4, darkEnergy: 0.02, informationLoss: 0.8 },
+                eigenmode: { eigenmodeDensity: 0.2, eigenvalueSpreading: 0.9, eigenvectorCoupling: 0.1, quantumEigenshift: 0.5, eigenspaceRotation: 0.8, modalDamping: 0.7, spectralFocus: 0.9, nonlinearCoupling: 0.4 }
+            },
+            'gravitational': {
+                name: 'Gravitational Waves',
+                description: 'Spacetime ripples create periodic frequency modulation',
+                quantum: { uncertainty: 0.1, coherence: 0.8, entanglement: 0.1, wavePacketWidth: 0.9 },
+                gr: { curvature: 0.7, timeDilation: 0.4, redshift: 0.3, horizonEffect: 0.2 },
+                sound: { baseFreq: 880, harmonics: 3, amplitude: 0.55, filterQ: 12 },
+                advanced: { decoherenceRate: 0.1, vacuumFluctuations: 0.4, hawkingRadiation: 0.0, cosmicBackground: 0.3, quantumTunneling: 0.0, spacetimeRipples: 0.9, darkEnergy: 0.15, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.4, eigenvalueSpreading: 0.6, eigenvectorCoupling: 0.5, quantumEigenshift: 0.0, eigenspaceRotation: 0.4, modalDamping: 0.2, spectralFocus: 0.4, nonlinearCoupling: 0.1 }
+            },
+            'decoherence': {
+                name: 'Quantum Decoherence',
+                description: 'Watch quantum coherence decay in real-time',
+                quantum: { uncertainty: 0.6, coherence: 0.3, entanglement: 0.4, wavePacketWidth: 0.4 },
+                gr: { curvature: 0.2, timeDilation: 0.1, redshift: 0.1, horizonEffect: 0.15 },
+                sound: { baseFreq: 523, harmonics: 4, amplitude: 0.5, filterQ: 6 },
+                advanced: { decoherenceRate: 0.9, vacuumFluctuations: 0.5, hawkingRadiation: 0.0, cosmicBackground: 0.2, quantumTunneling: 0.2, spacetimeRipples: 0.0, darkEnergy: 0.03, informationLoss: 0.4 },
+                eigenmode: { eigenmodeDensity: 0.6, eigenvalueSpreading: 0.4, eigenvectorCoupling: 0.3, quantumEigenshift: 0.7, eigenspaceRotation: 0.2, modalDamping: 0.6, spectralFocus: 0.3, nonlinearCoupling: 0.05 }
+            },
+            'planck': {
+                name: 'Planck Scale',
+                description: 'Where quantum and gravitational effects become comparable',
+                quantum: { uncertainty: 0.8, coherence: 0.5, entanglement: 0.6, wavePacketWidth: 0.2 },
+                gr: { curvature: 0.8, timeDilation: 0.6, redshift: 0.7, horizonEffect: 0.8 },
+                sound: { baseFreq: 1760, harmonics: 8, amplitude: 0.7, filterQ: 25 },
+                advanced: { decoherenceRate: 0.7, vacuumFluctuations: 0.9, hawkingRadiation: 0.3, cosmicBackground: 0.1, quantumTunneling: 0.8, spacetimeRipples: 0.6, darkEnergy: 0.4, informationLoss: 0.5 },
+                eigenmode: { eigenmodeDensity: 0.8, eigenvalueSpreading: 0.5, eigenvectorCoupling: 0.7, quantumEigenshift: 0.9, eigenspaceRotation: 0.6, modalDamping: 0.4, spectralFocus: 0.2, nonlinearCoupling: 0.6 }
+            },
+            'cosmic': {
+                name: 'Cosmic Ambient',
+                description: 'Slow-evolving, space-like textures for meditation',
+                quantum: { uncertainty: 0.3, coherence: 0.9, entanglement: 0.5, wavePacketWidth: 1.2 },
+                gr: { curvature: 0.3, timeDilation: 0.5, redshift: 0.4, horizonEffect: 0.3 },
+                sound: { baseFreq: 110, harmonics: 2, amplitude: 0.3, filterQ: 30 },
+                advanced: { decoherenceRate: 0.05, vacuumFluctuations: 0.3, hawkingRadiation: 0.0, cosmicBackground: 0.8, quantumTunneling: 0.0, spacetimeRipples: 0.2, darkEnergy: 0.6, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.3, eigenvalueSpreading: 0.8, eigenvectorCoupling: 0.2, quantumEigenshift: 0.1, eigenspaceRotation: 0.1, modalDamping: 0.05, spectralFocus: 0.7, nonlinearCoupling: 0.0 }
+            },
+            'particle': {
+                name: 'Particle Collider',
+                description: 'High-energy physics with rapid quantum fluctuations',
+                quantum: { uncertainty: 0.95, coherence: 0.1, entanglement: 0.8, wavePacketWidth: 0.1 },
+                gr: { curvature: 0.2, timeDilation: 0.1, redshift: 0.15, horizonEffect: 0.25 },
+                sound: { baseFreq: 2000, harmonics: 6, amplitude: 0.8, filterQ: 3 },
+                advanced: { decoherenceRate: 0.95, vacuumFluctuations: 0.8, hawkingRadiation: 0.0, cosmicBackground: 0.1, quantumTunneling: 0.9, spacetimeRipples: 0.0, darkEnergy: 0.02, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.9, eigenvalueSpreading: 0.3, eigenvectorCoupling: 0.8, quantumEigenshift: 0.7, eigenspaceRotation: 0.9, modalDamping: 0.8, spectralFocus: 0.1, nonlinearCoupling: 0.5 }
+            },
+            'neutron': {
+                name: 'Neutron Star',
+                description: 'Dense matter with extreme gravitational effects',
+                quantum: { uncertainty: 0.4, coherence: 0.7, entanglement: 0.3, wavePacketWidth: 0.3 },
+                gr: { curvature: 0.8, timeDilation: 0.7, redshift: 0.8, horizonEffect: 0.6 },
+                sound: { baseFreq: 200, harmonics: 4, amplitude: 0.5, filterQ: 15 },
+                advanced: { decoherenceRate: 0.4, vacuumFluctuations: 0.2, hawkingRadiation: 0.1, cosmicBackground: 0.1, quantumTunneling: 0.0, spacetimeRipples: 0.7, darkEnergy: 0.05, informationLoss: 0.2 },
+                eigenmode: { eigenmodeDensity: 0.5, eigenvalueSpreading: 0.4, eigenvectorCoupling: 0.6, quantumEigenshift: 0.3, eigenspaceRotation: 0.5, modalDamping: 0.5, spectralFocus: 0.6, nonlinearCoupling: 0.2 }
+            },
+            'wormhole': {
+                name: 'Wormhole Transit',
+                description: 'Traversable spacetime connections with exotic matter',
+                quantum: { uncertainty: 0.6, coherence: 0.4, entanglement: 0.9, wavePacketWidth: 0.8 },
+                gr: { curvature: 0.9, timeDilation: 0.3, redshift: 0.4, horizonEffect: 0.7 },
+                sound: { baseFreq: 330, harmonics: 5, amplitude: 0.6, filterQ: 18 },
+                advanced: { decoherenceRate: 0.3, vacuumFluctuations: 0.7, hawkingRadiation: 0.0, cosmicBackground: 0.2, quantumTunneling: 0.4, spacetimeRipples: 0.8, darkEnergy: 0.3, informationLoss: 0.6 },
+                eigenmode: { eigenmodeDensity: 0.6, eigenvalueSpreading: 0.7, eigenvectorCoupling: 0.8, quantumEigenshift: 0.5, eigenspaceRotation: 0.7, modalDamping: 0.3, spectralFocus: 0.3, nonlinearCoupling: 0.4 }
+            },
+            'multiverse': {
+                name: 'Multiverse Resonance',
+                description: 'Quantum branching creating parallel sound worlds',
+                quantum: { uncertainty: 0.7, coherence: 0.8, entanglement: 0.95, wavePacketWidth: 0.6 },
+                gr: { curvature: 0.4, timeDilation: 0.2, redshift: 0.3, horizonEffect: 0.4 },
+                sound: { baseFreq: 440, harmonics: 7, amplitude: 0.65, filterQ: 12 },
+                advanced: { decoherenceRate: 0.2, vacuumFluctuations: 0.6, hawkingRadiation: 0.0, cosmicBackground: 0.4, quantumTunneling: 0.7, spacetimeRipples: 0.3, darkEnergy: 0.8, informationLoss: 0.3 },
+                eigenmode: { eigenmodeDensity: 0.7, eigenvalueSpreading: 0.5, eigenvectorCoupling: 0.9, quantumEigenshift: 0.6, eigenspaceRotation: 0.3, modalDamping: 0.2, spectralFocus: 0.4, nonlinearCoupling: 0.7 }
+            },
+            // New Eigenmode-focused presets
+            'harmonic_oscillator': {
+                name: 'Harmonic Oscillator',
+                description: 'Classic quantum eigenstate ladder with evenly spaced energy levels',
+                quantum: { uncertainty: 0.3, coherence: 0.9, entanglement: 0.2, wavePacketWidth: 0.8 },
+                gr: { curvature: 0.1, timeDilation: 0.05, redshift: 0.05, horizonEffect: 0.1 },
+                sound: { baseFreq: 220, harmonics: 5, amplitude: 0.4, filterQ: 20 },
+                advanced: { decoherenceRate: 0.05, vacuumFluctuations: 0.1, hawkingRadiation: 0.0, cosmicBackground: 0.05, quantumTunneling: 0.0, spacetimeRipples: 0.0, darkEnergy: 0.0, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.8, eigenvalueSpreading: 0.0, eigenvectorCoupling: 0.1, quantumEigenshift: 0.0, eigenspaceRotation: 0.0, modalDamping: 0.05, spectralFocus: 0.7, nonlinearCoupling: 0.0 }
+            },
+            'crystal_lattice': {
+                name: 'Crystal Lattice',
+                description: 'Phonon eigenmodes in a crystalline structure',
+                quantum: { uncertainty: 0.2, coherence: 0.7, entanglement: 0.6, wavePacketWidth: 0.4 },
+                gr: { curvature: 0.2, timeDilation: 0.1, redshift: 0.1, horizonEffect: 0.15 },
+                sound: { baseFreq: 330, harmonics: 6, amplitude: 0.5, filterQ: 15 },
+                advanced: { decoherenceRate: 0.2, vacuumFluctuations: 0.3, hawkingRadiation: 0.0, cosmicBackground: 0.1, quantumTunneling: 0.1, spacetimeRipples: 0.0, darkEnergy: 0.0, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.9, eigenvalueSpreading: 0.5, eigenvectorCoupling: 0.7, quantumEigenshift: 0.1, eigenspaceRotation: 0.3, modalDamping: 0.15, spectralFocus: 0.3, nonlinearCoupling: 0.2 }
+            },
+            'quantum_well': {
+                name: 'Quantum Well',
+                description: 'Particle in a box with discrete energy eigenstates',
+                quantum: { uncertainty: 0.4, coherence: 0.85, entanglement: 0.1, wavePacketWidth: 0.5 },
+                gr: { curvature: 0.05, timeDilation: 0.02, redshift: 0.02, horizonEffect: 0.05 },
+                sound: { baseFreq: 550, harmonics: 4, amplitude: 0.45, filterQ: 25 },
+                advanced: { decoherenceRate: 0.1, vacuumFluctuations: 0.15, hawkingRadiation: 0.0, cosmicBackground: 0.08, quantumTunneling: 0.3, spacetimeRipples: 0.0, darkEnergy: 0.0, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.6, eigenvalueSpreading: 0.2, eigenvectorCoupling: 0.05, quantumEigenshift: 0.4, eigenspaceRotation: 0.0, modalDamping: 0.08, spectralFocus: 0.8, nonlinearCoupling: 0.0 }
+            },
+            'chaotic_attractor': {
+                name: 'Chaotic Attractor',
+                description: 'Strange attractor eigenspace with complex dynamics',
+                quantum: { uncertainty: 0.8, coherence: 0.3, entanglement: 0.7, wavePacketWidth: 0.3 },
+                gr: { curvature: 0.6, timeDilation: 0.4, redshift: 0.5, horizonEffect: 0.6 },
+                sound: { baseFreq: 666, harmonics: 7, amplitude: 0.6, filterQ: 8 },
+                advanced: { decoherenceRate: 0.7, vacuumFluctuations: 0.6, hawkingRadiation: 0.2, cosmicBackground: 0.2, quantumTunneling: 0.5, spacetimeRipples: 0.3, darkEnergy: 0.1, informationLoss: 0.3 },
+                eigenmode: { eigenmodeDensity: 0.7, eigenvalueSpreading: 0.8, eigenvectorCoupling: 0.9, quantumEigenshift: 0.6, eigenspaceRotation: 0.7, modalDamping: 0.3, spectralFocus: 0.2, nonlinearCoupling: 0.8 }
+            },
+            'spherical_harmonics': {
+                name: 'Spherical Harmonics',
+                description: 'Hydrogen atom orbitals - fundamental quantum eigenfunctions',
+                quantum: { uncertainty: 0.25, coherence: 0.85, entanglement: 0.3, wavePacketWidth: 0.7 },
+                gr: { curvature: 0.15, timeDilation: 0.08, redshift: 0.08, horizonEffect: 0.12 },
+                sound: { baseFreq: 262, harmonics: 5, amplitude: 0.42, filterQ: 18 },
+                advanced: { decoherenceRate: 0.08, vacuumFluctuations: 0.12, hawkingRadiation: 0.0, cosmicBackground: 0.06, quantumTunneling: 0.05, spacetimeRipples: 0.0, darkEnergy: 0.01, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.75, eigenvalueSpreading: 0.15, eigenvectorCoupling: 0.25, quantumEigenshift: 0.2, eigenspaceRotation: 0.0, modalDamping: 0.06, spectralFocus: 0.65, nonlinearCoupling: 0.05 }
+            },
+            'torus_resonance': {
+                name: 'Torus Resonance',
+                description: 'Toroidal eigenmodes with unique spectral properties',
+                quantum: { uncertainty: 0.35, coherence: 0.75, entanglement: 0.5, wavePacketWidth: 0.55 },
+                gr: { curvature: 0.3, timeDilation: 0.15, redshift: 0.2, horizonEffect: 0.25 },
+                sound: { baseFreq: 369, harmonics: 6, amplitude: 0.48, filterQ: 16 },
+                advanced: { decoherenceRate: 0.15, vacuumFluctuations: 0.25, hawkingRadiation: 0.0, cosmicBackground: 0.12, quantumTunneling: 0.2, spacetimeRipples: 0.1, darkEnergy: 0.08, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.65, eigenvalueSpreading: 0.45, eigenvectorCoupling: 0.55, quantumEigenshift: 0.3, eigenspaceRotation: 0.4, modalDamping: 0.12, spectralFocus: 0.45, nonlinearCoupling: 0.15 }
+            },
+            'klein_manifold': {
+                name: 'Klein Manifold',
+                description: 'Non-orientable Klein bottle with exotic eigenvalue spectrum',
+                quantum: { uncertainty: 0.45, coherence: 0.65, entanglement: 0.65, wavePacketWidth: 0.45 },
+                gr: { curvature: 0.45, timeDilation: 0.25, redshift: 0.35, horizonEffect: 0.4 },
+                sound: { baseFreq: 494, harmonics: 5, amplitude: 0.52, filterQ: 14 },
+                advanced: { decoherenceRate: 0.25, vacuumFluctuations: 0.35, hawkingRadiation: 0.05, cosmicBackground: 0.18, quantumTunneling: 0.35, spacetimeRipples: 0.25, darkEnergy: 0.15, informationLoss: 0.1 },
+                eigenmode: { eigenmodeDensity: 0.55, eigenvalueSpreading: 0.65, eigenvectorCoupling: 0.75, quantumEigenshift: 0.5, eigenspaceRotation: 0.6, modalDamping: 0.18, spectralFocus: 0.35, nonlinearCoupling: 0.35 }
+            },
+            'quantum_drum': {
+                name: 'Quantum Drum',
+                description: 'Circular membrane eigenmodes with Bessel functions',
+                quantum: { uncertainty: 0.3, coherence: 0.8, entanglement: 0.4, wavePacketWidth: 0.6 },
+                gr: { curvature: 0.25, timeDilation: 0.12, redshift: 0.15, horizonEffect: 0.2 },
+                sound: { baseFreq: 293, harmonics: 4, amplitude: 0.46, filterQ: 22 },
+                advanced: { decoherenceRate: 0.12, vacuumFluctuations: 0.18, hawkingRadiation: 0.0, cosmicBackground: 0.1, quantumTunneling: 0.15, spacetimeRipples: 0.05, darkEnergy: 0.04, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.7, eigenvalueSpreading: 0.35, eigenvectorCoupling: 0.45, quantumEigenshift: 0.25, eigenspaceRotation: 0.2, modalDamping: 0.1, spectralFocus: 0.55, nonlinearCoupling: 0.1 }
+            },
+            'eigenstate_cascade': {
+                name: 'Eigenstate Cascade',
+                description: 'Cascading transitions between quantum eigenstates',
+                quantum: { uncertainty: 0.5, coherence: 0.7, entanglement: 0.55, wavePacketWidth: 0.5 },
+                gr: { curvature: 0.35, timeDilation: 0.2, redshift: 0.25, horizonEffect: 0.3 },
+                sound: { baseFreq: 415, harmonics: 7, amplitude: 0.55, filterQ: 11 },
+                advanced: { decoherenceRate: 0.3, vacuumFluctuations: 0.4, hawkingRadiation: 0.08, cosmicBackground: 0.22, quantumTunneling: 0.45, spacetimeRipples: 0.3, darkEnergy: 0.2, informationLoss: 0.15 },
+                eigenmode: { eigenmodeDensity: 0.8, eigenvalueSpreading: 0.55, eigenvectorCoupling: 0.85, quantumEigenshift: 0.65, eigenspaceRotation: 0.5, modalDamping: 0.25, spectralFocus: 0.25, nonlinearCoupling: 0.45 }
+            },
+            'modal_synthesis': {
+                name: 'Modal Synthesis',
+                description: 'Pure modal synthesis with strong inter-mode coupling',
+                quantum: { uncertainty: 0.15, coherence: 0.85, entanglement: 0.25, wavePacketWidth: 0.75 },
+                gr: { curvature: 0.1, timeDilation: 0.05, redshift: 0.05, horizonEffect: 0.08 },
+                sound: { baseFreq: 196, harmonics: 8, amplitude: 0.38, filterQ: 24 },
+                advanced: { decoherenceRate: 0.04, vacuumFluctuations: 0.08, hawkingRadiation: 0.0, cosmicBackground: 0.04, quantumTunneling: 0.02, spacetimeRipples: 0.0, darkEnergy: 0.0, informationLoss: 0.0 },
+                eigenmode: { eigenmodeDensity: 0.95, eigenvalueSpreading: 0.25, eigenvectorCoupling: 0.8, quantumEigenshift: 0.05, eigenspaceRotation: 0.1, modalDamping: 0.04, spectralFocus: 0.5, nonlinearCoupling: 0.25 }
+            }
+        };
+
+        // Oscillator Pool for performance optimization
+        class OscillatorPool {
+            constructor(audioContext, size = 30) {
+                this.audioContext = audioContext;
+                this.poolSize = size;
+                this.pool = [];
+                this.activeOscillators = new Set();
+                this.initPool();
+            }
+            
+            initPool() {
+                // Pre-create oscillators
+                for (let i = 0; i < this.poolSize; i++) {
+                    this.pool.push(this.createOscillator());
+                }
+            }
+            
+            createOscillator() {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                
+                return { oscillator: osc, gainNode: gain, inUse: false };
+            }
+            
+            getOscillator() {
+                let oscObj = this.pool.find(o => !o.inUse);
+                
+                if (!oscObj) {
+                    oscObj = this.createOscillator();
+                    this.pool.push(oscObj);
+                }
+                
+                oscObj.inUse = true;
+                this.activeOscillators.add(oscObj);
+                
+                return oscObj;
+            }
+            
+            returnOscillator(oscObj) {
+                if (!oscObj) return;
+                
+                try {
+                    oscObj.oscillator.disconnect();
+                    oscObj.gainNode.disconnect();
+                    // Create fresh oscillator for reuse
+                    oscObj.oscillator = this.audioContext.createOscillator();
+                    oscObj.gainNode = this.audioContext.createGain();
+                    oscObj.oscillator.connect(oscObj.gainNode);
+                    oscObj.inUse = false;
+                    this.activeOscillators.delete(oscObj);
+                } catch (e) {
+                    // Handle errors silently
+                }
+            }
+            
+            cleanup() {
+                this.activeOscillators.forEach(oscObj => {
+                    this.returnOscillator(oscObj);
+                });
+            }
+        }
+
+        // Eigenmode Resonator Module
+        class EigenmodeResonator {
+            constructor() {
+                this.numModes = 8;
+                this.modes = [];
+                this.geometry = 'sphere';
+                this.modeAmplitudes = new Array(this.numModes).fill(0);
+                this.modePhases = new Array(this.numModes).fill(0);
+                this.previousEnergies = new Array(this.numModes).fill(0);
+                
+                this.initializeModes();
+            }
+            
+            initializeModes() {
+                this.modes = [];
+                const eigenfrequencies = this.calculateEigenfrequencies(this.geometry);
+                
+                for (let i = 0; i < this.numModes; i++) {
+                    this.modes.push({
+                        frequency: eigenfrequencies[i],
+                        amplitude: 1.0 / (i + 1),
+                        phase: Math.random() * 2 * Math.PI,
+                        damping: 0.1,
+                        energy: 0
+                    });
+                }
+            }
+            
+            calculateEigenfrequencies(geometry) {
+                const baseFreq = 100;
+                
+                switch(geometry) {
+                    case 'sphere':
+                        // Spherical harmonics: f_n = baseFreq * sqrt(l(l+1))
+                        return [0, 2, 6, 12, 20, 30, 42, 56].map(l => baseFreq * Math.sqrt(l + 1));
+                        
+                    case 'cube':
+                        // Box modes: f_n = baseFreq * sqrt(nx² + ny² + nz²)
+                        return [1, 2, 3, 5, 6, 8, 9, 10].map(n => baseFreq * Math.sqrt(n));
+                        
+                    case 'torus':
+                        // Toroidal modes (approximation)
+                        return [1.0, 2.1, 3.7, 5.2, 6.8, 8.3, 9.9, 11.4].map(n => baseFreq * n);
+                        
+                    case 'klein':
+                        // Klein bottle - non-orientable surface with exotic spectrum
+                        return [Math.PI, 2*Math.PI, Math.E*Math.PI, 3*Math.PI, 4*Math.PI, 
+                               Math.PI*Math.PI, 5*Math.PI, 2*Math.PI*Math.PI].map(n => baseFreq * n / 2);
+                        
+                    default:
+                        return Array(this.numModes).fill(0).map((_, i) => baseFreq * (i + 1));
+                }
+            }
+            
+            process(time, eigenmodeParams, quantumState, grState) {
+                const {
+                    eigenmodeDensity,
+                    eigenvalueSpreading,
+                    eigenvectorCoupling,
+                    quantumEigenshift,
+                    eigenspaceRotation,
+                    modalDamping,
+                    spectralFocus,
+                    nonlinearCoupling
+                } = eigenmodeParams;
+                
+                let output = 0;
+                const activeModes = Math.floor(eigenmodeDensity * this.numModes) + 1;
+                
+                // Update eigenfrequencies with quantum corrections
+                for (let i = 0; i < activeModes; i++) {
+                    const mode = this.modes[i];
+                    
+                    // Apply quantum eigenshift
+                    const quantumCorrection = 1 + quantumEigenshift * quantumState.uncertainty * 
+                                            (Math.sin(time * 0.1 + i) * 0.1);
+                    
+                    // Apply relativistic corrections
+                    const lorentzFactor = 1 / Math.sqrt(1 - grState.timeDilation * 0.5);
+                    
+                    // Spread eigenvalues
+                    const spreading = 1 + eigenvalueSpreading * (i - activeModes/2) * 0.1;
+                    
+                    const adjustedFreq = mode.frequency * quantumCorrection * lorentzFactor * spreading;
+                    
+                    // Calculate mode energy with coupling
+                    let energy = mode.amplitude * Math.exp(-modalDamping * time * 0.1);
+                    
+                    // Inter-mode coupling
+                    if (i > 0 && eigenvectorCoupling > 0) {
+                        energy += eigenvectorCoupling * this.previousEnergies[i-1] * 0.3;
+                    }
+                    if (i < activeModes - 1 && eigenvectorCoupling > 0) {
+                        energy += eigenvectorCoupling * this.previousEnergies[i+1] * 0.3;
+                    }
+                    
+                    // Spectral focus - concentrate energy in specific modes
+                    const focusCenter = Math.floor(spectralFocus * activeModes);
+                    const focusWidth = 2;
+                    const focusFactor = Math.exp(-Math.pow(i - focusCenter, 2) / (2 * focusWidth * focusWidth));
+                    energy *= (1 - spectralFocus * 0.5) + spectralFocus * focusFactor;
+                    
+                    // Eigenspace rotation
+                    const rotationPhase = eigenspaceRotation * Math.PI * 2 * i / activeModes;
+                    
+                    // Nonlinear coupling creates harmonics
+                    let modeOutput = energy * Math.sin(2 * Math.PI * adjustedFreq * time + 
+                                                       mode.phase + rotationPhase);
+                    
+                    if (nonlinearCoupling > 0) {
+                        modeOutput += nonlinearCoupling * energy * 0.3 * 
+                                     Math.sin(4 * Math.PI * adjustedFreq * time + mode.phase * 2);
+                    }
+                    
+                    output += modeOutput;
+                    
+                    // Store energy for next iteration
+                    this.previousEnergies[i] = energy;
+                    
+                    // Update mode phase for animation
+                    this.modePhases[i] = (2 * Math.PI * adjustedFreq * time + mode.phase) % (2 * Math.PI);
+                    this.modeAmplitudes[i] = energy;
+                }
+                
+                return output / Math.sqrt(activeModes); // Normalize
+            }
+            
+            setGeometry(geometry) {
+                this.geometry = geometry;
+                this.initializeModes();
+            }
+            
+            getVisualizationData() {
+                return {
+                    modes: this.modes,
+                    amplitudes: this.modeAmplitudes,
+                    phases: this.modePhases,
+                    geometry: this.geometry
+                };
+            }
+        }
+
+        // Parameter Validator
+        class ParameterValidator {
+            static validate(value, min = 0, max = 1, name = 'parameter') {
+                if (typeof value !== 'number' || isNaN(value)) {
+                    console.warn(`Invalid ${name}: ${value}, using ${min}`);
+                    return min;
+                }
+                
+                if (value < min || value > max) {
+                    console.warn(`${name} out of bounds: ${value}, clamping to [${min}, ${max}]`);
+                    return Math.max(min, Math.min(max, value));
+                }
+                
+                return value;
+            }
+            
+            static validateObject(obj, schema) {
+                const validated = {};
+                
+                for (const [key, constraints] of Object.entries(schema)) {
+                    const value = obj[key];
+                    validated[key] = this.validate(
+                        value !== undefined ? value : constraints.default,
+                        constraints.min,
+                        constraints.max,
+                        key
+                    );
+                }
+                
+                return validated;
+            }
+        }
+
+        // Enhanced Audio Engine with Eigenmodes
+        class AudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.oscillatorPool = null;
+                this.eigenResonator = new EigenmodeResonator();
+                
+                this.filterNode = null;
+                this.analyserNode = null;
+                this.masterGain = null;
+                this.compressor = null;
+                
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                
+                // State management
+                this.isPlaying = false;
+                this.isRecording = false;
+                this.isInitialized = false;
+                this.time = 0;
+                this.animationId = null;
+                this.currentPreset = 'custom';
+                this.normalizationMode = 'adaptive';
+                this.physicsMode = 'combined';
+                this.currentWaveform = 'sine';
+                this.evolutionEnabled = false;
+                this.evolutionSpeed = 0.1;
+                this.evolutionPhase = 0;
+                
+                // Enhanced Evolution System
+                this.evolutionTypes = ['drift', 'oscillation', 'chaos', 'decay', 'growth', 'spiral', 'eigenshift'];
+                this.evolutionType = 'drift';
+                this.evolutionIntensity = 0.3;
+                this.evolutionComplexity = 0.5;
+                
+                // Physics parameters with validation schemas
+                this.parameterSchemas = {
+                    quantum: {
+                        uncertainty: { min: 0, max: 1, default: 0.5 },
+                        coherence: { min: 0, max: 1, default: 0.8 },
+                        entanglement: { min: 0, max: 1, default: 0.3 },
+                        wavePacketWidth: { min: 0.1, max: 2, default: 0.6 }
+                    },
+                    gr: {
+                        curvature: { min: 0, max: 1, default: 0.4 },
+                        timeDilation: { min: 0, max: 1, default: 0.2 },
+                        redshift: { min: 0, max: 1, default: 0.3 },
+                        horizonEffect: { min: 0, max: 1, default: 0.5 }
+                    },
+                    sound: {
+                        baseFreq: { min: 100, max: 2000, default: 440 },
+                        harmonics: { min: 1, max: 8, default: 3 },
+                        amplitude: { min: 0, max: 1, default: 0.5 },
+                        filterQ: { min: 1, max: 30, default: 10 }
+                    },
+                    advanced: {
+                        decoherenceRate: { min: 0, max: 1, default: 0.1 },
+                        vacuumFluctuations: { min: 0, max: 1, default: 0.2 },
+                        hawkingRadiation: { min: 0, max: 1, default: 0.0 },
+                        cosmicBackground: { min: 0, max: 1, default: 0.15 },
+                        quantumTunneling: { min: 0, max: 1, default: 0.0 },
+                        spacetimeRipples: { min: 0, max: 1, default: 0.0 },
+                        darkEnergy: { min: 0, max: 1, default: 0.05 },
+                        informationLoss: { min: 0, max: 1, default: 0.0 }
+                    },
+                    eigenmode: {
+                        eigenmodeDensity: { min: 0, max: 1, default: 0.5 },
+                        eigenvalueSpreading: { min: 0, max: 1, default: 0.3 },
+                        eigenvectorCoupling: { min: 0, max: 1, default: 0.4 },
+                        quantumEigenshift: { min: 0, max: 1, default: 0.2 },
+                        eigenspaceRotation: { min: 0, max: 1, default: 0.0 },
+                        modalDamping: { min: 0, max: 1, default: 0.1 },
+                        spectralFocus: { min: 0, max: 1, default: 0.5 },
+                        nonlinearCoupling: { min: 0, max: 1, default: 0.0 }
+                    }
+                };
+                
+                // Initialize parameters with validation
+                this.quantumState = ParameterValidator.validateObject(
+                    {}, this.parameterSchemas.quantum
+                );
+                
+                this.grState = ParameterValidator.validateObject(
+                    {}, this.parameterSchemas.gr
+                );
+                
+                this.soundState = ParameterValidator.validateObject(
+                    {}, this.parameterSchemas.sound
+                );
+                
+                this.advancedState = ParameterValidator.validateObject(
+                    {}, this.parameterSchemas.advanced
+                );
+                
+                this.eigenmodeState = ParameterValidator.validateObject(
+                    {}, this.parameterSchemas.eigenmode
+                );
+                
+                // Audio enhancement controls
+                this.intensityBoost = 1.0;
+                this.dynamicRange = 0.7;
+                this.masterVolume = 0.5;
+                
+                // Visualization data
+                this.visualizationData = {
+                    waveform: new Array(128).fill(0),
+                    spectrum: new Array(64).fill(0),
+                    quantumState: { uncertainty: 0, coherence: 0, entanglement: 0 },
+                    relativisticState: { curvature: 0, dilation: 0, redshift: 0 },
+                    eigenmodeData: null
+                };
+                
+                console.log('AudioEngine initialized with eigenmode support');
+            }
+            
+            // Initialize audio context and nodes
+            async initializeAudio() {
+                try {
+                    if (this.audioContext) {
+                        await this.audioContext.close();
+                    }
+                    
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Initialize oscillator pool
+                    this.oscillatorPool = new OscillatorPool(this.audioContext);
+                    
+                    // Create audio nodes
+                    this.analyserNode = this.audioContext.createAnalyser();
+                    this.analyserNode.fftSize = 2048;
+                    this.analyserNode.smoothingTimeConstant = 0.8;
+                    
+                    this.filterNode = this.audioContext.createBiquadFilter();
+                    this.filterNode.type = 'bandpass';
+                    this.filterNode.frequency.value = 1000;
+                    this.filterNode.Q.value = this.soundState.filterQ;
+                    
+                    // Add compressor for better dynamics
+                    this.compressor = this.audioContext.createDynamicsCompressor();
+                    this.compressor.threshold.value = -24;
+                    this.compressor.knee.value = 30;
+                    this.compressor.ratio.value = 12;
+                    this.compressor.attack.value = 0.003;
+                    this.compressor.release.value = 0.25;
+                    
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = this.masterVolume;
+                    
+                    // Connect audio graph
+                    this.filterNode.connect(this.compressor);
+                    this.compressor.connect(this.analyserNode);
+                    this.analyserNode.connect(this.masterGain);
+                    this.masterGain.connect(this.audioContext.destination);
+                    
+                    // Resume if suspended
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
+                    this.isInitialized = true;
+                    
+                    console.log('Audio initialized successfully');
+                    console.log('Sample rate:', this.audioContext.sampleRate);
+                    console.log('Context state:', this.audioContext.state);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    this.isInitialized = false;
+                    throw error;
+                }
+            }
+            
+            // Check if audio is ready
+            isAudioReady() {
+                return this.audioContext && 
+                       this.audioContext.state !== 'closed' && 
+                       this.isInitialized;
+            }
+            
+            // Get audio context state
+            getAudioState() {
+                if (!this.audioContext) return 'not initialized';
+                return this.audioContext.state;
+            }
+            
+            // Enhanced quantum wave function with eigenmode influence
+            quantumWaveFunction(t, harmonic) {
+                const { uncertainty, coherence, entanglement, wavePacketWidth } = this.quantumState;
+                const { decoherenceRate, vacuumFluctuations, hawkingRadiation, cosmicBackground, 
+                        quantumTunneling, spacetimeRipples, darkEnergy, informationLoss } = this.advancedState;
+                
+                // Enhanced quantum uncertainty with vacuum fluctuations
+                const baseUncertainty = uncertainty * (1 + vacuumFluctuations * (Math.random() - 0.5) * 0.4);
+                const uncertaintyFactor = 1 + (Math.random() - 0.5) * baseUncertainty * 0.6;
+                
+                // Advanced decoherence model with environmental coupling
+                const environmentalCoupling = decoherenceRate * (1 + cosmicBackground * 0.6);
+                const coherenceFactor = Math.exp(-t * environmentalCoupling * 0.015);
+                
+                // Quantum tunneling creates phase jumps and amplitude spikes
+                const tunnelingProbability = quantumTunneling * Math.exp(-harmonic * 0.1);
+                const tunnelingEffect = tunnelingProbability > 0.3 ? 
+                    (Math.random() < tunnelingProbability * 0.1 ? 1.5 + Math.random() * 0.5 : 1.0) : 1.0;
+                
+                // Spacetime ripples create frequency modulation
+                const rippleFrequency = 0.05 + spacetimeRipples * 0.1;
+                const rippleAmplitude = spacetimeRipples * 0.3;
+                const rippleEffect = 1 + rippleAmplitude * Math.sin(t * rippleFrequency + harmonic * 0.2);
+                
+                // Dark energy creates subtle expansion effects
+                const expansionRate = darkEnergy * 0.001;
+                const expansionFactor = Math.exp(-t * expansionRate);
+                
+                // Information loss creates amplitude decay with sudden recoveries
+                const informationFactor = informationLoss > 0 ? 
+                    (Math.random() < informationLoss * 0.05 ? 0.3 + Math.random() * 0.4 : 1.0) : 1.0;
+                
+                // Entanglement couples harmonics with non-local correlations
+                const entanglementPhase = entanglement * harmonic * Math.PI * 0.15;
+                const entanglementCorrelation = Math.cos(entanglementPhase) * entanglement;
+                
+                // Wave packet evolution with dispersion
+                const dispersionFactor = Math.exp(-Math.pow(t * 0.1, 2) / (2 * wavePacketWidth * wavePacketWidth));
+                
+                // Enhanced Hawking radiation with temperature-dependent effects
+                const hawkingTemperature = hawkingRadiation * (1 + this.grState.horizonEffect * 0.5);
+                const hawkingNoise = hawkingRadiation > 0 ? 
+                    (Math.random() - 0.5) * hawkingTemperature * 0.3 * Math.exp(-t * 0.01) : 0;
+                
+                // Cosmic background radiation creates subtle long-term modulation
+                const cosmicModulation = cosmicBackground * 
+                    (Math.sin(t * 0.001 + harmonic * 0.1) * 0.15 + 
+                     Math.sin(t * 0.003 + harmonic * 0.05) * 0.1);
+                
+                // Add eigenmode influence
+                const eigenInfluence = this.physicsMode === 'eigenmode' ? 
+                    this.eigenmodeState.quantumEigenshift * 0.3 : 0;
+                
+                // Combine all quantum and advanced physics effects
+                const quantumAmplitude = uncertaintyFactor * coherenceFactor * dispersionFactor * 
+                                       tunnelingEffect * rippleEffect * expansionFactor * informationFactor *
+                                       (1 + entanglementCorrelation * 0.4) * 
+                                       (1 + cosmicModulation) * (1 + eigenInfluence);
+                
+                return Math.max(0.1, Math.min(2.0, quantumAmplitude + hawkingNoise));
+            }
+            
+            // Relativistic effects with eigenmode corrections
+            relativisticEffect(t, freq) {
+                const { curvature, timeDilation, redshift, horizonEffect } = this.grState;
+                
+                // Time dilation
+                const timeFactor = 1 - timeDilation * 0.1;
+                const adjustedTime = t * timeFactor;
+                
+                // Gravitational redshift
+                const redshiftFactor = 1 - redshift * 0.1;
+                let adjustedFreq = freq * redshiftFactor;
+                
+                // Spacetime curvature modulation
+                const curvatureMod = Math.sin(adjustedTime * 0.05) * curvature * 0.1;
+                adjustedFreq *= (1 + curvatureMod);
+                
+                // Event horizon effects
+                const horizonFactor = 1 - horizonEffect * 0.2;
+                adjustedFreq *= horizonFactor;
+                
+                // Add eigenmode spacetime corrections
+                if (this.physicsMode === 'eigenmode') {
+                    const eigenCorrection = 1 + this.eigenmodeState.eigenspaceRotation * 0.1 * 
+                                          Math.sin(t * 0.02);
+                    adjustedFreq *= eigenCorrection;
+                }
+                
+                return {
+                    frequency: Math.max(adjustedFreq, 20),
+                    timeScale: timeFactor
+                };
+            }
+            
+            // Improved sound synthesis with eigenmode support
+            synthesizeSound() {
+                if (!this.isAudioReady() || !this.isPlaying) return;
+                
+                const currentTime = this.audioContext.currentTime;
+                this.time += 0.016;
+                
+                // Evolution
+                if (this.evolutionEnabled) {
+                    this.evolutionPhase += this.evolutionSpeed * 0.016;
+                    this.applyEvolution();
+                }
+                
+                // Clean up old oscillators
+                this.oscillatorPool.cleanup();
+                
+                // Generate sound based on physics mode
+                if (this.physicsMode === 'eigenmode') {
+                    this.generateEigenmodeSound(currentTime);
+                } else {
+                    this.generateOscillators(currentTime);
+                }
+                
+                // Update visualization
+                this.updateVisualization();
+            }
+            
+            // Generate eigenmode-based sound
+            generateEigenmodeSound(currentTime) {
+                const { baseFreq, amplitude } = this.soundState;
+                const duration = 0.1;
+                
+                // Get eigenmode output
+                const eigenmodeOutput = this.eigenResonator.process(
+                    this.time, 
+                    this.eigenmodeState, 
+                    this.quantumState, 
+                    this.grState
+                );
+                
+                // Create modulated oscillators based on eigenmode output
+                const numOscillators = Math.floor(this.eigenmodeState.eigenmodeDensity * 8) + 1;
+                
+                for (let i = 0; i < numOscillators; i++) {
+                    const oscObj = this.oscillatorPool.getOscillator();
+                    const osc = oscObj.oscillator;
+                    const gain = oscObj.gainNode;
+                    
+                    // Base frequency from eigenmode
+                    const modeData = this.eigenResonator.modes[i % this.eigenResonator.numModes];
+                    let frequency = modeData.frequency * (baseFreq / 440);
+                    
+                    // Apply physics modulations
+                    const relEffect = this.relativisticEffect(this.time, frequency);
+                    frequency = relEffect.frequency;
+                    
+                    // Set amplitude based on eigenmode and physics
+                    let amp = amplitude * Math.abs(eigenmodeOutput) * 0.3;
+                    amp = this.normalizeAmplitude(amp);
+                    amp *= this.intensityBoost;
+                    amp *= (1 + this.dynamicRange * 0.3);
+                    
+                    // Set oscillator parameters
+                    osc.frequency.setValueAtTime(frequency, currentTime);
+                    osc.type = this.currentWaveform;
+                    
+                    // Apply smooth envelope
+                    gain.gain.setValueAtTime(0, currentTime);
+                    gain.gain.linearRampToValueAtTime(amp, currentTime + 0.01);
+                    gain.gain.linearRampToValueAtTime(amp * 0.9, currentTime + duration - 0.01);
+                    gain.gain.linearRampToValueAtTime(0, currentTime + duration);
+                    
+                    // Connect and play
+                    gain.connect(this.filterNode);
+                    osc.start(currentTime);
+                    osc.stop(currentTime + duration);
+                    
+                    // Schedule cleanup
+                    setTimeout(() => {
+                        this.oscillatorPool.returnOscillator(oscObj);
+                    }, duration * 1000 + 100);
+                }
+            }
+            
+            // Generate oscillators for current frame
+            generateOscillators(currentTime) {
+                const { baseFreq, harmonics, amplitude } = this.soundState;
+                const duration = 0.1;
+                
+                for (let i = 1; i <= harmonics; i++) {
+                    try {
+                        const oscObj = this.oscillatorPool.getOscillator();
+                        const osc = oscObj.oscillator;
+                        const gain = oscObj.gainNode;
+                        
+                        let frequency = baseFreq * i;
+                        let amp = amplitude * 0.4 / Math.sqrt(i);
+                        
+                        // Apply physics effects
+                        if (this.physicsMode === 'quantum' || this.physicsMode === 'combined') {
+                            const quantumMod = this.quantumWaveFunction(this.time, i);
+                            amp *= Math.max(0.15, Math.abs(quantumMod));
+                        }
+                        
+                        if (this.physicsMode === 'relativistic' || this.physicsMode === 'combined') {
+                            const relEffect = this.relativisticEffect(this.time, frequency);
+                            frequency = relEffect.frequency;
+                            amp *= relEffect.timeScale;
+                        }
+                        
+                        // Apply advanced physics effects
+                        if (this.advancedState.spacetimeRipples > 0) {
+                            const rippleAmp = 1 + this.advancedState.spacetimeRipples * 0.3 * 
+                                            Math.sin(this.time * 0.1 + i * 0.5);
+                            amp *= rippleAmp;
+                        }
+                        
+                        if (this.advancedState.darkEnergy > 0) {
+                            const darkEnergyAmp = 1 + this.advancedState.darkEnergy * 0.2 * 
+                                                 Math.sin(this.time * 0.02);
+                            amp *= darkEnergyAmp;
+                        }
+                        
+                        // Apply normalization and boosts
+                        amp = this.normalizeAmplitude(amp);
+                        amp *= this.intensityBoost;
+                        amp *= (1 + this.dynamicRange * 0.3);
+                        
+                        // Set oscillator parameters
+                        osc.frequency.setValueAtTime(frequency, currentTime);
+                        osc.type = this.currentWaveform;
+                        
+                        // Add subtle frequency modulation in combined mode
+                        if (this.physicsMode === 'combined') {
+                            const fmAmount = this.quantumState.uncertainty * 0.5;
+                            osc.frequency.setValueAtTime(
+                                frequency * (1 + fmAmount * Math.sin(this.time * 2)), 
+                                currentTime
+                            );
+                        }
+                        
+                        // Set gain with smooth envelope
+                        gain.gain.setValueAtTime(0, currentTime);
+                        gain.gain.linearRampToValueAtTime(amp, currentTime + 0.01);
+                        gain.gain.linearRampToValueAtTime(amp * 0.9, currentTime + duration - 0.01);
+                        gain.gain.linearRampToValueAtTime(0, currentTime + duration);
+                        
+                        // Connect nodes
+                        gain.connect(this.filterNode);
+                        
+                        // Start and schedule stop
+                        osc.start(currentTime);
+                        osc.stop(currentTime + duration);
+                        
+                        // Schedule cleanup
+                        setTimeout(() => {
+                            this.oscillatorPool.returnOscillator(oscObj);
+                        }, duration * 1000 + 100);
+                        
+                    } catch (error) {
+                        console.warn('Oscillator generation error:', error);
+                    }
+                }
+            }
+            
+            // Normalize amplitude based on mode
+            normalizeAmplitude(amp) {
+                const normalizedAmp = Math.max(0.01, Math.min(1, amp));
+                
+                switch (this.normalizationMode) {
+                    case 'peak':
+                        return normalizedAmp;
+                    case 'rms':
+                        return normalizedAmp * 0.7;
+                    case 'compressor':
+                        return normalizedAmp > 0.7 ? 0.7 + (normalizedAmp - 0.7) * 0.3 : normalizedAmp;
+                    case 'adaptive':
+                    default:
+                        return normalizedAmp * 0.5;
+                }
+            }
+            
+            // Enhanced evolution system with eigenshift
+            applyEvolution() {
+                if (!this.evolutionEnabled) return;
+                
+                const deltaTime = 0.016;
+                
+                // Apply evolution based on type
+                switch (this.evolutionType) {
+                    case 'eigenshift':
+                        this.applyEigenshiftEvolution(deltaTime);
+                        break;
+                    default:
+                        this.applyStandardEvolution(deltaTime);
+                }
+            }
+            
+            // Eigenshift evolution - evolves eigenvalues and eigenvectors
+            applyEigenshiftEvolution(deltaTime) {
+                const phase = this.evolutionPhase;
+                const intensity = this.evolutionIntensity;
+                
+                // Evolve eigenmode parameters
+                this.eigenmodeState.eigenvalueSpreading = 
+                    0.3 + 0.4 * Math.sin(phase * 0.3) * intensity;
+                
+                this.eigenmodeState.eigenspaceRotation = 
+                    (phase * 0.1) % 1;
+                
+                this.eigenmodeState.eigenvectorCoupling = 
+                    0.4 + 0.3 * Math.sin(phase * 0.5 + Math.PI/4) * intensity;
+                
+                // Evolve quantum eigenshift
+                this.eigenmodeState.quantumEigenshift = 
+                    0.2 + 0.3 * Math.sin(phase * 0.7) * intensity;
+                
+                // Also affect quantum parameters
+                this.quantumState.uncertainty = 
+                    0.5 + 0.3 * Math.sin(phase * 0.2) * intensity;
+                
+                this.quantumState.entanglement = 
+                    0.3 + 0.4 * Math.sin(phase * 0.4 + Math.PI/2) * intensity;
+            }
+            
+            // Standard evolution patterns
+            applyStandardEvolution(deltaTime) {
+                const phase = this.evolutionPhase;
+                const intensity = this.evolutionIntensity;
+                
+                // Evolve parameters based on evolution type
+                switch (this.evolutionType) {
+                    case 'drift':
+                        this.quantumState.uncertainty = 
+                            0.5 + 0.3 * Math.sin(phase * 0.1) * intensity;
+                        this.grState.curvature = 
+                            0.4 + 0.2 * Math.sin(phase * 0.08) * intensity;
+                        break;
+                        
+                    case 'oscillation':
+                        this.quantumState.coherence = 
+                            0.8 + 0.2 * Math.sin(phase) * intensity;
+                        this.grState.timeDilation = 
+                            0.2 + 0.15 * Math.sin(phase * 1.5) * intensity;
+                        break;
+                        
+                    case 'chaos':
+                        const chaosBase = Math.sin(phase) + Math.sin(phase * 2.3) * 0.5 + 
+                                        Math.sin(phase * 3.7) * 0.25;
+                        this.quantumState.uncertainty = 
+                            0.5 + chaosBase * intensity * 0.2;
+                        this.advancedState.vacuumFluctuations = 
+                            0.2 + Math.abs(chaosBase) * intensity * 0.3;
+                        break;
+                        
+                    case 'decay':
+                        const decay = Math.exp(-phase * 0.1);
+                        this.quantumState.coherence = 0.9 * decay;
+                        this.grState.horizonEffect = 0.5 + (1 - decay) * 0.4 * intensity;
+                        break;
+                        
+                    case 'growth':
+                        const growth = 1 - Math.exp(-phase * 0.05);
+                        this.advancedState.hawkingRadiation = growth * intensity * 0.5;
+                        this.grState.curvature = 0.4 + growth * intensity * 0.3;
+                        break;
+                        
+                    case 'spiral':
+                        const spiral = Math.sin(phase + Math.sin(phase * 0.3) * 2);
+                        this.quantumState.entanglement = 0.3 + spiral * intensity * 0.4;
+                        this.grState.redshift = 0.3 + spiral * intensity * 0.2;
+                        break;
+                }
+                
+                // Always validate parameters after evolution
+                this.validateAllParameters();
+            }
+            
+            // Validate all parameters
+            validateAllParameters() {
+                this.quantumState = ParameterValidator.validateObject(
+                    this.quantumState, this.parameterSchemas.quantum
+                );
+                this.grState = ParameterValidator.validateObject(
+                    this.grState, this.parameterSchemas.gr
+                );
+                this.advancedState = ParameterValidator.validateObject(
+                    this.advancedState, this.parameterSchemas.advanced
+                );
+                this.eigenmodeState = ParameterValidator.validateObject(
+                    this.eigenmodeState, this.parameterSchemas.eigenmode
+                );
+            }
+            
+            // Update visualization data
+            updateVisualization() {
+                if (!this.analyserNode) return;
+                
+                const bufferLength = this.analyserNode.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                const waveformArray = new Float32Array(this.analyserNode.fftSize);
+                
+                this.analyserNode.getByteFrequencyData(dataArray);
+                this.analyserNode.getFloatTimeDomainData(waveformArray);
+                
+                // Update waveform data
+                const waveform = [];
+                const step = Math.floor(waveformArray.length / 128);
+                for (let i = 0; i < 128; i++) {
+                    waveform.push(waveformArray[i * step] || 0);
+                }
+                
+                // Update spectrum data
+                const spectrum = [];
+                const freqStep = Math.floor(dataArray.length / 64);
+                for (let i = 0; i < 64; i++) {
+                    spectrum.push((dataArray[i * freqStep] || 0) / 255);
+                }
+                
+                this.visualizationData = {
+                    waveform,
+                    spectrum,
+                    quantumState: { ...this.quantumState },
+                    relativisticState: {
+                        curvature: this.grState.curvature,
+                        dilation: 1 - this.grState.timeDilation * 0.1,
+                        redshift: 1 - this.grState.redshift * 0.1
+                    },
+                    eigenmodeData: this.eigenResonator.getVisualizationData()
+                };
+            }
+            
+            // Animation loop
+            animate() {
+                if (this.isPlaying) {
+                    this.synthesizeSound();
+                    this.animationId = requestAnimationFrame(() => this.animate());
+                }
+            }
+            
+            // Play/Resume audio
+            async play() {
+                try {
+                    if (!this.isAudioReady()) {
+                        await this.initializeAudio();
+                    }
+                    
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
+                    this.isPlaying = true;
+                    this.animate();
+                    
+                    console.log('Audio playback started');
+                    
+                } catch (error) {
+                    console.error('Failed to start playback:', error);
+                    this.isPlaying = false;
+                    throw error;
+                }
+            }
+            
+            // Stop audio
+            stop() {
+                this.isPlaying = false;
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                
+                if (this.oscillatorPool) {
+                    this.oscillatorPool.cleanup();
+                }
+                
+                console.log('Audio playback stopped');
+            }
+            
+            // Test audio with simple tone
+            async testAudio() {
+                try {
+                    if (!this.isAudioReady()) {
+                        await this.initializeAudio();
+                    }
+                    
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
+                    const osc = this.audioContext.createOscillator();
+                    const gain = this.audioContext.createGain();
+                    
+                    osc.frequency.setValueAtTime(440, this.audioContext.currentTime);
+                    osc.type = 'sine';
+                    
+                    gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.start(this.audioContext.currentTime);
+                    osc.stop(this.audioContext.currentTime + 1);
+                    
+                    console.log('Audio test completed');
+                    
+                } catch (error) {
+                    console.error('Audio test failed:', error);
+                    throw error;
+                }
+            }
+            
+            // Parameter update methods with validation
+            updateQuantumParams(params) {
+                this.quantumState = ParameterValidator.validateObject(
+                    { ...this.quantumState, ...params },
+                    this.parameterSchemas.quantum
+                );
+                this.currentPreset = 'custom';
+            }
+            
+            updateGRParams(params) {
+                this.grState = ParameterValidator.validateObject(
+                    { ...this.grState, ...params },
+                    this.parameterSchemas.gr
+                );
+                this.currentPreset = 'custom';
+            }
+            
+            updateSoundParams(params) {
+                this.soundState = ParameterValidator.validateObject(
+                    { ...this.soundState, ...params },
+                    this.parameterSchemas.sound
+                );
+                this.currentPreset = 'custom';
+                
+                // Update filter
+                if (this.filterNode && this.audioContext) {
+                    const currentTime = this.audioContext.currentTime;
+                    this.filterNode.frequency.setValueAtTime(
+                        Math.max(this.soundState.baseFreq * 2, 80), 
+                        currentTime
+                    );
+                    this.filterNode.Q.setValueAtTime(
+                        Math.max(this.soundState.filterQ, 0.1), 
+                        currentTime
+                    );
+                }
+            }
+            
+            updateAdvancedParams(params) {
+                this.advancedState = ParameterValidator.validateObject(
+                    { ...this.advancedState, ...params },
+                    this.parameterSchemas.advanced
+                );
+                this.currentPreset = 'custom';
+            }
+            
+            updateEigenmodeParams(params) {
+                this.eigenmodeState = ParameterValidator.validateObject(
+                    { ...this.eigenmodeState, ...params },
+                    this.parameterSchemas.eigenmode
+                );
+                this.currentPreset = 'custom';
+            }
+            
+            updateMasterVolume(volume) {
+                this.masterVolume = ParameterValidator.validate(volume, 0, 1, 'masterVolume');
+                if (this.masterGain) {
+                    const currentTime = this.audioContext?.currentTime || 0;
+                    this.masterGain.gain.setValueAtTime(this.masterVolume, currentTime);
+                }
+            }
+            
+            // Mode updates
+            updatePhysicsMode(mode) {
+                this.physicsMode = mode;
+                console.log('Physics mode updated to:', mode);
+            }
+            
+            updateNormalizationMode(mode) {
+                this.normalizationMode = mode;
+                console.log('Normalization mode updated to:', mode);
+            }
+            
+            setWaveform(type) {
+                this.currentWaveform = type;
+                console.log('Waveform updated to:', type);
+            }
+            
+            setEvolution(enabled, speed = 0.1) {
+                this.evolutionEnabled = enabled;
+                this.evolutionSpeed = ParameterValidator.validate(speed, 0.01, 1.0, 'evolutionSpeed');
+                if (!enabled) {
+                    this.evolutionPhase = 0;
+                }
+            }
+            
+            setEvolutionType(type, intensity = 0.3, complexity = 0.5) {
+                this.evolutionType = type;
+                this.evolutionIntensity = ParameterValidator.validate(intensity, 0.1, 1.0, 'evolutionIntensity');
+                this.evolutionComplexity = ParameterValidator.validate(complexity, 0, 1, 'evolutionComplexity');
+            }
+            
+            setEigenmodeGeometry(geometry) {
+                this.eigenResonator.setGeometry(geometry);
+                console.log('Eigenmode geometry updated to:', geometry);
+            }
+            
+            // Preset management
+            loadPreset(presetKey) {
+                const preset = PRESETS[presetKey];
+                if (!preset) {
+                    console.error('Preset not found:', presetKey);
+                    return;
+                }
+                
+                this.quantumState = ParameterValidator.validateObject(
+                    preset.quantum, this.parameterSchemas.quantum
+                );
+                this.grState = ParameterValidator.validateObject(
+                    preset.gr, this.parameterSchemas.gr
+                );
+                this.soundState = ParameterValidator.validateObject(
+                    preset.sound, this.parameterSchemas.sound
+                );
+                
+                if (preset.advanced) {
+                    this.advancedState = ParameterValidator.validateObject(
+                        preset.advanced, this.parameterSchemas.advanced
+                    );
+                }
+                
+                if (preset.eigenmode) {
+                    this.eigenmodeState = ParameterValidator.validateObject(
+                        preset.eigenmode, this.parameterSchemas.eigenmode
+                    );
+                }
+                
+                this.currentPreset = presetKey;
+                this.time = 0;
+                
+                // Update audio nodes
+                if (this.filterNode && this.audioContext) {
+                    const currentTime = this.audioContext.currentTime;
+                    this.filterNode.frequency.setValueAtTime(
+                        Math.max(this.soundState.baseFreq * 2, 80), 
+                        currentTime
+                    );
+                    this.filterNode.Q.setValueAtTime(
+                        Math.max(this.soundState.filterQ, 0.1), 
+                        currentTime
+                    );
+                }
+                
+                console.log('Preset loaded:', presetKey);
+            }
+            
+            reset() {
+                this.loadPreset('custom');
+            }
+            
+            // Recording functionality
+            async startRecording() {
+                try {
+                    if (!this.isAudioReady()) {
+                        await this.initializeAudio();
+                    }
+                    
+                    const destination = this.audioContext.createMediaStreamDestination();
+                    this.masterGain.connect(destination);
+                    
+                    this.mediaRecorder = new MediaRecorder(destination.stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    
+                    this.recordedChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(blob);
+                        
+                        const recordingPanel = document.getElementById('recordingPanel');
+                        const audioPlayer = document.getElementById('audioPlayer');
+                        
+                        recordingPanel.style.display = 'block';
+                        audioPlayer.src = audioUrl;
+                        
+                        this.masterGain.disconnect(destination);
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    console.log('Recording started');
+                    
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    throw error;
+                }
+            }
+            
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    console.log('Recording stopped');
+                }
+            }
+            
+            // Export settings
+            exportSettings() {
+                const settings = {
+                    name: this.currentPreset === 'custom' ? 'Custom Export' : (PRESETS[this.currentPreset]?.name || 'Custom'),
+                    description: this.currentPreset === 'custom' ? 'User customized settings' : (PRESETS[this.currentPreset]?.description || ''),
+                    quantum: { ...this.quantumState },
+                    gr: { ...this.grState },
+                    sound: { ...this.soundState },
+                    advanced: { ...this.advancedState },
+                    eigenmode: { ...this.eigenmodeState },
+                    evolution: {
+                        type: this.evolutionType,
+                        speed: this.evolutionSpeed,
+                        intensity: this.evolutionIntensity,
+                        complexity: this.evolutionComplexity
+                    },
+                    audio: {
+                        intensityBoost: this.intensityBoost,
+                        dynamicRange: this.dynamicRange
+                    },
+                    normalization: this.normalizationMode,
+                    physicsMode: this.physicsMode,
+                    waveform: this.currentWaveform,
+                    volume: this.masterVolume,
+                    eigenmodeGeometry: this.eigenResonator.geometry,
+                    timestamp: new Date().toISOString(),
+                    version: '0.3.0'
+                };
+                
+                const dataStr = JSON.stringify(settings, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                
+                const link = document.createElement('a');
+                link.href = dataUri;
+                link.download = `eigensound-preset-${settings.name.replace(/\s+/g, '-').toLowerCase()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // Import settings
+            async importSettings(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const settings = JSON.parse(e.target.result);
+                            
+                            if (!settings.quantum || !settings.gr || !settings.sound) {
+                                throw new Error('Invalid preset format');
+                            }
+                            
+                            this.quantumState = ParameterValidator.validateObject(
+                                settings.quantum, this.parameterSchemas.quantum
+                            );
+                            this.grState = ParameterValidator.validateObject(
+                                settings.gr, this.parameterSchemas.gr
+                            );
+                            this.soundState = ParameterValidator.validateObject(
+                                settings.sound, this.parameterSchemas.sound
+                            );
+                            
+                            if (settings.advanced) {
+                                this.advancedState = ParameterValidator.validateObject(
+                                    settings.advanced, this.parameterSchemas.advanced
+                                );
+                            }
+                            
+                            if (settings.eigenmode) {
+                                this.eigenmodeState = ParameterValidator.validateObject(
+                                    settings.eigenmode, this.parameterSchemas.eigenmode
+                                );
+                            }
+                            
+                            if (settings.evolution) {
+                                this.evolutionType = settings.evolution.type || 'drift';
+                                this.evolutionSpeed = settings.evolution.speed || 0.1;
+                                this.evolutionIntensity = settings.evolution.intensity || 0.3;
+                                this.evolutionComplexity = settings.evolution.complexity || 0.5;
+                            }
+                            
+                            if (settings.audio) {
+                                this.intensityBoost = settings.audio.intensityBoost || 1.0;
+                                this.dynamicRange = settings.audio.dynamicRange || 0.7;
+                            }
+                            
+                            if (settings.normalization) this.normalizationMode = settings.normalization;
+                            if (settings.physicsMode) this.physicsMode = settings.physicsMode;
+                            if (settings.waveform) this.currentWaveform = settings.waveform;
+                            if (settings.volume !== undefined) this.masterVolume = settings.volume;
+                            if (settings.eigenmodeGeometry) this.eigenResonator.setGeometry(settings.eigenmodeGeometry);
+                            
+                            this.currentPreset = 'custom';
+                            this.time = 0;
+                            
+                            // Update audio nodes
+                            if (this.filterNode && this.audioContext) {
+                                const currentTime = this.audioContext.currentTime;
+                                this.filterNode.frequency.setValueAtTime(
+                                    Math.max(this.soundState.baseFreq * 2, 80), 
+                                    currentTime
+                                );
+                                this.filterNode.Q.setValueAtTime(
+                                    Math.max(this.soundState.filterQ, 0.1), 
+                                    currentTime
+                                );
+                            }
+                            
+                            resolve(settings);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+            
+            // Get comprehensive status
+            getStatus() {
+                return {
+                    isAudioReady: this.isAudioReady(),
+                    audioState: this.getAudioState(),
+                    isPlaying: this.isPlaying,
+                    isRecording: this.isRecording,
+                    currentPreset: this.currentPreset,
+                    physicsMode: this.physicsMode,
+                    normalizationMode: this.normalizationMode,
+                    waveform: this.currentWaveform,
+                    masterVolume: this.masterVolume,
+                    evolutionEnabled: this.evolutionEnabled,
+                    eigenmodeGeometry: this.eigenResonator.geometry
+                };
+            }
+        }
+
+        // Enhanced UI Controller
+        class UIController {
+            constructor(engine) {
+                this.engine = engine;
+                this.isUpdating = false;
+                this.selectedParameter = null;
+                this.isDragging = false;
+                
+                this.setupEventListeners();
+                this.setupPresets();
+                this.setupVisualization();
+                this.updateUI();
+                
+                // Update status periodically
+                setInterval(() => this.updateAudioStatus(), 1000);
+                
+                console.log('UI Controller initialized');
+            }
+            
+            setupEventListeners() {
+                // Control buttons
+                document.getElementById('playBtn').addEventListener('click', () => this.togglePlay());
+                document.getElementById('recordBtn').addEventListener('click', () => this.toggleRecord());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('testAudioBtn').addEventListener('click', () => this.testAudio());
+                document.getElementById('initAudioBtn').addEventListener('click', () => this.initAudio());
+                document.getElementById('infoBtn').addEventListener('click', () => this.toggleInfo());
+                
+                // Volume and intensity controls
+                document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                    this.engine.updateMasterVolume(parseFloat(e.target.value));
+                    this.updateUI();
+                });
+                
+                document.getElementById('intensityBoostSlider').addEventListener('input', (e) => {
+                    this.engine.intensityBoost = parseFloat(e.target.value);
+                    document.getElementById('intensityBoostValue').textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+                });
+                
+                document.getElementById('dynamicRangeSlider').addEventListener('input', (e) => {
+                    this.engine.dynamicRange = parseFloat(e.target.value);
+                    document.getElementById('dynamicRangeValue').textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+                });
+                
+                // Mode buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.updatePhysicsMode(btn.dataset.mode);
+                    });
+                });
+                
+                document.querySelectorAll('.normalization-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.normalization-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.updateNormalizationMode(btn.dataset.mode);
+                    });
+                });
+                
+                document.querySelectorAll('.waveform-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.waveform-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.setWaveform(btn.dataset.waveform);
+                    });
+                });
+                
+                // Eigenmode geometry buttons
+                document.querySelectorAll('.eigengeometry-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.eigengeometry-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.setEigenmodeGeometry(btn.dataset.geometry);
+                    });
+                });
+                
+                // Evolution controls
+                document.getElementById('evolutionBtn').addEventListener('click', () => this.toggleEvolution());
+                document.getElementById('evolutionSpeedSlider').addEventListener('input', (e) => {
+                    this.engine.evolutionSpeed = parseFloat(e.target.value);
+                    document.getElementById('evolutionSpeedValue').textContent = e.target.value;
+                });
+                document.getElementById('evolutionIntensitySlider').addEventListener('input', (e) => {
+                    this.engine.evolutionIntensity = parseFloat(e.target.value);
+                    document.getElementById('evolutionIntensityValue').textContent = e.target.value;
+                });
+                
+                // Evolution type buttons
+                document.querySelectorAll('.evolution-type-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.evolution-type-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.engine.setEvolutionType(btn.dataset.type, this.engine.evolutionIntensity, this.engine.evolutionComplexity);
+                    });
+                });
+                
+                // Export/Import
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportSettings());
+                document.getElementById('importInput').addEventListener('change', (e) => this.importSettings(e));
+                
+                // Parameter sliders
+                this.setupParameterSliders();
+                
+                // Recording controls
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadRecording());
+                document.getElementById('deleteBtn').addEventListener('click', () => this.deleteRecording());
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && !e.target.matches('input, textarea, select')) {
+                        e.preventDefault();
+                        this.togglePlay();
+                    }
+                });
+            }
+            
+            setupParameterSliders() {
+                const sliders = [
+                    // Quantum parameters
+                    { id: 'uncertaintySlider', param: 'uncertainty', type: 'quantum', display: 'uncertaintyValue' },
+                    { id: 'coherenceSlider', param: 'coherence', type: 'quantum', display: 'coherenceValue' },
+                    { id: 'entanglementSlider', param: 'entanglement', type: 'quantum', display: 'entanglementValue' },
+                    { id: 'wavePacketSlider', param: 'wavePacketWidth', type: 'quantum', display: 'wavePacketValue' },
+                    // Relativistic parameters
+                    { id: 'curvatureSlider', param: 'curvature', type: 'gr', display: 'curvatureValue' },
+                    { id: 'dilationSlider', param: 'timeDilation', type: 'gr', display: 'dilationValue' },
+                    { id: 'redshiftSlider', param: 'redshift', type: 'gr', display: 'redshiftValue' },
+                    { id: 'horizonSlider', param: 'horizonEffect', type: 'gr', display: 'horizonValue' },
+                    // Sound parameters
+                    { id: 'baseFreqSlider', param: 'baseFreq', type: 'sound', display: 'baseFreqValue' },
+                    { id: 'harmonicsSlider', param: 'harmonics', type: 'sound', display: 'harmonicsValue' },
+                    { id: 'amplitudeSlider', param: 'amplitude', type: 'sound', display: 'amplitudeValue' },
+                    { id: 'filterQSlider', param: 'filterQ', type: 'sound', display: 'filterQValue' },
+                    // Advanced parameters
+                    { id: 'decoherenceSlider', param: 'decoherenceRate', type: 'advanced', display: 'decoherenceValue' },
+                    { id: 'vacuumSlider', param: 'vacuumFluctuations', type: 'advanced', display: 'vacuumValue' },
+                    { id: 'hawkingSlider', param: 'hawkingRadiation', type: 'advanced', display: 'hawkingValue' },
+                    { id: 'cosmicSlider', param: 'cosmicBackground', type: 'advanced', display: 'cosmicValue' },
+                    { id: 'tunnelingSlider', param: 'quantumTunneling', type: 'advanced', display: 'tunnelingValue' },
+                    { id: 'ripplesSlider', param: 'spacetimeRipples', type: 'advanced', display: 'ripplesValue' },
+                    { id: 'darkEnergySlider', param: 'darkEnergy', type: 'advanced', display: 'darkEnergyValue' },
+                    { id: 'informationLossSlider', param: 'informationLoss', type: 'advanced', display: 'informationLossValue' },
+                    // Eigenmode parameters
+                    { id: 'eigenmodeDensitySlider', param: 'eigenmodeDensity', type: 'eigenmode', display: 'eigenmodeDensityValue' },
+                    { id: 'eigenvalueSpreadingSlider', param: 'eigenvalueSpreading', type: 'eigenmode', display: 'eigenvalueSpreadingValue' },
+                    { id: 'eigenvectorCouplingSlider', param: 'eigenvectorCoupling', type: 'eigenmode', display: 'eigenvectorCouplingValue' },
+                    { id: 'quantumEigenshiftSlider', param: 'quantumEigenshift', type: 'eigenmode', display: 'quantumEigenshiftValue' },
+                    { id: 'eigenspaceRotationSlider', param: 'eigenspaceRotation', type: 'eigenmode', display: 'eigenspaceRotationValue' },
+                    { id: 'modalDampingSlider', param: 'modalDamping', type: 'eigenmode', display: 'modalDampingValue' },
+                    { id: 'spectralFocusSlider', param: 'spectralFocus', type: 'eigenmode', display: 'spectralFocusValue' },
+                    { id: 'nonlinearCouplingSlider', param: 'nonlinearCoupling', type: 'eigenmode', display: 'nonlinearCouplingValue' }
+                ];
+                
+                sliders.forEach(({ id, param, type, display }) => {
+                    const slider = document.getElementById(id);
+                    if (slider) {
+                        slider.addEventListener('input', (e) => {
+                            const value = parseFloat(e.target.value);
+                            
+                            if (type === 'quantum') {
+                                this.engine.updateQuantumParams({ [param]: value });
+                            } else if (type === 'gr') {
+                                this.engine.updateGRParams({ [param]: value });
+                            } else if (type === 'sound') {
+                                this.engine.updateSoundParams({ [param]: value });
+                            } else if (type === 'advanced') {
+                                this.engine.updateAdvancedParams({ [param]: value });
+                            } else if (type === 'eigenmode') {
+                                this.engine.updateEigenmodeParams({ [param]: value });
+                            }
+                            
+                            this.updateUI();
+                        });
+                    }
+                });
+            }
+            
+            setupPresets() {
+                const presetGrid = document.getElementById('presetGrid');
+                
+                Object.entries(PRESETS).forEach(([key, preset]) => {
+                    const button = document.createElement('button');
+                    button.className = 'preset-btn';
+                    button.innerHTML = `
+                        <div class="preset-name">${preset.name}</div>
+                        <div class="preset-desc">${preset.description}</div>
+                    `;
+                    
+                    button.addEventListener('click', () => {
+                        this.engine.loadPreset(key);
+                        this.updateUI();
+                        this.updatePresetButtons();
+                    });
+                    
+                    presetGrid.appendChild(button);
+                });
+                
+                this.updatePresetButtons();
+            }
+            
+            updatePresetButtons() {
+                document.querySelectorAll('.preset-btn').forEach((btn, index) => {
+                    const presetKey = Object.keys(PRESETS)[index];
+                    btn.classList.toggle('active', presetKey === this.engine.currentPreset);
+                });
+            }
+            
+            setupVisualization() {
+                this.waveformCanvas = document.getElementById('waveformCanvas');
+                this.spectrumCanvas = document.getElementById('spectrumCanvas');
+                this.relationshipCanvas = document.getElementById('relationshipCanvas');
+                this.physicsFlowCanvas = document.getElementById('physicsFlowCanvas');
+                this.eigenmodeCanvas = document.getElementById('eigenmodeCanvas');
+                this.eigenspectrumCanvas = document.getElementById('eigenspectrumCanvas');
+                
+                this.waveformCtx = this.waveformCanvas.getContext('2d');
+                this.spectrumCtx = this.spectrumCanvas.getContext('2d');
+                this.relationshipCtx = this.relationshipCanvas.getContext('2d');
+                this.physicsFlowCtx = this.physicsFlowCanvas.getContext('2d');
+                this.eigenmodeCtx = this.eigenmodeCanvas.getContext('2d');
+                this.eigenspectrumCtx = this.eigenspectrumCanvas.getContext('2d');
+                
+                // Setup interactive parameter network
+                this.setupInteractiveParameterNetwork();
+                
+                this.startVisualizationLoop();
+            }
+            
+            setupInteractiveParameterNetwork() {
+                const canvas = this.relationshipCanvas;
+                
+                // Parameter network positions
+                this.parameterNodes = [];
+                
+                // Mouse interaction handlers
+                canvas.addEventListener('mousedown', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Check if clicking on a parameter node
+                    for (const node of this.parameterNodes) {
+                        const dist = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
+                        if (dist < node.radius + 5) {
+                            this.selectedParameter = node;
+                            this.isDragging = true;
+                            canvas.style.cursor = 'grabbing';
+                            break;
+                        }
+                    }
+                });
+                
+                canvas.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    if (this.isDragging && this.selectedParameter) {
+                        // Update parameter value based on position
+                        const centerX = canvas.width / 2;
+                        const centerY = canvas.height / 2;
+                        const angle = Math.atan2(y - centerY, x - centerX);
+                        const distance = Math.min(Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)), 
+                                                 canvas.width * 0.4) / (canvas.width * 0.4);
+                        
+                        // Update the parameter value
+                        const newValue = distance;
+                        
+                        if (this.selectedParameter.type === 'quantum') {
+                            this.engine.updateQuantumParams({ [this.selectedParameter.param]: newValue });
+                        } else if (this.selectedParameter.type === 'gr') {
+                            this.engine.updateGRParams({ [this.selectedParameter.param]: newValue });
+                        } else if (this.selectedParameter.type === 'advanced') {
+                            this.engine.updateAdvancedParams({ [this.selectedParameter.param]: newValue });
+                        }
+                        
+                        this.updateUI();
+                    } else {
+                        // Check hover
+                        let hovering = false;
+                        for (const node of this.parameterNodes) {
+                            const dist = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
+                            if (dist < node.radius + 5) {
+                                hovering = true;
+                                break;
+                            }
+                        }
+                        canvas.style.cursor = hovering ? 'grab' : 'default';
+                    }
+                });
+                
+                canvas.addEventListener('mouseup', () => {
+                    this.isDragging = false;
+                    this.selectedParameter = null;
+                    canvas.style.cursor = 'default';
+                });
+                
+                canvas.addEventListener('mouseleave', () => {
+                    this.isDragging = false;
+                    this.selectedParameter = null;
+                    canvas.style.cursor = 'default';
+                });
+            }
+            
+            startVisualizationLoop() {
+                const updateVisualizations = () => {
+                    this.drawWaveform();
+                    this.drawSpectrum();
+                    this.drawParameterRelationships();
+                    this.drawPhysicsFlow();
+                    this.drawEigenmode();
+                    this.drawEigenspectrum();
+                    this.updatePhysicsStates();
+                    this.updatePhysicsInteractions();
+                    this.updateEigenmodeMetrics();
+                    requestAnimationFrame(updateVisualizations);
+                };
+                
+                updateVisualizations();
+            }
+            
+            drawWaveform() {
+                const canvas = this.waveformCanvas;
+                const ctx = this.waveformCtx;
+                const data = this.engine.visualizationData.waveform;
+                
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw waveform
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const sliceWidth = width / data.length;
+                let x = 0;
+                
+                for (let i = 0; i < data.length; i++) {
+                    const v = Math.max(-1, Math.min(1, data[i]));
+                    const y = (v * height / 2) + height / 2;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                ctx.stroke();
+                
+                // Draw center line
+                ctx.strokeStyle = '#4b5563';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+                
+                // Add title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.fillText('Quantum Waveform', 10, 20);
+            }
+            
+            drawSpectrum() {
+                const canvas = this.spectrumCanvas;
+                const ctx = this.spectrumCtx;
+                const data = this.engine.visualizationData.spectrum;
+                
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw spectrum bars
+                const barWidth = width / data.length;
+                
+                for (let i = 0; i < data.length; i++) {
+                    const barHeight = Math.max(0, data[i] * height);
+                    const hue = (i / data.length) * 240;
+                    
+                    ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                    ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+                }
+                
+                // Add title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.fillText('Frequency Spectrum', 10, 20);
+            }
+            
+            drawParameterRelationships() {
+                const canvas = this.relationshipCanvas;
+                const ctx = this.relationshipCtx;
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) * 0.4;
+                
+                // Get current parameter values
+                const { quantumState, grState, advancedState } = this.engine;
+                
+                // Define parameter positions around a circle
+                const params = [
+                    { name: 'Uncertainty', value: quantumState.uncertainty, color: '#00d4ff', angle: 0, type: 'quantum', param: 'uncertainty' },
+                    { name: 'Coherence', value: quantumState.coherence, color: '#10b981', angle: Math.PI / 4, type: 'quantum', param: 'coherence' },
+                    { name: 'Entanglement', value: quantumState.entanglement, color: '#a855f7', angle: Math.PI / 2, type: 'quantum', param: 'entanglement' },
+                    { name: 'Curvature', value: grState.curvature, color: '#f59e0b', angle: 3 * Math.PI / 4, type: 'gr', param: 'curvature' },
+                    { name: 'Redshift', value: grState.redshift, color: '#ef4444', angle: Math.PI, type: 'gr', param: 'redshift' },
+                    { name: 'Hawking', value: advancedState.hawkingRadiation, color: '#ec4899', angle: 5 * Math.PI / 4, type: 'advanced', param: 'hawkingRadiation' },
+                    { name: 'Tunneling', value: advancedState.quantumTunneling, color: '#06b6d4', angle: 3 * Math.PI / 2, type: 'advanced', param: 'quantumTunneling' },
+                    { name: 'Ripples', value: advancedState.spacetimeRipples, color: '#8b5cf6', angle: 7 * Math.PI / 4, type: 'advanced', param: 'spacetimeRipples' }
+                ];
+                
+                // Clear and update parameter nodes
+                this.parameterNodes = [];
+                
+                // Draw parameter nodes
+                params.forEach(param => {
+                    const x = centerX + Math.cos(param.angle) * radius;
+                    const y = centerY + Math.sin(param.angle) * radius;
+                    const nodeRadius = 8 + param.value * 12;
+                    
+                    // Store node for interaction
+                    this.parameterNodes.push({
+                        x, y, 
+                        radius: nodeRadius,
+                        ...param
+                    });
+                    
+                    // Draw node
+                    ctx.beginPath();
+                    ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = param.color;
+                    ctx.fill();
+                    
+                    // Draw label
+                    ctx.fillStyle = '#e5e7eb';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(param.name, x, y + 25);
+                });
+                
+                // Draw connections based on parameter relationships
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                
+                // Quantum-GR connections
+                const uncertainty = params[0];
+                const curvature = params[3];
+                const coupling = uncertainty.value * curvature.value;
+                
+                if (coupling > 0.1) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + Math.cos(uncertainty.angle) * radius, centerY + Math.sin(uncertainty.angle) * radius);
+                    ctx.lineTo(centerX + Math.cos(curvature.angle) * radius, centerY + Math.sin(curvature.angle) * radius);
+                    ctx.lineWidth = coupling * 5;
+                    ctx.stroke();
+                }
+                
+                // Title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Interactive Parameter Network (Click & Drag)', 10, 20);
+            }
+            
+            drawPhysicsFlow() {
+                const canvas = this.physicsFlowCanvas;
+                const ctx = this.physicsFlowCtx;
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Get current parameter values
+                const { quantumState, grState, advancedState } = this.engine;
+                
+                // Define flow stages
+                const stages = [
+                    { name: 'Quantum Input', x: 50, y: height * 0.3, color: '#00d4ff' },
+                    { name: 'Eigenmode Process', x: width * 0.35, y: height * 0.5, color: '#ff3399' },
+                    { name: 'Physics Coupling', x: width * 0.65, y: height * 0.5, color: '#f59e0b' },
+                    { name: 'Sound Output', x: width - 50, y: height * 0.7, color: '#10b981' }
+                ];
+                
+                // Draw flow stages
+                stages.forEach(stage => {
+                    ctx.beginPath();
+                    ctx.arc(stage.x, stage.y, 15, 0, 2 * Math.PI);
+                    ctx.fillStyle = stage.color;
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#e5e7eb';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(stage.name, stage.x, stage.y + 25);
+                });
+                
+                // Draw flow arrows
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                
+                // Quantum to Eigenmode
+                const quantumFlow = (quantumState.uncertainty + quantumState.coherence + quantumState.entanglement) / 3;
+                ctx.beginPath();
+                ctx.moveTo(stages[0].x + 15, stages[0].y);
+                ctx.lineTo(stages[1].x - 15, stages[1].y);
+                ctx.lineWidth = 2 + quantumFlow * 3;
+                ctx.stroke();
+                
+                // Eigenmode to Physics
+                const eigenmodeFlow = this.engine.eigenmodeState.eigenmodeDensity;
+                ctx.beginPath();
+                ctx.moveTo(stages[1].x + 15, stages[1].y);
+                ctx.lineTo(stages[2].x - 15, stages[2].y);
+                ctx.lineWidth = 2 + eigenmodeFlow * 3;
+                ctx.stroke();
+                
+                // Physics to Sound
+                const outputFlow = (grState.curvature + grState.redshift + advancedState.vacuumFluctuations) / 3;
+                ctx.beginPath();
+                ctx.moveTo(stages[2].x + 15, stages[2].y);
+                ctx.lineTo(stages[3].x - 15, stages[3].y);
+                ctx.lineWidth = 2 + outputFlow * 3;
+                ctx.stroke();
+                
+                // Add physics effects indicators
+                if (advancedState.hawkingRadiation > 0.1) {
+                    ctx.fillStyle = '#ec4899';
+                    ctx.font = '8px Arial';
+                    ctx.fillText('Hawking Radiation', width * 0.5, height * 0.2);
+                }
+                
+                if (advancedState.quantumTunneling > 0.1) {
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillText('Quantum Tunneling', width * 0.5, height * 0.8);
+                }
+                
+                // Title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Physics Flow with Eigenmodes', 10, 20);
+            }
+            
+            drawEigenmode() {
+                const canvas = this.eigenmodeCanvas;
+                const ctx = this.eigenmodeCtx;
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Get eigenmode data
+                const eigenmodeData = this.engine.visualizationData.eigenmodeData;
+                if (!eigenmodeData) return;
+                
+                const { modes, amplitudes, phases, geometry } = eigenmodeData;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Draw geometry visualization
+                ctx.strokeStyle = '#ff3399';
+                ctx.fillStyle = 'rgba(255, 51, 153, 0.1)';
+                ctx.lineWidth = 2;
+                
+                switch (geometry) {
+                    case 'sphere':
+                        // Draw spherical harmonics pattern
+                        for (let i = 0; i < modes.length; i++) {
+                            const amplitude = amplitudes[i];
+                            const phase = phases[i];
+                            const radius = 30 + amplitude * 50;
+                            
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                            ctx.globalAlpha = amplitude * 0.3;
+                            ctx.fill();
+                            ctx.globalAlpha = 1;
+                            ctx.stroke();
+                        }
+                        break;
+                        
+                    case 'cube':
+                        // Draw box modes
+                        const size = 60;
+                        for (let i = 0; i < modes.length; i++) {
+                            const amplitude = amplitudes[i];
+                            const offset = amplitude * 20 * Math.sin(phases[i]);
+                            
+                            ctx.save();
+                            ctx.translate(centerX, centerY);
+                            ctx.rotate(phases[i] * 0.1);
+                            
+                            ctx.beginPath();
+                            ctx.rect(-size/2 + offset, -size/2 + offset, size, size);
+                            ctx.globalAlpha = amplitude * 0.3;
+                            ctx.fill();
+                            ctx.globalAlpha = 1;
+                            ctx.stroke();
+                            
+                            ctx.restore();
+                        }
+                        break;
+                        
+                    case 'torus':
+                        // Draw toroidal patterns
+                        for (let theta = 0; theta < 2 * Math.PI; theta += 0.1) {
+                            for (let i = 0; i < 4; i++) {
+                                const amplitude = amplitudes[i];
+                                const phase = phases[i];
+                                const R = 50;
+                                const r = 20 + amplitude * 15;
+                                
+                                const x = centerX + (R + r * Math.cos(theta + phase)) * Math.cos(theta * (i + 1));
+                                const y = centerY + (R + r * Math.cos(theta + phase)) * Math.sin(theta * (i + 1));
+                                
+                                ctx.beginPath();
+                                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                                ctx.fillStyle = `rgba(255, 51, 153, ${amplitude})`;
+                                ctx.fill();
+                            }
+                        }
+                        break;
+                        
+                    case 'klein':
+                        // Draw Klein bottle-inspired pattern
+                        for (let u = 0; u < 2 * Math.PI; u += 0.2) {
+                            for (let i = 0; i < modes.length; i++) {
+                                const amplitude = amplitudes[i];
+                                const phase = phases[i];
+                                
+                                const a = 3;
+                                const x = centerX + 20 * (a + Math.cos(u/2) * Math.sin(u + phase) - 
+                                         Math.sin(u/2) * Math.sin(2*u)) * amplitude;
+                                const y = centerY + 20 * (Math.sin(u/2) * Math.sin(u + phase) + 
+                                         Math.cos(u/2) * Math.sin(2*u)) * amplitude;
+                                
+                                ctx.beginPath();
+                                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                                ctx.fillStyle = `rgba(255, 51, 153, ${amplitude * 0.5})`;
+                                ctx.fill();
+                            }
+                        }
+                        break;
+                }
+                
+                // Add title
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Eigenmode Visualization: ${geometry}`, 10, 20);
+            }
+            
+            drawEigenspectrum() {
+                const canvas = this.eigenspectrumCanvas;
+                const ctx = this.eigenspectrumCtx;
+                const { width, height } = canvas;
+                
+                // Clear canvas
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Get eigenmode data
+                const eigenmodeData = this.engine.visualizationData.eigenmodeData;
+                if (!eigenmodeData) return;
+                
+                const { modes, amplitudes } = eigenmodeData;
+                
+                // Draw eigenfrequency spectrum
+                const barWidth = width / modes.length;
+                const maxFreq = Math.max(...modes.map(m => m.frequency));
+                
+                for (let i = 0; i < modes.length; i++) {
+                    const mode = modes[i];
+                    const amplitude = amplitudes[i];
+                    const barHeight = (mode.frequency / maxFreq) * height * 0.8;
+                    
+                    // Draw frequency bar
+                    ctx.fillStyle = `rgba(255, 51, 153, ${0.5 + amplitude * 0.5})`;
+                    ctx.fillRect(i * barWidth + 2, height - barHeight, barWidth - 4, barHeight);
+                    
+                    // Draw amplitude indicator
+                    const ampHeight = amplitude * height * 0.3;
+                    ctx.fillStyle = '#00d4ff';
+                    ctx.fillRect(i * barWidth + barWidth/3, height - barHeight - ampHeight - 5, 
+                               barWidth/3, ampHeight);
+                }
+                
+                // Add frequency labels
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '8px Arial';
+                ctx.textAlign = 'center';
+                for (let i = 0; i < Math.min(modes.length, 8); i++) {
+                    ctx.fillText(`${Math.round(modes[i].frequency)}Hz`, 
+                               i * barWidth + barWidth/2, height - 5);
+                }
+                
+                // Title
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Eigenfrequency Spectrum', 10, 20);
+            }
+            
+            updatePhysicsStates() {
+                const { quantumState, relativisticState } = this.engine.visualizationData;
+                
+                // Update quantum state indicators
+                document.getElementById('uncertaintyBar').style.width = `${quantumState.uncertainty * 100}%`;
+                document.getElementById('coherenceBar').style.width = `${quantumState.coherence * 100}%`;
+                document.getElementById('entanglementBar').style.width = `${quantumState.entanglement * 100}%`;
+                
+                document.getElementById('uncertaintyDisplay').textContent = `${Math.round(quantumState.uncertainty * 100)}%`;
+                document.getElementById('coherenceDisplay').textContent = `${Math.round(quantumState.coherence * 100)}%`;
+                document.getElementById('entanglementDisplay').textContent = `${Math.round(quantumState.entanglement * 100)}%`;
+                
+                // Update relativistic state indicators
+                document.getElementById('curvatureBar').style.width = `${relativisticState.curvature * 100}%`;
+                document.getElementById('dilationBar').style.width = `${relativisticState.dilation * 100}%`;
+                document.getElementById('redshiftBar').style.width = `${relativisticState.redshift * 100}%`;
+                
+                document.getElementById('curvatureDisplay').textContent = `${Math.round(relativisticState.curvature * 100)}%`;
+                document.getElementById('dilationDisplay').textContent = `${relativisticState.dilation.toFixed(2)}`;
+                document.getElementById('redshiftDisplay').textContent = `${relativisticState.redshift.toFixed(2)}`;
+            }
+            
+            updatePhysicsInteractions() {
+                const { quantumState, grState, advancedState } = this.engine;
+                
+                // Calculate physics interactions
+                const quantumGravity = quantumState.uncertainty * grState.curvature;
+                const entanglementRedshift = quantumState.entanglement * grState.redshift;
+                const coherenceTime = quantumState.coherence * grState.timeDilation;
+                
+                // Calculate advanced physics effects
+                const hawkingTemp = advancedState.hawkingRadiation * (1 + grState.horizonEffect * 0.5);
+                const tunnelingProb = advancedState.quantumTunneling * (1 - quantumState.coherence * 0.3);
+                const spacetimeDistortion = (grState.curvature + advancedState.spacetimeRipples * 0.5) * 
+                                          (1 + advancedState.darkEnergy * 0.3);
+                
+                // Update interaction displays
+                document.getElementById('quantumGravityValue').textContent = quantumGravity.toFixed(2);
+                document.getElementById('entanglementRedshiftValue').textContent = entanglementRedshift.toFixed(2);
+                document.getElementById('coherenceTimeValue').textContent = coherenceTime.toFixed(2);
+                
+                document.getElementById('hawkingTempValue').textContent = hawkingTemp.toFixed(2);
+                document.getElementById('tunnelingProbValue').textContent = tunnelingProb.toFixed(2);
+                document.getElementById('distortionValue').textContent = spacetimeDistortion.toFixed(2);
+                
+                // Color-code based on interaction strength
+                const updateInteractionColor = (elementId, value) => {
+                    const element = document.getElementById(elementId);
+                    if (value > 0.7) {
+                        element.style.color = '#ef4444';
+                        element.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                    } else if (value > 0.3) {
+                        element.style.color = '#f59e0b';
+                        element.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+                    } else {
+                        element.style.color = '#00d4ff';
+                        element.style.backgroundColor = 'rgba(0, 212, 255, 0.1)';
+                    }
+                };
+                
+                updateInteractionColor('quantumGravityValue', quantumGravity);
+                updateInteractionColor('hawkingTempValue', hawkingTemp);
+                updateInteractionColor('distortionValue', spacetimeDistortion);
+            }
+            
+            updateEigenmodeMetrics() {
+                const eigenmodeData = this.engine.visualizationData.eigenmodeData;
+                if (!eigenmodeData) return;
+                
+                const { modes, amplitudes, phases } = eigenmodeData;
+                const { eigenmodeState } = this.engine;
+                
+                // Calculate dominant eigenfrequency
+                let dominantIndex = 0;
+                let maxAmplitude = 0;
+                for (let i = 0; i < amplitudes.length; i++) {
+                    if (amplitudes[i] > maxAmplitude) {
+                        maxAmplitude = amplitudes[i];
+                        dominantIndex = i;
+                    }
+                }
+                const dominantFreq = modes[dominantIndex].frequency;
+                
+                // Calculate mode coherence
+                let phaseCoherence = 0;
+                for (let i = 1; i < phases.length; i++) {
+                    phaseCoherence += Math.cos(phases[i] - phases[i-1]);
+                }
+                phaseCoherence = Math.abs(phaseCoherence / (phases.length - 1));
+                
+                // Calculate eigenspace entropy
+                let entropy = 0;
+                const amplitudeSum = amplitudes.reduce((sum, amp) => sum + amp, 0); // <-- RENAMED VARIABLE
+                if (amplitudeSum > 0) {
+                    for (const amp of amplitudes) {
+                        if (amp > 0) {
+                            const p = amp / amplitudeSum;
+                            entropy -= p * Math.log(p);
+                        }
+                    }
+                    entropy = entropy / Math.log(amplitudes.length); // Normalize
+                }
+
+                // Calculate system metrics
+                const totalEnergy = amplitudes.reduce((sum, amp) => sum + amp * amp, 0) / amplitudes.length; // <-- This is now the only 'totalEnergy'
+                const systemComplexity = entropy * eigenmodeState.eigenvectorCoupling + eigenmodeState.nonlinearCoupling;
+                
+                // Update displays
+                document.getElementById('dominantEigenValue').textContent = `${Math.round(dominantFreq)}Hz`;
+                document.getElementById('modeCoherenceValue').textContent = phaseCoherence.toFixed(2);
+                document.getElementById('eigenEntropyValue').textContent = entropy.toFixed(2);
+                
+                document.getElementById('totalEnergyValue').textContent = totalEnergy.toFixed(2);
+                document.getElementById('phaseCoherenceValue').textContent = phaseCoherence.toFixed(2);
+                document.getElementById('complexityValue').textContent = systemComplexity.toFixed(2);
+            }
+            
+            updateUI() {
+                if (this.isUpdating) return;
+                this.isUpdating = true;
+                
+                const { quantumState, grState, soundState, advancedState, eigenmodeState } = this.engine;
+                
+                // Update quantum parameters
+                document.getElementById('uncertaintySlider').value = quantumState.uncertainty;
+                document.getElementById('uncertaintyValue').textContent = quantumState.uncertainty.toFixed(2);
+                
+                document.getElementById('coherenceSlider').value = quantumState.coherence;
+                document.getElementById('coherenceValue').textContent = quantumState.coherence.toFixed(2);
+                
+                document.getElementById('entanglementSlider').value = quantumState.entanglement;
+                document.getElementById('entanglementValue').textContent = quantumState.entanglement.toFixed(2);
+                
+                document.getElementById('wavePacketSlider').value = quantumState.wavePacketWidth;
+                document.getElementById('wavePacketValue').textContent = quantumState.wavePacketWidth.toFixed(2);
+                
+                // Update relativistic parameters
+                document.getElementById('curvatureSlider').value = grState.curvature;
+                document.getElementById('curvatureValue').textContent = grState.curvature.toFixed(2);
+                
+                document.getElementById('dilationSlider').value = grState.timeDilation;
+                document.getElementById('dilationValue').textContent = grState.timeDilation.toFixed(2);
+                
+                document.getElementById('redshiftSlider').value = grState.redshift;
+                document.getElementById('redshiftValue').textContent = grState.redshift.toFixed(2);
+                
+                document.getElementById('horizonSlider').value = grState.horizonEffect;
+                document.getElementById('horizonValue').textContent = grState.horizonEffect.toFixed(2);
+                
+                // Update sound parameters
+                document.getElementById('baseFreqSlider').value = soundState.baseFreq;
+                document.getElementById('baseFreqValue').textContent = `${soundState.baseFreq}Hz`;
+                
+                document.getElementById('harmonicsSlider').value = soundState.harmonics;
+                document.getElementById('harmonicsValue').textContent = soundState.harmonics;
+                
+                document.getElementById('amplitudeSlider').value = soundState.amplitude;
+                document.getElementById('amplitudeValue').textContent = soundState.amplitude.toFixed(2);
+                
+                document.getElementById('filterQSlider').value = soundState.filterQ;
+                document.getElementById('filterQValue').textContent = soundState.filterQ;
+
+                // Update advanced parameters
+                document.getElementById('decoherenceSlider').value = advancedState.decoherenceRate;
+                document.getElementById('decoherenceValue').textContent = advancedState.decoherenceRate.toFixed(2);
+                document.getElementById('vacuumSlider').value = advancedState.vacuumFluctuations;
+                document.getElementById('vacuumValue').textContent = advancedState.vacuumFluctuations.toFixed(2);
+                document.getElementById('hawkingSlider').value = advancedState.hawkingRadiation;
+                document.getElementById('hawkingValue').textContent = advancedState.hawkingRadiation.toFixed(2);
+                document.getElementById('cosmicSlider').value = advancedState.cosmicBackground;
+                document.getElementById('cosmicValue').textContent = advancedState.cosmicBackground.toFixed(2);
+                document.getElementById('tunnelingSlider').value = advancedState.quantumTunneling;
+                document.getElementById('tunnelingValue').textContent = advancedState.quantumTunneling.toFixed(2);
+                document.getElementById('ripplesSlider').value = advancedState.spacetimeRipples;
+                document.getElementById('ripplesValue').textContent = advancedState.spacetimeRipples.toFixed(2);
+                document.getElementById('darkEnergySlider').value = advancedState.darkEnergy;
+                document.getElementById('darkEnergyValue').textContent = advancedState.darkEnergy.toFixed(2);
+                document.getElementById('informationLossSlider').value = advancedState.informationLoss;
+                document.getElementById('informationLossValue').textContent = advancedState.informationLoss.toFixed(2);
+
+                // Update eigenmode parameters
+                document.getElementById('eigenmodeDensitySlider').value = eigenmodeState.eigenmodeDensity;
+                document.getElementById('eigenmodeDensityValue').textContent = eigenmodeState.eigenmodeDensity.toFixed(2);
+                document.getElementById('eigenvalueSpreadingSlider').value = eigenmodeState.eigenvalueSpreading;
+                document.getElementById('eigenvalueSpreadingValue').textContent = eigenmodeState.eigenvalueSpreading.toFixed(2);
+                document.getElementById('eigenvectorCouplingSlider').value = eigenmodeState.eigenvectorCoupling;
+                document.getElementById('eigenvectorCouplingValue').textContent = eigenmodeState.eigenvectorCoupling.toFixed(2);
+                document.getElementById('quantumEigenshiftSlider').value = eigenmodeState.quantumEigenshift;
+                document.getElementById('quantumEigenshiftValue').textContent = eigenmodeState.quantumEigenshift.toFixed(2);
+                document.getElementById('eigenspaceRotationSlider').value = eigenmodeState.eigenspaceRotation;
+                document.getElementById('eigenspaceRotationValue').textContent = eigenmodeState.eigenspaceRotation.toFixed(2);
+                document.getElementById('modalDampingSlider').value = eigenmodeState.modalDamping;
+                document.getElementById('modalDampingValue').textContent = eigenmodeState.modalDamping.toFixed(2);
+                document.getElementById('spectralFocusSlider').value = eigenmodeState.spectralFocus;
+                document.getElementById('spectralFocusValue').textContent = eigenmodeState.spectralFocus.toFixed(2);
+                document.getElementById('nonlinearCouplingSlider').value = eigenmodeState.nonlinearCoupling;
+                document.getElementById('nonlinearCouplingValue').textContent = eigenmodeState.nonlinearCoupling.toFixed(2);
+
+                // Update master controls
+                document.getElementById('volumeSlider').value = this.engine.masterVolume;
+                document.getElementById('volumeValue').textContent = `${Math.round(this.engine.masterVolume * 100)}%`;
+
+                document.getElementById('intensityBoostSlider').value = this.engine.intensityBoost;
+                document.getElementById('intensityBoostValue').textContent = `${Math.round(this.engine.intensityBoost * 100)}%`;
+
+                document.getElementById('dynamicRangeSlider').value = this.engine.dynamicRange;
+                document.getElementById('dynamicRangeValue').textContent = `${Math.round(this.engine.dynamicRange * 100)}%`;
+
+                // Update active buttons
+                const status = this.engine.getStatus();
+                this.updateActiveButton('.mode-btn', 'data-mode', status.physicsMode);
+                this.updateActiveButton('.normalization-btn', 'data-mode', status.normalizationMode);
+                this.updateActiveButton('.waveform-btn', 'data-waveform', status.waveform);
+                this.updateActiveButton('.eigengeometry-btn', 'data-geometry', status.eigenmodeGeometry);
+                this.updateActiveButton('.evolution-type-btn', 'data-type', this.engine.evolutionType);
+
+                this.updatePresetButtons();
+                
+                this.isUpdating = false;
+            }
+
+            updateActiveButton(selector, dataAttribute, value) {
+                document.querySelectorAll(selector).forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute(dataAttribute) === value);
+                });
+            }
+
+            async togglePlay() {
+                const playBtn = document.getElementById('playBtn');
+                const playIcon = document.getElementById('playIcon');
+                const playText = document.getElementById('playText');
+
+                if (this.engine.isPlaying) {
+                    this.engine.stop();
+                    playBtn.classList.remove('playing');
+                    playIcon.textContent = '▶';
+                    playText.textContent = 'Play';
+                } else {
+                    try {
+                        playBtn.classList.add('loading');
+                        await this.engine.play();
+                        playBtn.classList.add('playing');
+                        playIcon.textContent = '❚❚';
+                        playText.textContent = 'Stop';
+                    } catch (error) {
+                        alert('Failed to start audio. Please interact with the page (e.g., click "Init Audio") and try again.');
+                        console.error('Play error:', error);
+                    } finally {
+                        playBtn.classList.remove('loading');
+                    }
+                }
+            }
+
+            async toggleRecord() {
+                const recordBtn = document.getElementById('recordBtn');
+                const recordText = document.getElementById('recordText');
+
+                if (this.engine.isRecording) {
+                    this.engine.stopRecording();
+                    recordBtn.classList.remove('recording');
+                    recordText.textContent = 'Record';
+                } else {
+                    try {
+                        await this.engine.startRecording();
+                        recordBtn.classList.add('recording');
+                        recordText.textContent = 'Stop Recording';
+                    } catch (error) {
+                        alert('Failed to start recording.');
+                        console.error('Record error:', error);
+                    }
+                }
+            }
+
+            reset() {
+                this.engine.reset();
+                this.updateUI();
+                alert('All parameters have been reset to their default values.');
+            }
+
+            async testAudio() {
+                const btn = document.getElementById('testAudioBtn');
+                btn.classList.add('loading');
+                try {
+                    await this.engine.testAudio();
+                } catch (error) {
+                    alert('Audio test failed. Your browser might not support the Web Audio API or audio context is blocked.');
+                } finally {
+                    btn.classList.remove('loading');
+                }
+            }
+            
+            async initAudio() {
+                const btn = document.getElementById('initAudioBtn');
+                btn.classList.add('loading');
+                try {
+                    await this.engine.initializeAudio();
+                    alert('Audio context initialized successfully.');
+                } catch (error) {
+                    alert('Failed to initialize audio. Please ensure your browser is up-to-date and supports the Web Audio API.');
+                } finally {
+                    btn.classList.remove('loading');
+                    this.updateAudioStatus();
+                }
+            }
+
+            toggleInfo() {
+                const infoPanel = document.getElementById('infoPanel');
+                infoPanel.style.display = infoPanel.style.display === 'none' ? 'block' : 'none';
+            }
+
+            toggleEvolution() {
+                const btn = document.getElementById('evolutionBtn');
+                const enabled = !this.engine.evolutionEnabled;
+                this.engine.setEvolution(enabled);
+                btn.classList.toggle('active', enabled);
+                btn.querySelector('span:last-child').textContent = enabled ? 'Disable Evolution' : 'Enable Evolution';
+            }
+
+            exportSettings() {
+                this.engine.exportSettings();
+            }
+
+            async importSettings(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    await this.engine.importSettings(file);
+                    this.updateUI();
+                    alert('Preset imported successfully!');
+                } catch (error) {
+                    alert('Failed to import preset. The file may be invalid.');
+                    console.error('Import error:', error);
+                }
+                
+                // Reset file input
+                event.target.value = '';
+            }
+
+            downloadRecording() {
+                const audioPlayer = document.getElementById('audioPlayer');
+                if (!audioPlayer.src || audioPlayer.src === window.location.href) {
+                    alert('No recording available to download.');
+                    return;
+                }
+                const link = document.createElement('a');
+                link.href = audioPlayer.src;
+                link.download = `eigensound-recording-${new Date().toISOString()}.webm`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            deleteRecording() {
+                const audioPlayer = document.getElementById('audioPlayer');
+                const recordingPanel = document.getElementById('recordingPanel');
+                if (audioPlayer.src && audioPlayer.src !== window.location.href) {
+                    URL.revokeObjectURL(audioPlayer.src);
+                }
+                audioPlayer.src = '';
+                recordingPanel.style.display = 'none';
+                alert('Recording deleted.');
+            }
+
+            updateAudioStatus() {
+                const status = this.engine.getStatus();
+                const statusEl = document.getElementById('audioStatus');
+                let statusText = 'Audio: ';
+                switch(status.audioState) {
+                    case 'running': statusText += '✅ Running'; break;
+                    case 'suspended': statusText += '⏸️ Suspended'; break;
+                    case 'closed': statusText += '❌ Closed'; break;
+                    default: statusText += '❔ Not Initialized';
+                }
+                statusEl.textContent = statusText;
+            }
+        }
+
+        // --- Main Application Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const audioEngine = new AudioEngine();
+            const uiController = new UIController(audioEngine);
+
+            // Initial UI setup from default preset
+            audioEngine.loadPreset('custom');
+            uiController.updateUI();
+            
+            // Show a welcome/initialization message
+            const initBtn = document.getElementById('initAudioBtn');
+            const audioStatus = document.getElementById('audioStatus');
+            
+            setTimeout(() => {
+                if (!audioEngine.isAudioReady()) {
+                    audioStatus.innerHTML = 'Click "Init Audio" to start';
+                    initBtn.classList.add('btn-accent');
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>                
