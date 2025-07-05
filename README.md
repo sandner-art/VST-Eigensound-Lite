@@ -2,7 +2,7 @@
 
 **Quantum Mechanics Sonification for Scientific Exploration and Artistic Expression**
 
-[![Live Demo](https://img.shields.io/badge/🎵_Live_Demo-Try_Now-blue?style=for-the-badge)](https://sandner.art/VST-Eigensound-Lite)
+[![Live Demo](https://img.shields.io/badge/🎵_Live_Demo-Try_Now-blue?style=for-the-badge)](https://sandner-art.github.io/VST-Eigensound-Lite)
 [![Paper](https://img.shields.io/badge/📄_Research_Paper-Read-green?style=for-the-badge)](papers/P1/paper/)
 [![Documentation](https://img.shields.io/badge/📚_Docs-Guide-orange?style=for-the-badge)](docs/)
 
@@ -32,7 +32,7 @@ Please note that 'Lite' does not mean a lesser version of an app. Eigensound Lit
 
 ## Quick Start
 
-1. **[Try the Live Demo](https://sandner.art/VST-Eigensound-Lite)** - No installation required
+1. **[Try the Live Demo](https://sandner-art.github.io/VST-Eigensound-Lite)** - No installation required
 2. **Select a preset** (Particle in Box, Harmonic Oscillator, etc.)
 3. **Click "Excite System"** to hear quantum energy cascades
 4. **Drag on the visualization** to edit potential wells in real-time
@@ -155,7 +155,7 @@ Please ensure you understand and comply with these licenses when using or contri
 
 <div align="center">
 
-**[🎵 Try the Live Demo](https://sandner.art/VST-Eigensound-Lite)** | **[📄 Read the Paper](papers/P1/paper/)** | **[📚 Documentation](docs/)**
+**[🎵 Try the Live Demo](https://sandner-art.github.io/VST-Eigensound-Lite)** | **[📄 Read the Paper](papers/P1/paper/)** | **[📚 Documentation](docs/)**
 
 *Exploring the intersection of quantum physics, computer music, and human perception*
 
