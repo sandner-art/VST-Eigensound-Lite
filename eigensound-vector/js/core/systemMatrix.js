@@ -1,10 +1,9 @@
 // --- SystemMatrix Module ---
 // Manages the state and manipulation of the Hamiltonian matrix 'H'.
 
-import math from '../vendor/math-wrapper.js'; // <-- ADD THIS LINE
+import math from '../vendor/math-wrapper.js';
 
 export class SystemMatrix {
-    // ... rest of the file is the same as before ...
     constructor(size) {
         this.size = size;
         this.matrix = null; // This will hold the math.js matrix object
@@ -13,32 +12,24 @@ export class SystemMatrix {
     }
 
     initialize() {
-        // Create an identity matrix as a safe default
-        this.loadDiagonal();
+        this.loadDiagonal(); // Start with a simple, stable diagonal matrix
         console.log("SystemMatrix initialized.");
     }
 
     set(i, j, value) {
-        // Sets a value in the matrix.
-        // 'value' should be a complex number: math.complex(real, imag)
         const complexValue = math.complex(value.re, value.im);
         this.matrix.set([i, j], complexValue);
 
-        if (this.isHermitian) {
-            // Enforce H_ji = conjugate(H_ij)
-            if (i !== j) {
-                this.matrix.set([j, i], math.conj(complexValue));
-            }
+        if (this.isHermitian && i !== j) {
+            this.matrix.set([j, i], math.conj(complexValue));
         }
     }
     
     get(i, j) {
-        // Gets a value from the matrix.
         return this.matrix.get([i, j]);
     }
 
     getMatrix() {
-        // Returns the underlying math.js matrix object.
         return this.matrix;
     }
     
@@ -50,9 +41,10 @@ export class SystemMatrix {
             for (let i = 0; i < this.size; i++) {
                 for (let j = i; j < this.size; j++) {
                     if (i === j) {
-                        // Diagonal elements must be real for a Hermitian matrix
                         const val = newMatrix.get([i, i]);
-                        newMatrix.set([i, i], math.complex(val.re, 0));
+                        if (val.im !== 0) {
+                           newMatrix.set([i, i], math.complex(val.re, 0));
+                        }
                     } else {
                         const val = newMatrix.get([i, j]);
                         newMatrix.set([j, i], math.conj(val));
@@ -63,32 +55,31 @@ export class SystemMatrix {
         }
     }
 
-    // --- Preset Loaders ---
     loadDiagonal() {
         console.log("Loading Diagonal preset...");
-        const arr = Array.from({ length: this.size }, (_, i) => math.complex(0, (i + 1) * 2));
+        const arr = Array.from({ length: this.size }, (_, i) => math.complex(-0.1, (i + 1) * 1.5));
         this.matrix = math.diag(arr);
+        if (this.isHermitian) this.setHermitian(true);
     }
 
     loadTridiagonal() {
         console.log("Loading Tridiagonal preset...");
         this.matrix = math.zeros(this.size, this.size, 'dense');
         for (let i = 0; i < this.size; i++) {
-            this.set(i, i, math.complex(0, (i + 1) * 2.5)); // Main diagonal (frequency)
+            this.matrix.set([i, i], math.complex(-0.1, (i + 1) * 1.5));
             if (i < this.size - 1) {
-                const coupling = math.complex(0.5, 0); // Real coupling
-                this.set(i, i + 1, coupling);
-                // No need to set (i+1, i) if hermitian enforcement is on
+                const coupling = math.complex(0.5, 0);
+                this.matrix.set([i, i + 1], coupling);
             }
         }
-        if(this.isHermitian) this.setHermitian(true); // Ensure it's correct after building
+        if (this.isHermitian) this.setHermitian(true);
     }
 
     loadCirculant() {
         console.log("Loading Circulant preset...");
         this.loadTridiagonal();
-        // Add the wrap-around connection for the ring
         const coupling = math.complex(0.5, 0);
-        this.set(0, this.size - 1, coupling);
+        this.matrix.set([0, this.size - 1], coupling);
+        if (this.isHermitian) this.setHermitian(true);
     }
 }

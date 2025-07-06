@@ -1,22 +1,20 @@
 // --- AudioEngine Module ---
 // Manages all Web Audio API interactions, synthesis, and effects.
 
-import math from '../vendor/math-wrapper.js'; // <-- ADD THIS LINE
+import math from '../vendor/math-wrapper.js';
 
 const NOTE_LIFETIME = 4.0; // seconds
 
 export class AudioEngine {
-    // ... rest of the file is the same as before ...
     constructor() {
         this.audioContext = null;
         this.masterGain = null;
-        this.currentEigensystem = null; // Will be populated with { values, vectors }
+        this.currentEigensystem = null;
         this.activeNodes = [];
         this.isInitialized = false;
         console.log("AudioEngine initialized.");
     }
 
-    // --- Core Audio Setup ---
     async initializeAudio() {
         if (this.isInitialized) return;
         try {
@@ -24,7 +22,6 @@ export class AudioEngine {
             this.masterGain = this.audioContext.createGain();
             this.masterGain.gain.value = 0.5;
             this.masterGain.connect(this.audioContext.destination);
-            // Resume if suspended
             if (this.audioContext.state === 'suspended') {
                 await this.audioContext.resume();
             }
@@ -36,26 +33,28 @@ export class AudioEngine {
         }
     }
 
-    // --- Synthesizer Mode ---
     excite(excitationVector) {
         if (!this.isInitialized || !this.currentEigensystem) {
-            console.warn("Audio not ready or no eigensystem to play.");
-            if(!this.isInitialized) this.initializeAudio(); // Attempt to init on first interaction
+            if(!this.isInitialized) this.initializeAudio();
             return;
         }
 
         const { values, vectors } = this.currentEigensystem;
         const now = this.audioContext.currentTime;
 
-        // 1. Project excitationVector onto the eigenvectors to get initial amplitudes.
-        const exc = excitationVector || math.ones(values.length);
-        const amplitudes = math.multiply(math.inv(vectors), exc).toArray();
+        // --- THIS IS THE CRITICAL FIX ---
+        // Project excitationVector onto the eigenvectors to get initial amplitudes.
+        // math.multiply returns a column matrix (e.g., [[a1], [a2], ...])
+        // .flat() converts it to a simple array [a1, a2, ...]
+        const exc = excitationVector || Array(values.length).fill(1);
+        const amplitudes = math.multiply(math.inv(vectors), exc).toArray().flat();
+        // --- END OF FIX ---
 
-        console.log("Exciting system...");
-        
-        // Clean up any previously playing notes
-        this.activeNodes.forEach(node => node.gain.gain.cancelScheduledValues(now));
-        this.activeNodes.forEach(node => node.osc.stop(now));
+        this.activeNodes.forEach(node => {
+            node.gain.gain.cancelScheduledValues(now);
+            node.gain.gain.setTargetAtTime(0, now, 0.01);
+            node.osc.stop(now + 0.1);
+        });
         this.activeNodes = [];
 
         for (let i = 0; i < values.length; i++) {
@@ -64,38 +63,25 @@ export class AudioEngine {
 
             if (initialAmplitude < 0.001) continue;
 
-            // Map imaginary part to frequency (scaled for audible range)
-            const frequency = Math.abs(eigenvalue.im) * 50 + 100; // Scale to an audible range
-            // Map real part to decay rate
-            const decayRate = -eigenvalue.re; // Damping is negative of the real part
+            const frequency = Math.abs(eigenvalue.im) * 80 + 100;
+            const decayRate = -eigenvalue.re;
 
             const osc = this.audioContext.createOscillator();
             const gainNode = this.audioContext.createGain();
             
             osc.connect(gainNode);
             gainNode.connect(this.masterGain);
-
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(frequency, now);
+            osc.frequency.value = frequency;
 
-            // Set gain envelope based on amplitude and decay rate
             gainNode.gain.setValueAtTime(initialAmplitude, now);
-            
-            // Use setTargetAtTime for a more natural exponential decay
-            // The time constant is the inverse of the decay rate
             const timeConstant = 1 / Math.max(0.1, decayRate);
             gainNode.gain.setTargetAtTime(0.0001, now, timeConstant);
             
             osc.start(now);
             osc.stop(now + NOTE_LIFETIME);
-
             this.activeNodes.push({ osc, gain: gainNode });
         }
-        
-        // Remove nodes after they've finished playing
-        setTimeout(() => {
-            this.activeNodes = this.activeNodes.filter(n => n.osc.playbackState === 'playing');
-        }, NOTE_LIFETIME * 1000 + 200);
     }
 
     updateEigensystem(eigensystem) {

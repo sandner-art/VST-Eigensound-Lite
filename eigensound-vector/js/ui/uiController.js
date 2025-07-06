@@ -3,7 +3,6 @@
 
 import { MatrixView } from './matrixView.js';
 import { AnalysisView } from './analysisView.js';
-// The problematic import of AudioView has been removed.
 
 export class UIController {
     constructor(systemMatrix, eigenEngine, audioEngine) {
@@ -12,7 +11,6 @@ export class UIController {
         this.audioEngine = audioEngine;
         this.selectedCell = { i: 0, j: 0 };
 
-        // Instantiate all the view-specific controller modules
         this.matrixView = new MatrixView(
             document.getElementById('matrix-container'),
             this.handleMatrixSelection.bind(this)
@@ -21,28 +19,23 @@ export class UIController {
             document.getElementById('eigenvalue-plot-container'),
             document.getElementById('eigenvector-viewer-container')
         );
-        // this.audioView = new AudioView(document.getElementById('audio-visualizer-container')); // This remains commented out for future use.
-
         console.log("UIController initialized.");
     }
 
     initialize() {
         console.log("Initializing UI events and views...");
-        // Ensure audio is initialized on first user interaction
         document.body.addEventListener('click', () => this.audioEngine.initializeAudio(), { once: true });
         
         this.setupEventListeners();
-        this.triggerFullUpdate(); // Initial calculation
+        this.triggerFullUpdate();
     }
 
     setupEventListeners() {
         document.getElementById('excite-button').addEventListener('click', () => {
-            // A simple excitation vector (excites all modes somewhat equally)
             const excitationVector = Array(this.systemMatrix.size).fill(1);
             this.audioEngine.excite(excitationVector);
         });
         
-        // Preset buttons
         document.getElementById('preset-diagonal').addEventListener('click', () => {
             this.systemMatrix.loadDiagonal();
             this.triggerFullUpdate();
@@ -62,15 +55,8 @@ export class UIController {
         });
     }
 
-    /**
-     * This is the main callback function passed to the MatrixView.
-     * It gets called whenever the user clicks on a cell in the matrix grid.
-     */
     handleMatrixSelection(i, j) {
         this.selectedCell = { i, j };
-        this.matrixView.selectCell(i, j);
-        
-        // Simple interaction: click to increase coupling/damping
         const currentVal = this.systemMatrix.get(i, j);
         
         if (i === j) { // Diagonal: affect damping (real part)
@@ -81,13 +67,9 @@ export class UIController {
         this.triggerFullUpdate();
     }
 
-    /**
-     * A central function to re-calculate and re-draw everything.
-     */
     triggerFullUpdate() {
         const H = this.systemMatrix.getMatrix();
         
-        // Update the matrix view with fresh data first (reflects any changes from presets/toggles)
         this.matrixView.render(H);
         this.matrixView.selectCell(this.selectedCell.i, this.selectedCell.j);
 

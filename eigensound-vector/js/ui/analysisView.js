@@ -1,6 +1,8 @@
 // --- AnalysisView Module ---
 // Responsible for all visualizations in Panel 2 (eigen-analyzer).
 
+import math from '../vendor/math-wrapper.js';
+
 export class AnalysisView {
     constructor(plotContainer, vectorContainer) {
         this.plotContainer = plotContainer;
@@ -22,6 +24,12 @@ export class AnalysisView {
         this.hoveredIndex = -1;
 
         this.plotCanvas.addEventListener('mousemove', e => this.handleMouseMove(e));
+        this.plotCanvas.addEventListener('mouseleave', () => {
+            if (this.hoveredIndex !== -1) {
+                this.hoveredIndex = -1;
+                this.draw();
+            }
+        });
 
         console.log("AnalysisView initialized.");
     }
@@ -31,7 +39,7 @@ export class AnalysisView {
         this.plotCanvas.height = this.plotContainer.clientHeight;
         this.vectorCanvas.width = this.vectorContainer.clientWidth;
         this.vectorCanvas.height = this.vectorContainer.clientHeight;
-        if(this.lastEigensystem) this.update(this.lastEigensystem); // Redraw on resize
+        if(this.lastEigensystem) this.update(this.lastEigensystem);
     }
 
     update(eigensystem) {
@@ -50,32 +58,35 @@ export class AnalysisView {
         const { width, height } = this.plotCanvas;
         const values = this.lastEigensystem.values;
 
-        // Find data bounds for scaling
         let maxIm = 1, maxRe = 1;
         values.forEach(v => {
-            if (Math.abs(v.im) > maxIm) maxIm = Math.abs(v.im);
-            if (Math.abs(v.re) > maxRe) maxRe = Math.abs(v.re);
+            const val = math.complex(v);
+            if (Math.abs(val.im) > maxIm) maxIm = Math.abs(val.im);
+            if (Math.abs(val.re) > maxRe) maxRe = Math.abs(val.re);
         });
 
-        // Clear and draw background
         ctx.fillStyle = '#0c1323';
         ctx.fillRect(0, 0, width, height);
         ctx.strokeStyle = '#2a3a5e';
         ctx.lineWidth = 1;
 
-        // Draw axes
         const originX = width / 2;
         const originY = height / 2;
         ctx.beginPath();
-        ctx.moveTo(0, originY);
-        ctx.lineTo(width, originY); // Real axis (Damping)
-        ctx.moveTo(originX, 0);
-        ctx.lineTo(originX, height); // Imaginary axis (Frequency)
+        ctx.moveTo(0, originY); ctx.lineTo(width, originY);
+        ctx.moveTo(originX, 0); ctx.lineTo(originX, height);
         ctx.stroke();
 
-        // Plot eigenvalues
+        ctx.font = "10px sans-serif";
+        ctx.fillStyle = "#555";
+        ctx.textAlign = "left";
+        ctx.fillText("Frequency (Im)", originX + 5, 12);
+        ctx.textAlign = "right";
+        ctx.fillText("Damping (Re)", width - 5, originY - 5);
+
+
         for (let i = 0; i < values.length; i++) {
-            const v = values[i];
+            const v = math.complex(values[i]);
             const x = originX + (v.re / maxRe) * (originX * 0.9);
             const y = originY - (v.im / maxIm) * (originY * 0.9);
             
@@ -89,19 +100,24 @@ export class AnalysisView {
     drawEigenvectorViewer(index) {
         const ctx = this.vectorCtx;
         const { width, height } = this.vectorCanvas;
-        const vectors = this.lastEigensystem.vectors;
-
+        
         ctx.fillStyle = '#0c1323';
         ctx.fillRect(0, 0, width, height);
 
-        if (index < 0 || index >= vectors.length) {
+        if (!this.lastEigensystem || index < 0 || index >= this.lastEigensystem.vectors.length) {
             ctx.fillStyle = '#555';
             ctx.textAlign = 'center';
+            ctx.font = '12px sans-serif';
             ctx.fillText("Hover over an eigenvalue to see its mode shape", width / 2, height / 2);
             return;
         }
-
-        const vector = vectors.map(row => row[index]); // Get the column vector
+        
+        // --- THIS IS THE CRITICAL FIX ---
+        // Eigenvectors from math.eigs are the COLUMNS of the returned matrix.
+        // We need to extract the column corresponding to the index.
+        const vector = this.lastEigensystem.vectors.map(row => row[index]);
+        // --- END OF FIX ---
+        
         const barWidth = width / vector.length;
         
         let maxMag = 0;
@@ -111,13 +127,13 @@ export class AnalysisView {
         });
 
         for(let i=0; i<vector.length; i++) {
-            const val = vector[i];
+            const val = math.complex(vector[i]);
             const mag = math.abs(val);
-            const barHeight = maxMag > 0 ? (mag / maxMag) * (height * 0.9) : 0;
+            const barHeight = maxMag > 0 ? (mag / maxMag) * (height * 0.95) : 0;
             const hue = (math.arg(val) + Math.PI) / (2 * Math.PI) * 360;
 
             ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
-            ctx.fillRect(i * barWidth, height - barHeight, barWidth * 0.8, barHeight);
+            ctx.fillRect(i * barWidth + barWidth * 0.1, height - barHeight, barWidth * 0.8, barHeight);
         }
     }
     
@@ -131,23 +147,24 @@ export class AnalysisView {
         const values = this.lastEigensystem.values;
         let maxIm = 1, maxRe = 1;
         values.forEach(v => {
-            if (Math.abs(v.im) > maxIm) maxIm = Math.abs(v.im);
-            if (Math.abs(v.re) > maxRe) maxRe = Math.abs(v.re);
+            const val = math.complex(v);
+            if (Math.abs(val.im) > maxIm) maxIm = Math.abs(val.im);
+            if (Math.abs(val.re) > maxRe) maxRe = Math.abs(val.re);
         });
 
         const originX = this.plotCanvas.width / 2;
         const originY = this.plotCanvas.height / 2;
         
         let foundIndex = -1;
-        let min_dist = 10 * 10; // 10px radius
+        let min_dist_sq = 10 * 10;
 
         for (let i = 0; i < values.length; i++) {
-            const v = values[i];
+            const v = math.complex(values[i]);
             const x = originX + (v.re / maxRe) * (originX * 0.9);
             const y = originY - (v.im / maxIm) * (originY * 0.9);
             const dist_sq = (mouseX - x)**2 + (mouseY - y)**2;
-            if(dist_sq < min_dist){
-                min_dist = dist_sq;
+            if(dist_sq < min_dist_sq){
+                min_dist_sq = dist_sq;
                 foundIndex = i;
             }
         }
@@ -165,6 +182,11 @@ export class AnalysisView {
         ctx.fillRect(0, 0, width, height);
         ctx.fillStyle = '#e94560';
         ctx.textAlign = 'center';
+        ctx.font = '12px sans-serif';
         ctx.fillText("Error: Could not compute eigensystem.", width / 2, height / 2);
+        
+        const vecCtx = this.vectorCtx;
+        vecCtx.fillStyle = '#0c1323';
+        vecCtx.fillRect(0, 0, vecCtx.canvas.width, vecCtx.canvas.height);
     }
 }
