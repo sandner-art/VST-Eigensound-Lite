@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eigensound | vector v0.0.1</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>eigensound | vector</h1>
+        <p>An interactive laboratory for Eigen-Sonification.</p>
+    </header>
+
+    <main class="app-container">
+        <!-- Panel 1: System Forge -->
+        <section id="system-forge" class="panel">
+            <h2>1. The System Forge (Define H)</h2>
+            <div id="matrix-container" class="visualization-container">
+                <!-- Interactive Matrix Grid will be generated here -->
+            </div>
+            <div class="controls">
+                <h3>Matrix Presets</h3>
+                <button id="preset-diagonal">Diagonal</button>
+                <button id="preset-tridiagonal">Tridiagonal</button>
+                <button id="preset-circulant">Circulant</button>
+                <label><input type="checkbox" id="enforce-hermitian" checked> Enforce Hermitian</label>
+            </div>
+        </section>
+
+        <!-- Panel 2: Eigen-Analyzer -->
+        <section id="eigen-analyzer" class="panel">
+            <h2>2. The Eigen-Analyzer (Analyze H)</h2>
+            <div id="eigenvalue-plot-container" class="visualization-container">
+                <!-- Complex Eigenvalue Plot will be drawn here -->
+            </div>
+            <div id="eigenvector-viewer-container" class="visualization-container">
+                <!-- Eigenvector "Mode Shape" will be shown here -->
+            </div>
+        </section>
+
+        <!-- Panel 3: Audition Stage -->
+        <section id="audition-stage" class="panel">
+            <h2>3. The Audition Stage (Hear the Result)</h2>
+            <div class="controls">
+                <button id="mode-synth" class="active">Synthesizer</button>
+                <button id="mode-effect" disabled>Eigen-Filter (WIP)</button>
+                <button id="mic-toggle" disabled>Enable Mic</button>
+            </div>
+            <div id="audio-visualizer-container" class="visualization-container">
+                <!-- Spectrogram / Dual Spectrum will be drawn here -->
+            </div>
+            <div class="controls">
+                <button id="excite-button">EXCITE</button>
+                <label>Dry/Wet <input type="range" id="dry-wet-slider" min="0" max="1" step="0.01" value="0.5" disabled></label>
+            </div>
+        </section>
+    </main>
+
+    <!-- 
+      CORRECTED SCRIPT LOADING:
+      We only need ONE script tag with type="module".
+      It points to our main entry file. All other dependencies, 
+      including math.js, will be handled by the module loader.
+    -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
