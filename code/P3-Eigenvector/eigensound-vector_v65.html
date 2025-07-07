@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eigensound | vector v0.0.1</title>
+    <style>
+        /* --- Global Styles --- */
+        :root {
+            --bg-dark: #0c1323;
+            --bg-med: #16213e;
+            --bg-light: #1a1a2e;
+            --border-color: #0f3460;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0c0;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #e94560;
+            --accent-tertiary: #f9a826;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            color: var(--accent-primary);
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+        }
+
+        /* --- Layout --- */
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "forge analyzer"
+                "stage stage";
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        #system-forge { grid-area: forge; }
+        #eigen-analyzer { grid-area: analyzer; }
+        #audition-stage { grid-area: stage; }
+
+        .panel {
+            background-color: var(--bg-med);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: var(--accent-secondary);
+            font-size: 1.2rem;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .visualization-container {
+            background-color: var(--bg-dark);
+            border-radius: 4px;
+            position: relative;
+            flex-grow: 1;
+            min-height: 200px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            padding-top: 1rem;
+        }
+
+        button {
+            background: var(--border-color);
+            border: 1px solid var(--accent-primary);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1e457a;
+        }
+
+        button.active {
+            background-color: var(--accent-primary);
+            color: var(--bg-dark);
+            font-weight: bold;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- Matrix View Specifics --- */
+        #matrix-container {
+            display: grid;
+            padding: 10px;
+            gap: 5px;
+            min-height: 200px;
+        }
+        
+        .matrix-cell {
+            background-color: #333;
+            border: 1px solid #555;
+            cursor: pointer;
+            transition: background-color 0.1s, transform 0.1s;
+            text-align: center;
+            color: white;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+        }
+        
+        .matrix-cell.selected {
+            border: 2px solid var(--accent-tertiary);
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        /* --- Canvas Styles --- */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        input[type="range"] {
+            background: var(--bg-dark);
+            height: 5px;
+            border-radius: 3px;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .physics-panel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .synthesis-panel, .advanced-panel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        select {
+            background: var(--bg-med);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.3rem;
+            border-radius: 3px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .advanced-controls button {
+            margin-right: 0.5rem;
+        }
+
+        button.recording {
+            background-color: var(--accent-secondary);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .physics-controls label {
+            display: block;
+            margin: 0.8rem 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .physics-controls span {
+            float: right;
+            color: var(--accent-tertiary);
+            font-weight: bold;
+        }
+
+        .controls h3 {
+            margin: 0 1rem 0.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .controls span {
+            color: var(--accent-tertiary);
+            font-weight: bold;
+            margin-left: 0.3rem;
+        }
+
+        label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "forge"
+                    "analyzer"
+                    "stage";
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>eigensound | vector</h1>
+        <p>An interactive laboratory for Eigen-Sonification.</p>
+    </header>
+
+    <main class="app-container">
+        <!-- Panel 1: System Forge -->
+        <section id="system-forge" class="panel">
+            <h2>1. The System Forge (Define H)</h2>
+            <div id="matrix-container" class="visualization-container">
+                <!-- Interactive Matrix Grid will be generated here -->
+            </div>
+            <div class="controls">
+                <h3>Matrix Presets</h3>
+                <button id="preset-diagonal">Diagonal</button>
+                <button id="preset-tridiagonal">Tridiagonal</button>
+                <button id="preset-circulant">Circulant</button>
+                <label><input type="checkbox" id="enforce-hermitian" checked> Enforce Hermitian</label>
+                <label style="margin-left: 1rem;">
+                    Edit Sensitivity <input type="range" id="edit-sensitivity" min="0.1" max="3.0" step="0.1" value="1.0">
+                    <span id="sensitivity-value">1.0</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Panel 2: Eigen-Analyzer -->
+        <section id="eigen-analyzer" class="panel">
+            <h2>2. The Eigen-Analyzer (Analyze H)</h2>
+            <div id="eigenvalue-plot-container" class="visualization-container">
+                <!-- Complex Eigenvalue Plot will be drawn here -->
+            </div>
+            <div id="eigenvector-viewer-container" class="visualization-container">
+                <!-- Eigenvector "Mode Shape" will be shown here -->
+            </div>
+            <div class="controls">
+                <div id="eigenvalue-info" style="color: var(--text-secondary); font-size: 0.8rem; min-height: 1.2rem;">
+                    Hover over eigenvalues to see details
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel 3: Audition Stage -->
+        <section id="audition-stage" class="panel">
+            <h2>3. The Audition Stage (Hear the Result)</h2>
+            <div class="controls">
+                <button id="mode-synth" class="active">Synthesizer</button>
+                <button id="mode-effect">Eigen-Filter</button>
+                <button id="continuous-toggle">Start Continuous</button>
+                <label>Volume <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5"></label>
+            </div>
+            
+            <!-- Physics Parameters Panel -->
+            <div class="physics-panel" style="background: var(--bg-dark); border-radius: 4px; padding: 1rem; margin: 1rem 0;">
+                <h4 style="margin-top: 0; color: var(--accent-primary); font-size: 0.9rem;">Physics Parameters</h4>
+                <div class="physics-controls">
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Quantum Uncertainty <span id="uncertainty-value">0.10</span>
+                        <input type="range" id="uncertainty-slider" min="0" max="1" step="0.01" value="0.1">
+                    </label>
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Gravitational Curvature <span id="gravity-value">0.00</span>
+                        <input type="range" id="gravity-slider" min="-0.5" max="0.5" step="0.01" value="0">
+                    </label>
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Coupling Strength <span id="coupling-value">0.50</span>
+                        <input type="range" id="coupling-slider" min="0" max="1" step="0.01" value="0.5">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Synthesizer Settings Panel -->
+            <div class="synthesis-panel" style="background: var(--bg-dark); border-radius: 4px; padding: 1rem; margin: 1rem 0;">
+                <h4 style="margin-top: 0; color: var(--accent-secondary); font-size: 0.9rem;">Synthesis Engine</h4>
+                <div class="synthesis-controls">
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Synthesis Mode:
+                        <select id="synthesis-mode" style="background: var(--bg-med); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.3rem; margin-left: 0.5rem;">
+                            <option value="modal">Modal (Basic)</option>
+                            <option value="harmonic">Harmonic Series</option>
+                            <option value="inharmonic">Inharmonic</option>
+                            <option value="fm">FM Synthesis</option>
+                            <option value="additive">Additive</option>
+                        </select>
+                    </label>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                        <label><input type="checkbox" id="filter-synthesis"> Route through Eigen-Filter</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Controls Panel -->
+            <div class="advanced-panel" style="background: var(--bg-dark); border-radius: 4px; padding: 1rem; margin: 1rem 0;">
+                <h4 style="margin-top: 0; color: var(--accent-tertiary); font-size: 0.9rem;">Advanced Controls</h4>
+                <div class="advanced-controls">
+                    <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
+                        <button id="time-evolution-toggle">Start H(t) Evolution</button>
+                        <button id="record-toggle">🎙️ Record</button>
+                    </div>
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Evolution Rate <span id="evolution-rate-value">1.0</span>
+                        <input type="range" id="evolution-rate" min="0.1" max="5.0" step="0.1" value="1.0">
+                    </label>
+                </div>
+            </div>
+            
+            <div id="audio-visualizer-container" class="visualization-container">
+                <!-- Spectrogram / Modal Analysis will be drawn here -->
+            </div>
+            <div class="controls">
+                <button id="excite-button">EXCITE</button>
+                <button id="excite-impulse">IMPULSE</button>
+                <button id="excite-random">RANDOM</button>
+                <button id="excite-sweep">FREQUENCY SWEEP</button>
+                <label>Dry/Wet <input type="range" id="dry-wet-slider" min="0" max="1" step="0.01" value="0.5" disabled></label>
+            </div>
+            <div class="controls">
+                <div id="system-info" style="color: var(--text-secondary); font-size: 0.8rem;">
+                    Current system: Diagonal matrix (6×6)
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.2/math.min.js"></script>
+    <script>
+        // --- SystemMatrix Module ---
+        class SystemMatrix {
+            constructor(size) {
+                this.size = size;
+                this.matrix = null;
+                this.isHermitian = true;
+                this.initialize();
+            }
+
+            initialize() {
+                this.loadDiagonal();
+                console.log("SystemMatrix initialized with complex eigenvalues.");
+            }
+
+            set(i, j, value) {
+                const complexValue = math.complex(value.re, value.im);
+                this.matrix.set([i, j], complexValue);
+
+                if (this.isHermitian && i !== j) {
+                    this.matrix.set([j, i], math.conj(complexValue));
+                }
+            }
+            
+            get(i, j) {
+                return this.matrix.get([i, j]);
+            }
+
+            getMatrix() {
+                return this.matrix;
+            }
+            
+            setHermitian(isHermitian) {
+                this.isHermitian = isHermitian;
+                if (isHermitian) {
+                    // Create a proper matrix from the current one
+                    const matrixArray = this.matrix.toArray();
+                    const newMatrix = math.matrix(matrixArray);
+                    
+                    for (let i = 0; i < this.size; i++) {
+                        for (let j = i; j < this.size; j++) {
+                            if (i === j) {
+                                const val = newMatrix.get([i, i]);
+                                if (val.im !== 0) {
+                                   newMatrix.set([i, i], math.complex(val.re, 0));
+                                }
+                            } else {
+                                const val = newMatrix.get([i, j]);
+                                newMatrix.set([j, i], math.conj(val));
+                            }
+                        }
+                    }
+                    this.matrix = newMatrix;
+                }
+            }
+
+            loadDiagonal() {
+                console.log("Loading Diagonal preset...");
+                // Create proper complex numbers for the diagonal elements
+                const complexArray = [];
+                for (let i = 0; i < this.size; i++) {
+                    complexArray.push(math.complex(-0.1, (i + 1) * 1.5));
+                }
+                
+                // Create a zero matrix first
+                this.matrix = math.matrix(math.zeros(this.size, this.size, 'dense'));
+                
+                // Set diagonal elements manually to ensure complex numbers
+                for (let i = 0; i < this.size; i++) {
+                    this.matrix.set([i, i], complexArray[i]);
+                }
+                
+                console.log("Created diagonal matrix with complex eigenvalues");
+                if (this.isHermitian) this.setHermitian(true);
+            }
+
+            loadTridiagonal() {
+                console.log("Loading Tridiagonal preset...");
+                this.matrix = math.matrix(math.zeros(this.size, this.size, 'dense'));
+                for (let i = 0; i < this.size; i++) {
+                    this.matrix.set([i, i], math.complex(-0.1, (i + 1) * 1.5));
+                    if (i < this.size - 1) {
+                        const coupling = math.complex(0.5, 0);
+                        this.matrix.set([i, i + 1], coupling);
+                    }
+                }
+                if (this.isHermitian) this.setHermitian(true);
+            }
+
+            loadCirculant() {
+                console.log("Loading Circulant preset...");
+                this.loadTridiagonal();
+                const coupling = math.complex(0.5, 0);
+                this.matrix.set([0, this.size - 1], coupling);
+                if (this.isHermitian) this.setHermitian(true);
+            }
+        }
+
+        // --- EigenEngine Module ---
+        class EigenEngine {
+            constructor() {
+                console.log("EigenEngine ready.");
+                this.lastResult = null;
+            }
+
+            calculate(matrix) {
+                try {
+                    const eigensystem = math.eigs(matrix);
+                    
+                    this.lastResult = {
+                        values: eigensystem.values.toArray(),
+                        vectors: eigensystem.vectors.toArray(),
+                    };
+                    return this.lastResult;
+                } catch (error) {
+                    console.error("Eigen-decomposition failed:", error);
+                    return null;
+                }
+            }
+        }
+
+        // --- AudioEngine Module ---
+        const NOTE_LIFETIME = 4.0;
+
+        class AudioEngine {
+            constructor() {
+                this.audioContext = null;
+                this.masterGain = null;
+                this.currentEigensystem = null;
+                this.activeNodes = [];
+                this.isInitialized = false;
+                
+                // Continuous synthesis properties
+                this.continuousMode = false;
+                this.modalOscillators = [];
+                this.modalGains = [];
+                this.noiseSource = null;
+                this.noiseGain = null;
+                this.updateInterval = null;
+                
+                // Physics parameters
+                this.quantumUncertainty = 0.1;
+                this.gravitationalCurvature = 0.0;
+                this.couplingStrength = 0.5;
+                
+                // Synthesis settings
+                this.synthesisMode = 'modal'; // modal, harmonic, inharmonic, fm, additive
+                this.routeSynthesisThroughFilter = false;
+                
+                // Recording properties
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                
+                // Time evolution properties
+                this.timeEvolutionEnabled = false;
+                this.timeEvolutionInterval = null;
+                this.timeEvolutionStep = 0;
+                this.evolutionRate = 1.0;
+                this.previousEigensystem = null;
+                
+                // Eigen-Filter properties
+                this.eigenFilterMode = false;
+                this.inputStream = null;
+                this.inputGain = null;
+                this.analyser = null;
+                this.inputBuffer = new Float32Array(2048);
+                this.filteredBuffer = new Float32Array(2048);
+                this.convolver = null;
+                this.filterUpdateInterval = null;
+                
+                console.log("AudioEngine initialized.");
+            }
+
+            async initializeAudio() {
+                if (this.isInitialized) return;
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = 0.5;
+                    this.masterGain.connect(this.audioContext.destination);
+                    
+                    // Initialize noise source for quantum background
+                    this.setupQuantumNoise();
+                    
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    this.isInitialized = true;
+                    console.log("Audio context initialized successfully.");
+                } catch (e) {
+                    console.error("Failed to initialize audio context:", e);
+                    alert("Could not initialize audio. Please use a modern browser and allow audio permissions.");
+                }
+            }
+
+            setupQuantumNoise() {
+                // Create a quiet noise background representing quantum fluctuations
+                const bufferSize = this.audioContext.sampleRate * 2;
+                const noiseBuffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                
+                // Generate filtered noise
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = (Math.random() * 2 - 1) * 0.02; // Very quiet
+                }
+                
+                this.noiseSource = this.audioContext.createBufferSource();
+                this.noiseSource.buffer = noiseBuffer;
+                this.noiseSource.loop = true;
+                
+                this.noiseGain = this.audioContext.createGain();
+                this.noiseGain.gain.value = 0.0; // Start silent
+                
+                this.noiseSource.connect(this.noiseGain);
+                this.noiseGain.connect(this.masterGain);
+                this.noiseSource.start();
+            }
+
+            startContinuousMode() {
+                if (!this.isInitialized || !this.currentEigensystem) return;
+                
+                this.continuousMode = true;
+                this.stopAllTransientSounds();
+                this.createModalOscillators();
+                
+                // Enable quantum noise background
+                this.noiseGain.gain.setTargetAtTime(this.quantumUncertainty * 0.1, this.audioContext.currentTime, 0.1);
+                
+                // Start real-time parameter update loop
+                this.startParameterUpdateLoop();
+                
+                console.log("Continuous synthesis mode activated");
+            }
+
+            stopContinuousMode() {
+                this.continuousMode = false;
+                this.stopModalOscillators();
+                this.noiseGain.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.1);
+                
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+                
+                console.log("Continuous synthesis mode deactivated");
+            }
+
+            createModalOscillators() {
+                if (!this.currentEigensystem) return;
+                
+                this.stopModalOscillators();
+                const { values } = this.currentEigensystem;
+                
+                for (let i = 0; i < values.length; i++) {
+                    const eigenvalue = math.complex(values[i]);
+                    
+                    // Create oscillator and gain for each mode
+                    const osc = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Apply physics-based frequency mapping
+                    const baseFreq = this.calculateModalFrequency(eigenvalue, i);
+                    osc.frequency.value = baseFreq;
+                    
+                    // Different waveforms for different modes
+                    const waveforms = ['sine', 'triangle', 'sawtooth'];
+                    osc.type = waveforms[i % waveforms.length];
+                    
+                    // Initial amplitude based on eigenvalue properties
+                    const amplitude = this.calculateModalAmplitude(eigenvalue, i);
+                    gainNode.gain.value = amplitude;
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(this.masterGain);
+                    osc.start();
+                    
+                    this.modalOscillators.push(osc);
+                    this.modalGains.push(gainNode);
+                }
+            }
+
+            stopModalOscillators() {
+                this.modalOscillators.forEach(osc => {
+                    try { osc.stop(); } catch(e) {}
+                });
+                this.modalOscillators = [];
+                this.modalGains = [];
+            }
+
+            calculateModalFrequency(eigenvalue, modeIndex) {
+                const realPart = eigenvalue.re;
+                const imagPart = eigenvalue.im;
+                
+                // Base frequency from imaginary part
+                let baseFreq = 200 + Math.abs(imagPart) * 100;
+                
+                // Apply gravitational curvature (frequency warping)
+                if (this.gravitationalCurvature !== 0) {
+                    const redshift = 1 - this.gravitationalCurvature * 0.1;
+                    baseFreq *= redshift;
+                }
+                
+                // Add harmonic series offset
+                const frequency = baseFreq * (1 + modeIndex * 0.1);
+                
+                // Apply uncertainty broadening (slight frequency modulation)
+                const uncertainty = this.quantumUncertainty * 0.5;
+                const modulation = 1 + uncertainty * (Math.random() - 0.5) * 0.02;
+                
+                return Math.max(80, Math.min(2000, frequency * modulation));
+            }
+
+            calculateModalAmplitude(eigenvalue, modeIndex) {
+                const realPart = eigenvalue.re;
+                const imagPart = eigenvalue.im;
+                
+                // Amplitude based on eigenvalue magnitude and stability
+                const stability = Math.exp(realPart * 2); // More negative real part = lower amplitude
+                const magnitude = Math.abs(eigenvalue.im);
+                
+                // Base amplitude with mode-dependent scaling
+                let amplitude = stability * (0.1 + magnitude * 0.05) / Math.sqrt(this.modalOscillators.length + 1);
+                
+                // Apply coupling strength effects
+                amplitude *= (0.5 + this.couplingStrength * 0.5);
+                
+                return Math.max(0.001, Math.min(0.2, amplitude));
+            }
+
+            startParameterUpdateLoop() {
+                // Update oscillator parameters in real-time
+                this.updateInterval = setInterval(() => {
+                    if (!this.continuousMode || !this.currentEigensystem) return;
+                    
+                    this.updateModalParameters();
+                }, 50); // 20 Hz update rate
+            }
+
+            updateModalParameters() {
+                if (!this.currentEigensystem || this.modalOscillators.length === 0) return;
+                
+                const { values } = this.currentEigensystem;
+                const now = this.audioContext.currentTime;
+                
+                for (let i = 0; i < Math.min(values.length, this.modalOscillators.length); i++) {
+                    const eigenvalue = math.complex(values[i]);
+                    const osc = this.modalOscillators[i];
+                    const gain = this.modalGains[i];
+                    
+                    if (osc && gain) {
+                        // Update frequency
+                        const newFreq = this.calculateModalFrequency(eigenvalue, i);
+                        osc.frequency.setTargetAtTime(newFreq, now, 0.05);
+                        
+                        // Update amplitude
+                        const newAmp = this.calculateModalAmplitude(eigenvalue, i);
+                        gain.gain.setTargetAtTime(newAmp, now, 0.05);
+                    }
+                }
+            }
+
+            excite(excitationVector) {
+                if (this.continuousMode) {
+                    // In continuous mode, excitation modulates existing oscillators
+                    this.modulateModalAmplitudes(excitationVector);
+                } else {
+                    // Original transient excitation behavior
+                    this.createTransientExcitation(excitationVector);
+                }
+            }
+
+            modulateModalAmplitudes(excitationVector) {
+                if (!this.currentEigensystem || this.modalGains.length === 0) return;
+                
+                const now = this.audioContext.currentTime;
+                const exc = excitationVector || Array(this.modalGains.length).fill(1);
+                
+                for (let i = 0; i < Math.min(exc.length, this.modalGains.length); i++) {
+                    const gain = this.modalGains[i];
+                    if (gain) {
+                        const excitationLevel = Math.abs(exc[i]);
+                        const currentAmp = gain.gain.value;
+                        const targetAmp = currentAmp * (1 + excitationLevel * 2);
+                        
+                        // Quick attack, slower decay
+                        gain.gain.setTargetAtTime(Math.min(0.3, targetAmp), now, 0.01);
+                        gain.gain.setTargetAtTime(currentAmp, now + 0.1, 0.5);
+                    }
+                }
+            }
+
+            createTransientExcitation(excitationVector) {
+                // Original implementation for transient mode
+                if (!this.isInitialized || !this.currentEigensystem) {
+                    if(!this.isInitialized) this.initializeAudio();
+                    return;
+                }
+
+                const { values, vectors } = this.currentEigensystem;
+                const now = this.audioContext.currentTime;
+
+                const exc = excitationVector || Array(values.length).fill(1);
+                
+                let amplitudes;
+                try {
+                    const vectorMatrix = math.matrix(vectors);
+                    const excMatrix = math.matrix(exc);
+                    const invVectors = math.inv(vectorMatrix);
+                    const result = math.multiply(invVectors, excMatrix);
+                    
+                    if (result.toArray) {
+                        amplitudes = result.toArray().flat();
+                    } else if (Array.isArray(result)) {
+                        amplitudes = result.flat();
+                    } else {
+                        amplitudes = [result];
+                    }
+                } catch (error) {
+                    console.warn("Could not compute amplitudes, using uniform excitation:", error);
+                    amplitudes = Array(values.length).fill(1.0 / values.length);
+                }
+
+                this.activeNodes.forEach(node => {
+                    node.gain.gain.cancelScheduledValues(now);
+                    node.gain.gain.setTargetAtTime(0, now, 0.01);
+                    node.osc.stop(now + 0.1);
+                });
+                this.activeNodes = [];
+
+                for (let i = 0; i < values.length; i++) {
+                    const eigenvalue = math.complex(values[i]);
+                    const initialAmplitude = Math.abs(amplitudes[i]) / Math.sqrt(values.length);
+
+                    if (initialAmplitude < 0.01) continue;
+
+                    const frequency = this.calculateModalFrequency(eigenvalue, i);
+                    const decayRate = Math.max(0.1, -eigenvalue.re * 10);
+                    
+                    console.log(`Mode ${i}: λ=${eigenvalue.re.toFixed(3)}+${eigenvalue.im.toFixed(3)}i, f=${frequency.toFixed(1)}Hz, decay=${decayRate.toFixed(2)}`);
+
+                    const osc = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(this.masterGain);
+                    
+                    const waveforms = ['sine', 'triangle', 'sawtooth'];
+                    osc.type = waveforms[i % waveforms.length];
+                    osc.frequency.value = frequency;
+
+                    gainNode.gain.setValueAtTime(initialAmplitude * 0.3, now);
+                    const timeConstant = 1 / decayRate;
+                    gainNode.gain.setTargetAtTime(0.001, now, timeConstant);
+                    
+                    osc.start(now);
+                    osc.stop(now + NOTE_LIFETIME);
+                    this.activeNodes.push({ osc, gain: gainNode });
+                }
+            }
+
+            stopAllTransientSounds() {
+                const now = this.audioContext.currentTime;
+                this.activeNodes.forEach(node => {
+                    node.gain.gain.cancelScheduledValues(now);
+                    node.gain.gain.setTargetAtTime(0, now, 0.01);
+                    try { node.osc.stop(now + 0.1); } catch(e) {}
+                });
+                this.activeNodes = [];
+            }
+
+            updateEigensystem(eigensystem) {
+                this.currentEigensystem = eigensystem;
+                
+                if (this.continuousMode) {
+                    // Recreate oscillators with new eigensystem
+                    this.createModalOscillators();
+                }
+                
+                // Update filter kernel to keep filtering current with eigensystem changes
+                if (this.eigenFilterMode) {
+                    this.updateEigenFilterKernel();
+                }
+            }
+
+            setVolume(volume) {
+                if (this.masterGain) {
+                    this.masterGain.gain.value = volume;
+                    console.log("Volume set to:", volume);
+                }
+            }
+
+            // Physics parameter controls
+            setQuantumUncertainty(value) {
+                this.quantumUncertainty = value;
+                if (this.noiseGain && this.continuousMode) {
+                    this.noiseGain.gain.setTargetAtTime(value * 0.1, this.audioContext.currentTime, 0.1);
+                }
+            }
+
+            setGravitationalCurvature(value) {
+                this.gravitationalCurvature = value;
+            }
+
+            setCouplingStrength(value) {
+                this.couplingStrength = value;
+            }
+
+            // === EIGEN-FILTER IMPLEMENTATION ===
+            
+            async startEigenFilter() {
+                if (!this.isInitialized || !this.currentEigensystem) {
+                    console.warn("Cannot start Eigen-Filter: Audio not initialized or no eigensystem");
+                    return false;
+                }
+
+                try {
+                    // Request microphone access
+                    this.inputStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { 
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false 
+                        } 
+                    });
+                    
+                    // Create audio input chain
+                    const source = this.audioContext.createMediaStreamSource(this.inputStream);
+                    this.inputGain = this.audioContext.createGain();
+                    this.inputGain.gain.value = 2.0; // Boost input for more prominent filtering
+                    
+                    // Create analyser for input signal processing
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 2048;
+                    this.analyser.smoothingTimeConstant = 0.1; // Faster response
+                    
+                    // Create multiple filter stages for more dramatic effects
+                    this.createEigenFilterChain();
+                    
+                    // Connect audio chain with parallel processing
+                    source.connect(this.inputGain);
+                    this.inputGain.connect(this.analyser);
+                    
+                    // Connect to filter chain
+                    this.connectEigenFilterChain();
+                    
+                    this.eigenFilterMode = true;
+                    
+                    // Start real-time filter update loop
+                    this.startEigenFilterLoop();
+                    
+                    console.log("Eigen-Filter activated - enhanced modal processing");
+                    return true;
+                    
+                } catch (error) {
+                    console.error("Failed to start Eigen-Filter:", error);
+                    return false;
+                }
+            }
+
+            createEigenFilterChain() {
+                if (!this.currentEigensystem) return;
+                
+                const { values } = this.currentEigensystem;
+                this.filterNodes = [];
+                this.resonators = [];
+                
+                // Create individual resonant filters for each eigenmode
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    
+                    // Create resonant bandpass filter for this eigenmode
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    
+                    const frequency = this.calculateModalFrequency(eigenvalue, i);
+                    filter.frequency.value = Math.max(80, Math.min(8000, frequency));
+                    
+                    // Q factor based on eigenvalue stability
+                    const stability = Math.abs(eigenvalue.re);
+                    filter.Q.value = Math.max(0.5, Math.min(30, 5 + stability * 20)); // High Q for resonance
+                    
+                    // Gain based on eigenvalue-dependent filter function
+                    const gainNode = this.audioContext.createGain();
+                    gainNode.gain.value = this.eigenvalueFilterFunction(eigenvalue) * 3.0; // Amplify for prominence
+                    
+                    this.filterNodes.push({ filter, gain: gainNode, eigenvalue, index: i });
+                });
+                
+                // Create output mixer
+                this.filterMixer = this.audioContext.createGain();
+                this.filterMixer.gain.value = 0.7;
+                this.filterMixer.connect(this.masterGain);
+                
+                // Add nonlinear processor for more dramatic effects
+                this.createNonlinearProcessor();
+            }
+
+            createNonlinearProcessor() {
+                // Add waveshaping for more dramatic filtering effects
+                this.waveshaper = this.audioContext.createWaveShaper();
+                this.waveshaper.oversample = '4x';
+                
+                // Create nonlinear curve based on eigenvalue properties
+                this.updateNonlinearCurve();
+                
+                this.waveshaper.connect(this.filterMixer);
+            }
+
+            updateNonlinearCurve() {
+                if (!this.waveshaper || !this.currentEigensystem) return;
+                
+                const samples = 512;
+                const curve = new Float32Array(samples);
+                
+                // Create eigenvalue-dependent waveshaping curve
+                for (let i = 0; i < samples; i++) {
+                    const x = (i - samples/2) / (samples/2); // -1 to 1
+                    
+                    // Base saturation curve
+                    let y = Math.tanh(x * 2);
+                    
+                    // Add eigenvalue-dependent harmonics
+                    this.currentEigensystem.values.forEach((val, mode) => {
+                        const eigenvalue = math.complex(val);
+                        const harmonic = Math.sin(x * Math.PI * (mode + 1)) * Math.abs(eigenvalue.im) * 0.1;
+                        y += harmonic;
+                    });
+                    
+                    curve[i] = Math.tanh(y); // Keep in bounds
+                }
+                
+                this.waveshaper.curve = curve;
+            }
+
+            connectEigenFilterChain() {
+                if (!this.filterNodes || !this.inputGain) return;
+                
+                // Connect each eigenmode filter in parallel
+                this.filterNodes.forEach(node => {
+                    this.inputGain.connect(node.filter);
+                    node.filter.connect(node.gain);
+                    node.gain.connect(this.waveshaper);
+                });
+                
+                // Also add option to filter synthesized audio
+                if (this.continuousMode && this.modalGains.length > 0) {
+                    // Create mixer for synthesis + microphone
+                    this.synthMixer = this.audioContext.createGain();
+                    this.synthMixer.gain.value = 0.3; // Mix level
+                    
+                    // Connect modal oscillators to filter chain too
+                    this.modalGains.forEach(gain => {
+                        gain.disconnect(this.masterGain);
+                        gain.connect(this.synthMixer);
+                    });
+                    
+                    this.synthMixer.connect(this.inputGain); // Feed synthesis into filter chain
+                }
+            }
+
+            eigenvalueFilterFunction(eigenvalue) {
+                // Enhanced filter function for more prominent effects
+                const realPart = eigenvalue.re;
+                const imagPart = eigenvalue.im;
+                
+                // 1. Resonant Enhancement: emphasize eigenfrequencies dramatically
+                const resonantGain = 1.0 + Math.abs(imagPart) * 2.0; // Much stronger resonance
+                
+                // 2. Stability Filtering: create dramatic contrast between stable/unstable
+                const stabilityGain = realPart < -0.1 ? 3.0 : realPart > 0.1 ? 0.1 : 1.0;
+                
+                // 3. Gravitational frequency warping
+                const gravityGain = 1.0 - this.gravitationalCurvature * 0.3;
+                
+                // 4. Coupling-dependent amplification
+                const couplingGain = 0.5 + this.couplingStrength * 1.5;
+                
+                // 5. Quantum uncertainty adds randomness
+                const quantumNoise = 1.0 + (Math.random() - 0.5) * this.quantumUncertainty * 0.5;
+                
+                // Combine filter effects with much more dramatic range
+                return Math.max(0.01, Math.min(5.0, resonantGain * stabilityGain * gravityGain * couplingGain * quantumNoise));
+            }
+
+            startEigenFilterLoop() {
+                // Update filter parameters in real-time for dramatic changes
+                this.filterUpdateInterval = setInterval(() => {
+                    if (this.eigenFilterMode && this.currentEigensystem && this.filterNodes) {
+                        this.updateFilterParameters();
+                        this.updateNonlinearCurve();
+                    }
+                }, 100); // Faster updates for more responsive filtering
+            }
+
+            updateFilterParameters() {
+                if (!this.filterNodes) return;
+                
+                const now = this.audioContext.currentTime;
+                
+                this.filterNodes.forEach(node => {
+                    const { filter, gain, eigenvalue, index } = node;
+                    
+                    // Update frequency based on current eigenvalue
+                    const newFreq = this.calculateModalFrequency(eigenvalue, index);
+                    filter.frequency.setTargetAtTime(
+                        Math.max(80, Math.min(8000, newFreq)), 
+                        now, 
+                        0.05
+                    );
+                    
+                    // Update gain based on filter function
+                    const newGain = this.eigenvalueFilterFunction(eigenvalue);
+                    gain.gain.setTargetAtTime(newGain, now, 0.05);
+                    
+                    // Dynamic Q modulation for more interesting filtering
+                    const qModulation = 1.0 + Math.sin(now * 2 + index) * 0.5;
+                    const newQ = Math.max(0.5, Math.min(30, (5 + Math.abs(eigenvalue.re) * 20) * qModulation));
+                    filter.Q.setTargetAtTime(newQ, now, 0.1);
+                });
+            }
+        }
+
+        // --- MatrixView Module ---
+        class MatrixView {
+            constructor(container, onSelectionCallback) {
+                this.container = container;
+                this.onSelection = onSelectionCallback;
+                this.size = 0;
+                console.log("MatrixView initialized.");
+            }
+
+            render(matrix) {
+                const size = matrix.size()[0];
+                
+                if (size !== this.size) {
+                    this.size = size;
+                    this.container.innerHTML = '';
+                    this.container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                    this.container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+                    for (let i = 0; i < size; i++) {
+                        for (let j = 0; j < size; j++) {
+                            const cell = document.createElement('div');
+                            cell.className = 'matrix-cell';
+                            cell.dataset.i = i;
+                            cell.dataset.j = j;
+                            cell.addEventListener('click', () => this.onSelection(i, j));
+                            this.container.appendChild(cell);
+                        }
+                    }
+                }
+                this.updateValues(matrix);
+            }
+            
+            updateValues(matrix) {
+                let maxMag = 0;
+                matrix.forEach(value => {
+                    const mag = math.abs(value);
+                    if (mag > maxMag) maxMag = mag;
+                });
+
+                const cells = this.container.children;
+                for (const cell of cells) {
+                    const i = parseInt(cell.dataset.i);
+                    const j = parseInt(cell.dataset.j);
+                    const value = matrix.get([i, j]);
+                    
+                    // Ensure value is a proper complex number
+                    const complexValue = math.complex(value);
+                    const mag = math.abs(complexValue);
+                    
+                    const brightness = maxMag > 0 ? (mag / maxMag) * 100 : 0;
+                    const hue = (math.arg(complexValue) + Math.PI) / (2 * Math.PI) * 360;
+                    
+                    cell.style.backgroundColor = `hsl(${hue}, 80%, ${20 + brightness * 0.4}%)`;
+                    cell.title = `H[${i},${j}] = ${complexValue.re.toFixed(2)} + ${complexValue.im.toFixed(2)}j`;
+                }
+            }
+
+            selectCell(i, j) {
+                const cells = this.container.children;
+                for (const cell of cells) {
+                    cell.classList.remove('selected');
+                    if (parseInt(cell.dataset.i) === i && parseInt(cell.dataset.j) === j) {
+                        cell.classList.add('selected');
+                    }
+                }
+            }
+        }
+
+        // --- AnalysisView Module ---
+        class AnalysisView {
+            constructor(plotContainer, vectorContainer) {
+                this.plotContainer = plotContainer;
+                this.vectorContainer = vectorContainer;
+                this.infoElement = document.getElementById('eigenvalue-info');
+                
+                this.plotCanvas = document.createElement('canvas');
+                this.plotContainer.appendChild(this.plotCanvas);
+                this.plotCtx = this.plotCanvas.getContext('2d');
+
+                this.vectorCanvas = document.createElement('canvas');
+                this.vectorContainer.appendChild(this.vectorCanvas);
+                this.vectorCtx = this.vectorCanvas.getContext('2d');
+                
+                this.resizeObserver = new ResizeObserver(() => this.resize());
+                this.resizeObserver.observe(this.plotContainer);
+                this.resizeObserver.observe(this.vectorContainer);
+
+                this.lastEigensystem = null;
+                this.hoveredIndex = -1;
+
+                this.plotCanvas.addEventListener('mousemove', e => this.handleMouseMove(e));
+                this.plotCanvas.addEventListener('click', e => this.handleEigenvalueClick(e));
+                this.plotCanvas.addEventListener('mouseleave', () => {
+                    if (this.hoveredIndex !== -1) {
+                        this.hoveredIndex = -1;
+                        this.updateInfo(-1);
+                        this.draw();
+                    }
+                });
+
+                console.log("AnalysisView initialized.");
+            }
+
+            resize() {
+                this.plotCanvas.width = this.plotContainer.clientWidth;
+                this.plotCanvas.height = this.plotContainer.clientHeight;
+                this.vectorCanvas.width = this.vectorContainer.clientWidth;
+                this.vectorCanvas.height = this.vectorContainer.clientHeight;
+                if(this.lastEigensystem) this.update(this.lastEigensystem);
+            }
+
+            update(eigensystem) {
+                this.lastEigensystem = eigensystem;
+                this.draw();
+            }
+            
+            draw() {
+                if (!this.lastEigensystem) return;
+                this.drawEigenvaluePlot();
+                this.drawEigenvectorViewer(this.hoveredIndex);
+            }
+
+            drawEigenvaluePlot() {
+                const ctx = this.plotCtx;
+                const { width, height } = this.plotCanvas;
+                const values = this.lastEigensystem.values;
+
+                let maxIm = 1, maxRe = 1;
+                values.forEach(v => {
+                    const val = math.complex(v);
+                    if (Math.abs(val.im) > maxIm) maxIm = Math.abs(val.im);
+                    if (Math.abs(val.re) > maxRe) maxRe = Math.abs(val.re);
+                });
+
+                ctx.fillStyle = '#0c1323';
+                ctx.fillRect(0, 0, width, height);
+                ctx.strokeStyle = '#2a3a5e';
+                ctx.lineWidth = 1;
+
+                const originX = width / 2;
+                const originY = height / 2;
+                ctx.beginPath();
+                ctx.moveTo(0, originY); ctx.lineTo(width, originY);
+                ctx.moveTo(originX, 0); ctx.lineTo(originX, height);
+                ctx.stroke();
+
+                ctx.font = "10px sans-serif";
+                ctx.fillStyle = "#555";
+                ctx.textAlign = "left";
+                ctx.fillText("Frequency (Im)", originX + 5, 12);
+                ctx.textAlign = "right";
+                ctx.fillText("Damping (Re)", width - 5, originY - 5);
+
+                for (let i = 0; i < values.length; i++) {
+                    const v = math.complex(values[i]);
+                    const x = originX + (v.re / maxRe) * (originX * 0.9);
+                    const y = originY - (v.im / maxIm) * (originY * 0.9);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = i === this.hoveredIndex ? '#f9a826' : '#00d4ff';
+                    ctx.fill();
+                }
+            }
+
+            drawEigenvectorViewer(index) {
+                const ctx = this.vectorCtx;
+                const { width, height } = this.vectorCanvas;
+                
+                ctx.fillStyle = '#0c1323';
+                ctx.fillRect(0, 0, width, height);
+
+                if (!this.lastEigensystem || index < 0 || index >= this.lastEigensystem.vectors.length) {
+                    ctx.fillStyle = '#555';
+                    ctx.textAlign = 'center';
+                    ctx.font = '12px sans-serif';
+                    ctx.fillText("Hover over an eigenvalue to see its mode shape", width / 2, height / 2);
+                    return;
+                }
+                
+                try {
+                    const vector = this.lastEigensystem.vectors.map(row => row[index]);
+                    const barWidth = width / vector.length;
+                    
+                    let maxMag = 0;
+                    vector.forEach(v => {
+                        const complexV = math.complex(v);
+                        const mag = math.abs(complexV);
+                        if(mag > maxMag) maxMag = mag;
+                    });
+
+                    for(let i=0; i<vector.length; i++) {
+                        const val = math.complex(vector[i]);
+                        const mag = math.abs(val);
+                        const barHeight = maxMag > 0 ? (mag / maxMag) * (height * 0.95) : 0;
+                        const hue = (math.arg(val) + Math.PI) / (2 * Math.PI) * 360;
+
+                        ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+                        ctx.fillRect(i * barWidth + barWidth * 0.1, height - barHeight, barWidth * 0.8, barHeight);
+                    }
+                } catch (error) {
+                    console.error("Error drawing eigenvector:", error);
+                    ctx.fillStyle = '#e94560';
+                    ctx.textAlign = 'center';
+                    ctx.font = '12px sans-serif';
+                    ctx.fillText("Error displaying eigenvector", width / 2, height / 2);
+                }
+            }
+            
+            handleMouseMove(e) {
+                if (!this.lastEigensystem) return;
+
+                const rect = this.plotCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const values = this.lastEigensystem.values;
+                let maxIm = 1, maxRe = 1;
+                values.forEach(v => {
+                    const val = math.complex(v);
+                    if (Math.abs(val.im) > maxIm) maxIm = Math.abs(val.im);
+                    if (Math.abs(val.re) > maxRe) maxRe = Math.abs(val.re);
+                });
+
+                const originX = this.plotCanvas.width / 2;
+                const originY = this.plotCanvas.height / 2;
+                
+                let foundIndex = -1;
+                let min_dist_sq = 10 * 10;
+
+                for (let i = 0; i < values.length; i++) {
+                    const v = math.complex(values[i]);
+                    const x = originX + (v.re / maxRe) * (originX * 0.9);
+                    const y = originY - (v.im / maxIm) * (originY * 0.9);
+                    const dist_sq = (mouseX - x)**2 + (mouseY - y)**2;
+                    if(dist_sq < min_dist_sq){
+                        min_dist_sq = dist_sq;
+                        foundIndex = i;
+                    }
+                }
+
+                if(foundIndex !== this.hoveredIndex){
+                    this.hoveredIndex = foundIndex;
+                    this.updateInfo(foundIndex);
+                    this.draw();
+                }
+            }
+
+            updateInfo(index) {
+                if (!this.lastEigensystem || index < 0 || index >= this.lastEigensystem.values.length) {
+                    this.infoElement.textContent = "Hover over eigenvalues to see details • Click to excite mode";
+                    return;
+                }
+                
+                const eigenvalue = math.complex(this.lastEigensystem.values[index]);
+                const realPart = eigenvalue.re;
+                const imagPart = eigenvalue.im;
+                
+                // Calculate corresponding audio parameters
+                const baseFreq = 200 + Math.abs(imagPart) * 100;
+                const frequency = baseFreq * (1 + index * 0.1);
+                const decayRate = Math.max(0.1, -realPart * 10);
+                
+                this.infoElement.textContent = 
+                    `Mode ${index}: λ = ${realPart.toFixed(3)} + ${imagPart.toFixed(3)}i → ${frequency.toFixed(1)} Hz, decay = ${decayRate.toFixed(2)} • Click to excite!`;
+            }
+
+            handleEigenvalueClick(e) {
+                if (!this.lastEigensystem) return;
+                
+                const rect = this.plotCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const foundIndex = this.findEigenvalueIndex(mouseX, mouseY);
+                
+                if (foundIndex >= 0) {
+                    // Create targeted excitation for this eigenmode
+                    const excitationVector = Array(this.lastEigensystem.values.length).fill(0);
+                    excitationVector[foundIndex] = 2.0; // Strong excitation for this mode
+                    
+                    // Notify the UI controller to excite this mode
+                    if (window.esv && window.esv.audioEngine) {
+                        window.esv.audioEngine.excite(excitationVector);
+                        this.updateInfo(foundIndex);
+                        
+                        // Visual feedback - make the clicked eigenvalue flash
+                        this.flashEigenvalue(foundIndex);
+                        
+                        console.log(`Excited eigenmode ${foundIndex}`);
+                    }
+                }
+            }
+
+            findEigenvalueIndex(mouseX, mouseY) {
+                if (!this.lastEigensystem) return -1;
+                
+                const values = this.lastEigensystem.values;
+                let maxIm = 1, maxRe = 1;
+                values.forEach(v => {
+                    const val = math.complex(v);
+                    if (Math.abs(val.im) > maxIm) maxIm = Math.abs(val.im);
+                    if (Math.abs(val.re) > maxRe) maxRe = Math.abs(val.re);
+                });
+
+                const originX = this.plotCanvas.width / 2;
+                const originY = this.plotCanvas.height / 2;
+                
+                let foundIndex = -1;
+                let min_dist_sq = 15 * 15; // Larger click radius
+
+                for (let i = 0; i < values.length; i++) {
+                    const v = math.complex(values[i]);
+                    const x = originX + (v.re / maxRe) * (originX * 0.9);
+                    const y = originY - (v.im / maxIm) * (originY * 0.9);
+                    const dist_sq = (mouseX - x)**2 + (mouseY - y)**2;
+                    if(dist_sq < min_dist_sq){
+                        min_dist_sq = dist_sq;
+                        foundIndex = i;
+                    }
+                }
+                
+                return foundIndex;
+            }
+
+            flashEigenvalue(index) {
+                // Store original state and animate a flash effect
+                const originalHovered = this.hoveredIndex;
+                this.hoveredIndex = index;
+                this.draw();
+                
+                setTimeout(() => {
+                    this.hoveredIndex = originalHovered;
+                    this.draw();
+                }, 200);
+            }
+
+            showError() {
+                const ctx = this.plotCtx;
+                const { width, height } = this.plotCanvas;
+                ctx.fillStyle = '#0c1323';
+                ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#e94560';
+                ctx.textAlign = 'center';
+                ctx.font = '12px sans-serif';
+                ctx.fillText("Error: Could not compute eigensystem.", width / 2, height / 2);
+                
+                const vecCtx = this.vectorCtx;
+                vecCtx.fillStyle = '#0c1323';
+                vecCtx.fillRect(0, 0, vecCtx.canvas.width, vecCtx.canvas.height);
+            }
+        }
+
+        // --- AudioView Module ---
+        class AudioView {
+            constructor(container) {
+                this.container = container;
+                this.currentEigensystem = null;
+                this.audioEngine = null;
+                this.canvas = null;
+                this.ctx = null;
+                this.animationFrame = null;
+                
+                console.log("AudioView initialized.");
+                this.setMode('synthesizer');
+            }
+
+            setAudioEngine(audioEngine) {
+                this.audioEngine = audioEngine;
+            }
+
+            update(audioData) {
+                // Future implementation for real-time visualization
+            }
+
+            updateEigensystem(eigensystem) {
+                this.currentEigensystem = eigensystem;
+                if (this.mode === 'synthesizer') {
+                    this.displaySynthesizerInfo();
+                }
+            }
+
+            displaySynthesizerInfo() {
+                if (!this.currentEigensystem) return;
+                
+                // Create canvas for live visualization if it doesn't exist
+                if (!this.canvas) {
+                    this.setupCanvas();
+                }
+                
+                const { values } = this.currentEigensystem;
+                let infoHTML = '<div style="padding: 1rem; color: var(--text-secondary); position: relative;">';
+                infoHTML += '<h4 style="margin-top: 0; color: var(--accent-primary);">Modal Analysis</h4>';
+                
+                // Live synthesis status
+                if (this.audioEngine && this.audioEngine.continuousMode) {
+                    const synthMode = this.audioEngine.synthesisMode || 'modal';
+                    const isFiltered = this.audioEngine.routeSynthesisThroughFilter && this.audioEngine.eigenFilterMode;
+                    infoHTML += `<div style="color: var(--accent-tertiary); font-weight: bold; margin-bottom: 1rem;">`;
+                    infoHTML += `🎵 LIVE SYNTHESIS: ${synthMode.toUpperCase()}`;
+                    if (isFiltered) infoHTML += ' → EIGEN-FILTER';
+                    infoHTML += '</div>';
+                }
+                
+                // Time evolution status
+                if (this.audioEngine && this.audioEngine.timeEvolutionEnabled) {
+                    infoHTML += `<div style="color: var(--accent-secondary); font-weight: bold; margin-bottom: 1rem;">`;
+                    infoHTML += `🌀 H(t) EVOLUTION ACTIVE (rate: ${(this.audioEngine.evolutionRate || 1).toFixed(1)}x)</div>`;
+                }
+                
+                infoHTML += '<div style="max-height: 200px; overflow-y: auto;">';
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    const baseFreq = 200 + Math.abs(eigenvalue.im) * 100;
+                    const frequency = baseFreq * (1 + i * 0.1);
+                    const decayRate = Math.max(0.1, -eigenvalue.re * 10);
+                    
+                    // Calculate stability indicator
+                    const stability = eigenvalue.re < -0.05 ? 'stable' : eigenvalue.re > 0.05 ? 'unstable' : 'marginal';
+                    const stabilityColor = stability === 'stable' ? '#4CAF50' : stability === 'unstable' ? '#f44336' : '#FF9800';
+                    
+                    infoHTML += `<div style="margin: 0.5rem 0; font-size: 0.8rem; padding: 0.3rem; border-left: 3px solid ${stabilityColor};">`;
+                    infoHTML += `<strong>Mode ${i}:</strong> `;
+                    infoHTML += `<span style="color: var(--accent-tertiary);">${frequency.toFixed(1)} Hz</span> `;
+                    infoHTML += `<span style="color: ${stabilityColor};">(${stability})</span><br>`;
+                    infoHTML += `λ = ${eigenvalue.re.toFixed(3)} + ${eigenvalue.im.toFixed(3)}i, `;
+                    infoHTML += `decay = ${decayRate.toFixed(2)}`;
+                    infoHTML += '</div>';
+                });
+                infoHTML += '</div>';
+                
+                // Physics parameters readout
+                if (this.audioEngine) {
+                    infoHTML += '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.7rem;">';
+                    infoHTML += `Quantum: ${this.audioEngine.quantumUncertainty.toFixed(2)} | `;
+                    infoHTML += `Gravity: ${this.audioEngine.gravitationalCurvature.toFixed(2)} | `;
+                    infoHTML += `Coupling: ${this.audioEngine.couplingStrength.toFixed(2)}`;
+                    infoHTML += '</div>';
+                }
+                
+                infoHTML += '</div>';
+                
+                // Update the container but preserve the canvas
+                const existingCanvas = this.container.querySelector('canvas');
+                this.container.innerHTML = infoHTML;
+                if (existingCanvas) {
+                    this.container.appendChild(existingCanvas);
+                }
+            }
+
+            setupCanvas() {
+                this.canvas = document.createElement('canvas');
+                this.canvas.style.position = 'absolute';
+                this.canvas.style.top = '0';
+                this.canvas.style.left = '0';
+                this.canvas.style.width = '100%';
+                this.canvas.style.height = '100%';
+                this.canvas.style.pointerEvents = 'none';
+                this.canvas.style.opacity = '0.3';
+                
+                this.ctx = this.canvas.getContext('2d');
+                this.container.appendChild(this.canvas);
+                
+                // Start animation loop for live visualization
+                this.startVisualization();
+                
+                // Handle resize
+                const resizeObserver = new ResizeObserver(() => {
+                    this.canvas.width = this.container.clientWidth;
+                    this.canvas.height = this.container.clientHeight;
+                });
+                resizeObserver.observe(this.container);
+            }
+
+            startVisualization() {
+                const animate = () => {
+                    if (this.canvas && this.ctx) {
+                        this.drawModalActivity();
+                    }
+                    this.animationFrame = requestAnimationFrame(animate);
+                };
+                animate();
+            }
+
+            drawModalActivity() {
+                if (!this.canvas || !this.ctx || !this.currentEigensystem) return;
+                
+                const { width, height } = this.canvas;
+                if (width === 0 || height === 0) return;
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, width, height);
+                
+                // Only draw if continuous mode is active
+                if (!this.audioEngine || !this.audioEngine.continuousMode) return;
+                
+                const values = this.currentEigensystem.values;
+                const time = Date.now() * 0.001; // Convert to seconds
+                
+                // Draw modal activity as oscillating bars
+                const barWidth = width / values.length;
+                
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    
+                    // Calculate oscillation amplitude based on eigenvalue
+                    const frequency = Math.abs(eigenvalue.im) * 0.1 + 0.5;
+                    const amplitude = Math.exp(eigenvalue.re * 2) * 0.5; // Damping affects amplitude
+                    const phase = time * frequency + i * 0.5;
+                    
+                    // Calculate bar height
+                    const oscillation = Math.sin(phase) * amplitude;
+                    const barHeight = (0.5 + oscillation * 0.4) * height * 0.8;
+                    
+                    // Color based on frequency
+                    const hue = (frequency / 2) * 360;
+                    this.ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.6)`;
+                    
+                    // Draw bar
+                    const x = i * barWidth + barWidth * 0.1;
+                    const y = height - barHeight;
+                    this.ctx.fillRect(x, y, barWidth * 0.8, barHeight);
+                });
+                
+                // Draw frequency spectrum outline
+                this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    const frequency = Math.abs(eigenvalue.im);
+                    const normalizedFreq = Math.min(1, frequency / 10); // Normalize to 0-1
+                    const x = i * barWidth + barWidth * 0.5;
+                    const y = height - (normalizedFreq * height * 0.6);
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                
+                this.ctx.stroke();
+            }
+
+            setMode(mode) {
+                this.mode = mode;
+                console.log(`AudioView mode set to: ${mode}`);
+                
+                if (mode === 'synthesizer') {
+                    if (this.currentEigensystem) {
+                        this.displaySynthesizerInfo();
+                    } else {
+                        this.container.innerHTML = `
+                            <div style="color:#555; text-align:center; padding:2rem;">
+                                <h4>Synthesizer Mode</h4>
+                                <p>Click "Start Continuous" for live modal synthesis</p>
+                                <small>Or use EXCITE buttons for transient sounds</small>
+                            </div>`;
+                    }
+                } else if (mode === 'eigen-filter') {
+                    this.displayEigenFilterInfo();
+                    this.startEigenFilterVisualization();
+                } else {
+                    this.container.innerHTML = `<p style="color:#555; text-align:center; padding:2rem;">Unknown mode</p>`;
+                }
+            }
+
+            displayEigenFilterInfo() {
+                if (!this.canvas) {
+                    this.setupCanvas();
+                }
+                
+                let infoHTML = '<div style="padding: 1rem; color: var(--text-secondary); position: relative;">';
+                infoHTML += '<h4 style="margin-top: 0; color: var(--accent-secondary);">Eigen-Filter Active</h4>';
+                
+                infoHTML += '<div style="color: var(--accent-tertiary); font-weight: bold; margin-bottom: 1rem;">';
+                infoHTML += '🎤 LIVE EIGEN-FILTER PROCESSING</div>';
+                
+                infoHTML += '<p style="font-size: 0.85rem; line-height: 1.4;">Input audio is processed through ';
+                infoHTML += 'parallel resonant filters tuned to eigenfrequencies. Each eigenmode creates ';
+                infoHTML += 'a bandpass filter with Q and gain determined by eigenvalue properties.</p>';
+                
+                // Show synthesis routing status
+                if (this.audioEngine && this.audioEngine.routeSynthesisThroughFilter && this.audioEngine.continuousMode) {
+                    infoHTML += '<div style="background: var(--bg-med); padding: 0.5rem; border-radius: 3px; margin: 1rem 0;">';
+                    infoHTML += '<strong>🔀 SYNTHESIS ROUTING:</strong> Modal oscillators → Eigen-Filter → Output';
+                    infoHTML += '</div>';
+                }
+                
+                if (this.currentEigensystem) {
+                    const { values } = this.currentEigensystem;
+                    infoHTML += '<div style="margin-top: 1rem;"><strong>Active Filter Modes:</strong></div>';
+                    infoHTML += '<div style="max-height: 150px; overflow-y: auto; font-size: 0.75rem;">';
+                    
+                    values.forEach((val, i) => {
+                        const eigenvalue = math.complex(val);
+                        const frequency = 200 + Math.abs(eigenvalue.im) * 100;
+                        const stability = eigenvalue.re < 0 ? 'stable' : 'unstable';
+                        const stabilityColor = stability === 'stable' ? '#4CAF50' : '#f44336';
+                        
+                        infoHTML += `<div style="margin: 0.3rem 0; border-left: 2px solid ${stabilityColor}; padding-left: 0.5rem;">`;
+                        infoHTML += `Filter ${i}: ${frequency.toFixed(0)}Hz (${stability})</div>`;
+                    });
+                    
+                    infoHTML += '</div>';
+                }
+                
+                infoHTML += '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.7rem;">';
+                infoHTML += 'Try changing matrix parameters to hear real-time filter changes</div>';
+                
+                infoHTML += '</div>';
+                
+                // Update the container but preserve the canvas
+                const existingCanvas = this.container.querySelector('canvas');
+                this.container.innerHTML = infoHTML;
+                if (existingCanvas) {
+                    this.container.appendChild(existingCanvas);
+                }
+            }
+
+            startEigenFilterVisualization() {
+                // Enhanced visualization for eigen-filter mode
+                this.eigenFilterVizActive = true;
+            }
+
+            drawModalActivity() {
+                if (!this.canvas || !this.ctx || !this.currentEigensystem) return;
+                
+                const { width, height } = this.canvas;
+                if (width === 0 || height === 0) return;
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, width, height);
+                
+                if (this.mode === 'eigen-filter' && this.audioEngine && this.audioEngine.eigenFilterMode) {
+                    // Draw eigen-filter visualization
+                    this.drawEigenFilterActivity(width, height);
+                } else if (this.audioEngine && this.audioEngine.continuousMode) {
+                    // Draw synthesizer visualization
+                    this.drawSynthesizerActivity(width, height);
+                }
+            }
+
+            drawEigenFilterActivity(width, height) {
+                const filterState = this.audioEngine.getEigenFilterState();
+                if (!filterState) return;
+                
+                const { inputSpectrum, filterStates, synthesisRouted } = filterState;
+                const values = this.currentEigensystem.values;
+                
+                // Draw input spectrum as background
+                this.ctx.fillStyle = 'rgba(0, 212, 255, 0.1)';
+                const spectrumWidth = width / inputSpectrum.length;
+                
+                for (let i = 0; i < inputSpectrum.length; i++) {
+                    const magnitude = inputSpectrum[i] / 255;
+                    const barHeight = magnitude * height * 0.3;
+                    this.ctx.fillRect(i * spectrumWidth, height - barHeight, spectrumWidth, barHeight);
+                }
+                
+                // Draw filter bank responses
+                if (filterStates && filterStates.length > 0) {
+                    const barWidth = width / filterStates.length;
+                    
+                    filterStates.forEach((filterState, i) => {
+                        const eigenvalue = math.complex(filterState.eigenvalue);
+                        
+                        // Filter activity visualization
+                        const filterActivity = filterState.gain * filterState.Q * 0.01;
+                        const barHeight = Math.min(height * 0.8, filterActivity * height);
+                        
+                        // Color coding: stable = green, unstable = red
+                        const hue = eigenvalue.re < 0 ? 120 : 0;
+                        this.ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.8)`;
+                        
+                        const x = i * barWidth + barWidth * 0.1;
+                        const y = height - barHeight;
+                        this.ctx.fillRect(x, y, barWidth * 0.8, barHeight);
+                        
+                        // Draw Q factor as line thickness
+                        const filterFreq = filterState.frequency / 8000; // Normalize to 0-1
+                        const markerX = filterFreq * width;
+                        this.ctx.strokeStyle = `hsla(${hue}, 70%, 60%, 0.9)`;
+                        this.ctx.lineWidth = Math.max(1, Math.min(5, filterState.Q * 0.2));
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(markerX, height * 0.7);
+                        this.ctx.lineTo(markerX, height);
+                        this.ctx.stroke();
+                    });
+                }
+                
+                // Show synthesis routing indicator
+                if (synthesisRouted) {
+                    this.ctx.fillStyle = 'rgba(249, 168, 38, 0.8)';
+                    this.ctx.font = '10px sans-serif';
+                    this.ctx.fillText('SYNTHESIS → FILTER', width - 120, 15);
+                }
+                
+                // Draw title
+                this.ctx.fillStyle = 'rgba(233, 69, 96, 0.8)';
+                this.ctx.font = '12px sans-serif';
+                this.ctx.fillText('Enhanced Eigen-Filter Bank', 10, 20);
+            }
+
+            drawSynthesizerActivity(width, height) {
+                const values = this.currentEigensystem.values;
+                const time = Date.now() * 0.001;
+                
+                // Draw modal activity as oscillating bars
+                const barWidth = width / values.length;
+                
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    
+                    // Calculate oscillation amplitude based on eigenvalue
+                    const frequency = Math.abs(eigenvalue.im) * 0.1 + 0.5;
+                    const amplitude = Math.exp(eigenvalue.re * 2) * 0.5;
+                    const phase = time * frequency + i * 0.5;
+                    
+                    // Calculate bar height
+                    const oscillation = Math.sin(phase) * amplitude;
+                    const barHeight = (0.5 + oscillation * 0.4) * height * 0.8;
+                    
+                    // Color based on frequency
+                    const hue = (frequency / 2) * 360;
+                    this.ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.6)`;
+                    
+                    // Draw bar
+                    const x = i * barWidth + barWidth * 0.1;
+                    const y = height - barHeight;
+                    this.ctx.fillRect(x, y, barWidth * 0.8, barHeight);
+                });
+                
+                // Draw frequency spectrum outline
+                this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                
+                values.forEach((val, i) => {
+                    const eigenvalue = math.complex(val);
+                    const frequency = Math.abs(eigenvalue.im);
+                    const normalizedFreq = Math.min(1, frequency / 10);
+                    const x = i * barWidth + barWidth * 0.5;
+                    const y = height - (normalizedFreq * height * 0.6);
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                });
+                
+                this.ctx.stroke();
+            }
+
+            destroy() {
+                if (this.animationFrame) {
+                    cancelAnimationFrame(this.animationFrame);
+                }
+            }
+        }
+
+        // --- UIController Module ---
+        class UIController {
+            constructor(systemMatrix, eigenEngine, audioEngine) {
+                this.systemMatrix = systemMatrix;
+                this.eigenEngine = eigenEngine;
+                this.audioEngine = audioEngine;
+                this.selectedCell = { i: 0, j: 0 };
+                this.editSensitivity = 1.0; // User-adjustable parameter change sensitivity
+
+                this.matrixView = new MatrixView(
+                    document.getElementById('matrix-container'),
+                    this.handleMatrixSelection.bind(this)
+                );
+                this.analysisView = new AnalysisView(
+                    document.getElementById('eigenvalue-plot-container'),
+                    document.getElementById('eigenvector-viewer-container')
+                );
+                this.audioView = new AudioView(
+                    document.getElementById('audio-visualizer-container')
+                );
+                this.audioView.setAudioEngine(this.audioEngine);
+                console.log("UIController initialized.");
+            }
+
+            initialize() {
+                console.log("Initializing UI events and views...");
+                document.body.addEventListener('click', () => this.audioEngine.initializeAudio(), { once: true });
+                
+                this.setupEventListeners();
+                this.triggerFullUpdate();
+                
+                // Initialize system info display
+                this.updateSystemInfo("Application initialized");
+            }
+
+            setupEventListeners() {
+                // Mode switching
+                document.getElementById('mode-synth').addEventListener('click', () => {
+                    this.setAudioMode('synthesizer');
+                });
+                
+                document.getElementById('mode-effect').addEventListener('click', () => {
+                    this.setAudioMode('eigen-filter');
+                });
+
+                // Volume control
+                document.getElementById('volume-slider').addEventListener('input', (e) => {
+                    this.audioEngine.setVolume(parseFloat(e.target.value));
+                });
+
+                // Continuous synthesis toggle
+                document.getElementById('continuous-toggle').addEventListener('click', (e) => {
+                    const button = e.target;
+                    if (this.audioEngine.continuousMode) {
+                        this.audioEngine.stopContinuousMode();
+                        button.textContent = 'Start Continuous';
+                        button.classList.remove('active');
+                        this.updateSystemInfo("Continuous synthesis stopped");
+                    } else {
+                        this.audioEngine.startContinuousMode();
+                        button.textContent = 'Stop Continuous';
+                        button.classList.add('active');
+                        this.updateSystemInfo("Continuous synthesis active - matrix changes affect live sound");
+                    }
+                });
+
+                // Physics parameter controls
+                document.getElementById('uncertainty-slider').addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    this.audioEngine.setQuantumUncertainty(value);
+                    document.getElementById('uncertainty-value').textContent = value.toFixed(2);
+                    this.updateSystemInfo(`Quantum uncertainty: ${value.toFixed(2)} (spectral noise level)`);
+                });
+
+                document.getElementById('gravity-slider').addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    this.audioEngine.setGravitationalCurvature(value);
+                    document.getElementById('gravity-value').textContent = value.toFixed(2);
+                    const effect = value > 0 ? 'redshift' : value < 0 ? 'blueshift' : 'neutral';
+                    this.updateSystemInfo(`Gravitational curvature: ${value.toFixed(2)} (${effect})`);
+                });
+
+                document.getElementById('coupling-slider').addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    this.audioEngine.setCouplingStrength(value);
+                    document.getElementById('coupling-value').textContent = value.toFixed(2);
+                    this.updateSystemInfo(`Coupling strength: ${value.toFixed(2)} (modal interaction level)`);
+                });
+
+                // Excitation buttons
+                document.getElementById('excite-button').addEventListener('click', () => {
+                    const excitationVector = Array(this.systemMatrix.size).fill(1);
+                    this.audioEngine.excite(excitationVector);
+                    this.updateSystemInfo("Uniform excitation applied");
+                });
+                
+                document.getElementById('excite-impulse').addEventListener('click', () => {
+                    const excitationVector = Array(this.systemMatrix.size).fill(0);
+                    excitationVector[0] = 1; // Single impulse at first mode
+                    this.audioEngine.excite(excitationVector);
+                    this.updateSystemInfo("Impulse excitation at mode 0");
+                });
+                
+                document.getElementById('excite-random').addEventListener('click', () => {
+                    const excitationVector = Array(this.systemMatrix.size).fill(0).map(() => Math.random() - 0.5);
+                    this.audioEngine.excite(excitationVector);
+                    this.updateSystemInfo("Random excitation applied");
+                });
+
+                document.getElementById('excite-sweep').addEventListener('click', () => {
+                    // Sequential mode excitation for frequency sweep
+                    this.performFrequencySweep();
+                });
+                
+                // Preset buttons
+                document.getElementById('preset-diagonal').addEventListener('click', () => {
+                    this.systemMatrix.loadDiagonal();
+                    this.triggerFullUpdate();
+                    this.updateSystemInfo("Diagonal matrix loaded");
+                });
+                document.getElementById('preset-tridiagonal').addEventListener('click', () => {
+                    this.systemMatrix.loadTridiagonal();
+                    this.triggerFullUpdate();
+                    this.updateSystemInfo("Tridiagonal matrix loaded");
+                });
+                document.getElementById('preset-circulant').addEventListener('click', () => {
+                    this.systemMatrix.loadCirculant();
+                    this.triggerFullUpdate();
+                    this.updateSystemInfo("Circulant matrix loaded");
+                });
+                
+                document.getElementById('enforce-hermitian').addEventListener('change', (e) => {
+                    this.systemMatrix.setHermitian(e.target.checked);
+                    this.triggerFullUpdate();
+                    this.updateSystemInfo(`Hermitian constraint: ${e.target.checked ? 'ON' : 'OFF'}`);
+                });
+
+                // Edit sensitivity control
+                document.getElementById('edit-sensitivity').addEventListener('input', (e) => {
+                    this.editSensitivity = parseFloat(e.target.value);
+                    document.getElementById('sensitivity-value').textContent = this.editSensitivity.toFixed(1);
+                    this.updateSystemInfo(`Edit sensitivity: ${this.editSensitivity.toFixed(1)}x (affects parameter change magnitude)`);
+                });
+
+                // Synthesizer settings
+                document.getElementById('synthesis-mode').addEventListener('change', (e) => {
+                    this.audioEngine.setSynthesisMode(e.target.value);
+                    this.updateSystemInfo(`Synthesis mode: ${e.target.value}`);
+                });
+
+                document.getElementById('filter-synthesis').addEventListener('change', (e) => {
+                    this.audioEngine.routeSynthesisThroughFilter = e.target.checked;
+                    this.updateSystemInfo(`Synthesis → Eigen-Filter: ${e.target.checked ? 'ON' : 'OFF'}`);
+                });
+
+                // Recording controls
+                document.getElementById('record-toggle').addEventListener('click', (e) => {
+                    const button = e.target;
+                    if (this.audioEngine.isRecording) {
+                        this.audioEngine.stopRecording();
+                        button.textContent = '🎙️ Record';
+                        button.classList.remove('active');
+                        this.updateSystemInfo("Recording stopped and downloaded");
+                    } else {
+                        if (this.audioEngine.startRecording()) {
+                            button.textContent = '⏹️ Stop Recording';
+                            button.classList.add('active');
+                            this.updateSystemInfo("Recording started - all audio output being captured");
+                        } else {
+                            this.updateSystemInfo("Failed to start recording");
+                        }
+                    }
+                });
+
+                // Advanced physics controls
+                document.getElementById('time-evolution-toggle').addEventListener('click', (e) => {
+                    const button = e.target;
+                    if (this.audioEngine.timeEvolutionEnabled) {
+                        this.audioEngine.enableTimeEvolution(false);
+                        button.textContent = 'Start H(t) Evolution';
+                        button.classList.remove('active');
+                        this.updateSystemInfo("Time evolution stopped - matrix is static");
+                    } else {
+                        this.audioEngine.enableTimeEvolution(true);
+                        button.textContent = 'Stop H(t) Evolution';
+                        button.classList.add('active');
+                        this.updateSystemInfo("Time evolution active - matrix H(t) is dynamically changing");
+                    }
+                });
+
+                document.getElementById('evolution-rate').addEventListener('input', (e) => {
+                    const rate = parseFloat(e.target.value);
+                    this.audioEngine.evolutionRate = rate;
+                    document.getElementById('evolution-rate-value').textContent = rate.toFixed(1);
+                    this.updateSystemInfo(`Evolution rate: ${rate.toFixed(1)}x (speed of H(t) changes)`);
+                });
+            }
+
+            performFrequencySweep() {
+                if (!this.audioEngine.currentEigensystem) return;
+                
+                const modes = this.audioEngine.currentEigensystem.values.length;
+                let currentMode = 0;
+                
+                const sweepInterval = setInterval(() => {
+                    if (currentMode >= modes) {
+                        clearInterval(sweepInterval);
+                        this.updateSystemInfo("Frequency sweep completed");
+                        return;
+                    }
+                    
+                    const excitationVector = Array(modes).fill(0);
+                    excitationVector[currentMode] = 1;
+                    this.audioEngine.excite(excitationVector);
+                    
+                    this.updateSystemInfo(`Frequency sweep: mode ${currentMode} of ${modes}`);
+                    currentMode++;
+                }, 800); // 800ms between modes
+            }
+
+            updateSystemInfo(message) {
+                const infoElement = document.getElementById('system-info');
+                if (infoElement) {
+                    infoElement.textContent = message;
+                    // Reset to default after 3 seconds
+                    setTimeout(() => {
+                        infoElement.textContent = `Current system: ${this.getMatrixTypeDescription()} (${this.systemMatrix.size}×${this.systemMatrix.size})`;
+                    }, 3000);
+                }
+            }
+
+            setAudioMode(mode) {
+                const synthButton = document.getElementById('mode-synth');
+                const filterButton = document.getElementById('mode-effect');
+                
+                if (mode === 'synthesizer') {
+                    // Switch to synthesizer mode
+                    synthButton.classList.add('active');
+                    filterButton.classList.remove('active');
+                    
+                    this.audioEngine.stopEigenFilter();
+                    this.audioView.setMode('synthesizer');
+                    this.updateSystemInfo("Switched to Synthesizer mode");
+                    
+                } else if (mode === 'eigen-filter') {
+                    // Switch to eigen-filter mode
+                    synthButton.classList.remove('active');
+                    filterButton.classList.add('active');
+                    
+                    this.audioEngine.stopContinuousMode(); // Stop synthesis first
+                    document.getElementById('continuous-toggle').textContent = 'Start Continuous';
+                    document.getElementById('continuous-toggle').classList.remove('active');
+                    
+                    // Start eigen-filter
+                    this.audioEngine.startEigenFilter().then(success => {
+                        if (success) {
+                            this.audioView.setMode('eigen-filter');
+                            this.updateSystemInfo("Eigen-Filter active - speak/play audio to hear modal filtering");
+                        } else {
+                            this.updateSystemInfo("Failed to start Eigen-Filter - microphone access required");
+                            // Fall back to synthesizer mode
+                            setTimeout(() => this.setAudioMode('synthesizer'), 2000);
+                        }
+                    });
+                }
+            }
+
+            getMatrixTypeDescription() {
+                // Simple heuristic to determine matrix type
+                const H = this.systemMatrix.getMatrix();
+                let offDiagonalCount = 0;
+                let isTridiagonal = true;
+                
+                for (let i = 0; i < this.systemMatrix.size; i++) {
+                    for (let j = 0; j < this.systemMatrix.size; j++) {
+                        if (i !== j) {
+                            const val = H.get([i, j]);
+                            if (math.abs(val) > 1e-10) {
+                                offDiagonalCount++;
+                                if (Math.abs(i - j) > 1 && !(i === 0 && j === this.systemMatrix.size - 1) && !(j === 0 && i === this.systemMatrix.size - 1)) {
+                                    isTridiagonal = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (offDiagonalCount === 0) return "Diagonal";
+                if (isTridiagonal && offDiagonalCount <= 2 * (this.systemMatrix.size - 1)) return "Tridiagonal";
+                if (H.get([0, this.systemMatrix.size - 1]).re !== 0 || H.get([this.systemMatrix.size - 1, 0]).re !== 0) return "Circulant";
+                return "Custom";
+            }
+
+            handleMatrixSelection(i, j) {
+                this.selectedCell = { i, j };
+                const currentVal = this.systemMatrix.get(i, j);
+                
+                // Use edit sensitivity for scaling parameter changes
+                const sensitivity = this.editSensitivity;
+                
+                if (i === j) { 
+                    // Diagonal: significantly affect eigenvalue real/imaginary parts
+                    const realDelta = (Math.random() - 0.5) * 0.2 * sensitivity;
+                    const imagDelta = (Math.random() - 0.5) * 2.0 * sensitivity; // Frequency changes
+                    this.systemMatrix.set(i, j, { 
+                        re: currentVal.re + realDelta, 
+                        im: currentVal.im + imagDelta 
+                    });
+                    this.updateSystemInfo(`Eigenvalue ${i} shifted: Δf≈${(imagDelta*100).toFixed(0)}Hz (sens: ${sensitivity.toFixed(1)})`);
+                } else { 
+                    // Off-diagonal: dramatically affect coupling strength
+                    const couplingDelta = (Math.random() - 0.5) * 1.5 * sensitivity;
+                    this.systemMatrix.set(i, j, { 
+                        re: currentVal.re + couplingDelta, 
+                        im: currentVal.im + couplingDelta * 0.3 
+                    });
+                    this.updateSystemInfo(`Coupling [${i},${j}] modified: Δ=${couplingDelta.toFixed(2)} (sens: ${sensitivity.toFixed(1)})`);
+                }
+                this.triggerFullUpdate();
+            }
+
+            triggerFullUpdate() {
+                const H = this.systemMatrix.getMatrix();
+                
+                this.matrixView.render(H);
+                this.matrixView.selectCell(this.selectedCell.i, this.selectedCell.j);
+
+                const eigensystem = this.eigenEngine.calculate(H);
+
+                if (eigensystem) {
+                    this.analysisView.update(eigensystem);
+                    this.audioEngine.updateEigensystem(eigensystem);
+                    this.audioView.updateEigensystem(eigensystem);
+                } else {
+                    this.analysisView.showError();
+                }
+            }
+        }
+
+        // --- Main Application ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Initializing eigensound|vector...");
+
+            try {
+                const matrixSize = 6;
+                const systemMatrix = new SystemMatrix(matrixSize);
+                const eigenEngine = new EigenEngine();
+                const audioEngine = new AudioEngine();
+                const ui = new UIController(systemMatrix, eigenEngine, audioEngine);
+
+                ui.initialize();
+
+                console.log("eigensound|vector initialized successfully.");
+                console.log("🎵 COMPLETE EIGEN-SONIFICATION LABORATORY:");
+                console.log("   🎛️  SYNTHESIS: Choose from 5 synthesis modes (Modal, Harmonic, Inharmonic, FM, Additive)");
+                console.log("   🎤 EIGEN-FILTER: Real-time audio processing through eigensystem resonances");
+                console.log("   🎙️  RECORDING: Capture and download your eigen-compositions");
+                console.log("   ⚡ INTERACTIONS: Click eigenvalues to excite modes, adjust edit sensitivity");
+                console.log("   🌀 TIME EVOLUTION: Animate H(t) for dynamic soundscapes");
+                console.log("   🔬 PHYSICS: Quantum uncertainty, gravitational curvature, coupling strength");
+                console.log("   📊 PHASE TRANSITIONS: Automatic detection of eigenvalue bifurcations");
+                console.log("");
+                console.log("🚀 Quick Start:");
+                console.log("   1. Click 'Start Continuous' for live modal synthesis");
+                console.log("   2. Try different Matrix Presets and Synthesis Modes");
+                console.log("   3. Click 'Eigen-Filter' to process live audio through your eigensystem");
+                console.log("   4. Enable 'H(t) Evolution' for dynamic mathematical soundscapes");
+                console.log("");
+                window.esv = { systemMatrix, eigenEngine, audioEngine, ui };
+
+            } catch (error) {
+                console.error("Fatal error during initialization:", error);
+                console.error("Stack trace:", error.stack);
+                document.body.innerHTML = `
+                    <h1 style="color:red">Error Initializing Application</h1>
+                    <p>Error: ${error.message}</p>
+                    <p style="font-family:monospace; white-space:pre-wrap; font-size:12px;">${error.stack}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
