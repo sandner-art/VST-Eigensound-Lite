@@ -2,7 +2,7 @@
 
 **Quantum Mechanics Sonification for Scientific Exploration and Artistic Expression**
 
-[![Live Demo](https://img.shields.io/badge/🎵_Live_Demo-Try_Now-blue?style=for-the-badge)](https://sandner.art/VST-Eigensound-Lite)
+[![Live Demo](https://img.shields.io/badge/🎵_Live_Demo-Try_Now-blue?style=for-the-badge)](https://sandner-art.github.io/VST-Eigensound-Lite)
 [![Version](https://img.shields.io/badge/Version-0.2.0-green?style=for-the-badge)](#)
 [![Research](https://img.shields.io/badge/📄_Research_Paper-Read-orange?style=for-the-badge)](../papers/P1/paper/)
 
