@@ -14,11 +14,12 @@
 
 This documentation covers all aspects of Eigensound Lite, from basic usage to advanced quantum physics concepts. Whether you're a scientist, musician, educator, or curious explorer, you'll find guides tailored to your needs.
 
-### 🎯 Quick Navigation
+### 🎯 Quick Navigation 
 
 | **Document** | **Audience** | **Description** |
 |--------------|-------------|-----------------|
 | **[User Guide](user-guide.md)** | Everyone | Complete walkthrough of all features and scientific concepts |
+| **[User Guide eigensound - vector](user-guide-eigensound-vector.md)** | Everyone | Research of eigenvectors and eigenvalues sonification |
 | **[Features](features.md)** | Developers, Researchers | Comprehensive feature list with technical details |
 | **[Tips & Exploration](tips.md)** | Musicians, Scientists | Practical tips for creative and scientific exploration |
 
