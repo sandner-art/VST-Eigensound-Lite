@@ -719,31 +719,67 @@
             }
 
             calculateModalFrequency(eigenvalue, modeIndex) {
-                const realPart = eigenvalue.re;
-                const imagPart = eigenvalue.im;
-                
-                // Base frequency from imaginary part with validation
-                let baseFreq = 200 + Math.abs(imagPart || 0) * 100;
-                
-                // Apply gravitational curvature (frequency warping)
-                if (this.gravitationalCurvature !== 0) {
-                    const redshift = 1 - this.gravitationalCurvature * 0.1;
-                    baseFreq *= Math.max(0.1, redshift); // Prevent negative frequencies
-                }
-                
-                // Add harmonic series offset
-                const frequency = baseFreq * (1 + modeIndex * 0.1);
-                
-                // Apply uncertainty broadening (slight frequency modulation)
-                const uncertainty = this.quantumUncertainty * 0.5;
-                const modulation = 1 + uncertainty * (Math.random() - 0.5) * 0.02;
-                
-                // Validate and clamp frequency to reasonable range
-                const finalFreq = Math.max(80, Math.min(2000, frequency * modulation));
-                
-                // Ensure finite value
-                return isFinite(finalFreq) ? finalFreq : 440; // Default to A4 if invalid
-            }
+                            const imagPart = eigenvalue.im || 0;
+                            let frequency;
+
+                            // The fundamental frequency, often derived from the first eigenmode,
+                            // is used as a base for harmonic and inharmonic modes.
+                            let fundamental = 440; // Default fallback
+                            if (this.currentEigensystem && this.currentEigensystem.values.length > 0) {
+                                const firstEigenvalue = math.complex(this.currentEigensystem.values[0]);
+                                fundamental = 200 + Math.abs(firstEigenvalue.im || 0) * 100;
+                            }
+
+                            // *** FIX: This switch statement implements the different synthesis logics ***
+                            switch (this.synthesisMode) {
+                                case 'harmonic':
+                                    // Creates a classic, musical-sounding harmonic series (e.g., 1f, 2f, 3f...).
+                                    frequency = fundamental * (modeIndex + 1);
+                                    break;
+
+                                case 'inharmonic':
+                                    // Creates metallic, bell-like timbres using non-integer multiples
+                                    // based on the golden ratio (1.618).
+                                    frequency = fundamental * Math.pow(1.61803398875, modeIndex);
+                                    break;
+
+                                case 'fm':
+                                    // A simple exponential mapping to approximate the complex, bright
+                                    // sound of FM synthesis. A full implementation would be more complex.
+                                    frequency = (200 + Math.abs(imagPart) * 100) * Math.pow(1.4, modeIndex);
+                                    break;
+                                    
+                                case 'additive':
+                                    // Creates dense clusters of frequencies using a quadratic relationship,
+                                    // characteristic of additive synthesis building complex tones.
+                                    frequency = (200 + Math.abs(imagPart) * 50) + (modeIndex * modeIndex * 20);
+                                    break;
+
+                                case 'modal':
+                                default:
+                                    // The original "default" sound of the application. Each mode's frequency
+                                    // is based on its own eigenvalue plus a small linear offset.
+                                    let baseFreq = 200 + Math.abs(imagPart) * 100;
+                                    frequency = baseFreq * (1 + modeIndex * 0.1);
+                                    break;
+                            }
+
+                            // Apply global physics parameters *after* the mode-specific calculation
+                            if (this.gravitationalCurvature !== 0) {
+                                const redshift = 1 - this.gravitationalCurvature * 0.1;
+                                frequency *= Math.max(0.1, redshift);
+                            }
+                            
+                            // Apply quantum uncertainty broadening
+                            const uncertainty = this.quantumUncertainty * 0.5;
+                            const modulation = 1 + uncertainty * (Math.random() - 0.5) * 0.02;
+                            
+                            // Validate and clamp the final frequency to a reasonable audible range
+                            const finalFreq = Math.max(80, Math.min(8000, frequency * modulation));
+                            
+                            // Ensure the final value is a valid number before returning
+                            return isFinite(finalFreq) ? finalFreq : 440;
+                        }
 
             calculateModalAmplitude(eigenvalue, modeIndex) {
                 const realPart = eigenvalue.re || 0;
@@ -764,6 +800,53 @@
                 
                 // Ensure finite value
                 return isFinite(finalAmp) ? finalAmp : 0.05; // Default amplitude if invalid
+            }
+
+            // === TIME EVOLUTION IMPLEMENTATION ===
+
+            enableTimeEvolution(enabled) {
+                this.timeEvolutionEnabled = enabled;
+
+                if (this.timeEvolutionEnabled && !this.timeEvolutionInterval) {
+                    console.log("Starting H(t) evolution...");
+                    this.timeEvolutionStep = 0;
+                    
+                    this.timeEvolutionInterval = setInterval(() => {
+                        if (!window.esv || !window.esv.systemMatrix || !window.esv.ui) {
+                           // Failsafe if the app structure is not ready
+                           this.enableTimeEvolution(false); // Stop the loop
+                           return;
+                        }
+
+                        const H = window.esv.systemMatrix;
+                        const size = H.size;
+                        const rate = this.evolutionRate * 0.02; // Control speed of evolution
+                        this.timeEvolutionStep += rate;
+
+                        // Evolve the off-diagonal (coupling) terms
+                        for (let i = 0; i < size; i++) {
+                            for (let j = i + 1; j < size; j++) {
+                                const baseValue = math.complex(0.5, 0); // Base coupling
+                                const modulation = Math.sin(this.timeEvolutionStep + i * 0.5) * 0.4;
+                                const phaseShift = Math.cos(this.timeEvolutionStep * 0.7 + j * 0.3) * 0.2;
+                                
+                                H.set(i, j, {
+                                    re: baseValue.re * (1 + modulation),
+                                    im: baseValue.im + phaseShift
+                                });
+                            }
+                        }
+                        
+                        // Trigger a full recalculation and visual update
+                        window.esv.ui.triggerFullUpdate();
+
+                    }, 50); // Update 20 times per second
+
+                } else if (!this.timeEvolutionEnabled && this.timeEvolutionInterval) {
+                    console.log("Stopping H(t) evolution.");
+                    clearInterval(this.timeEvolutionInterval);
+                    this.timeEvolutionInterval = null;
+                }
             }
 
             startParameterUpdateLoop() {
@@ -992,6 +1075,90 @@
                 }
             }
 
+            // === RECORDING IMPLEMENTATION ===
+            
+            startRecording() {
+                if (!this.isInitialized || this.isRecording) {
+                    console.warn("Cannot start recording. Audio not ready or already recording.");
+                    return false;
+                }
+
+                try {
+                    // Create a destination node to capture the final audio output
+                    this.recorderDestination = this.audioContext.createMediaStreamDestination();
+                    this.masterGain.connect(this.recorderDestination);
+
+                    // Determine a supported MIME type
+                    const options = { mimeType: 'audio/webm;codecs=opus' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        console.log('WebM Opus not supported, trying Vorbis');
+                        options.mimeType = 'audio/webm;codecs=vorbis';
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            console.log('WebM Vorbis not supported, trying default');
+                            options.mimeType = 'audio/webm';
+                             if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                                alert("No supported audio format found for recording.");
+                                return false;
+                             }
+                        }
+                    }
+
+                    this.recordedChunks = [];
+                    this.mediaRecorder = new MediaRecorder(this.recorderDestination.stream, options);
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.recordedChunks, { type: options.mimeType });
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Create a temporary link to trigger the download
+                        const a = document.createElement('a');
+                        document.body.appendChild(a);
+                        a.style.display = 'none';
+                        a.href = url;
+                        const filename = `eigensound-${new Date().toISOString()}.webm`;
+                        a.download = filename;
+                        a.click();
+                        
+                        // Clean up the URL and link
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    };
+
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    console.log("Recording started...");
+                    return true;
+
+                } catch (error) {
+                    console.error("Failed to start recording:", error);
+                    alert("Recording failed to start. Check browser permissions and console for errors.");
+                    return false;
+                }
+            }
+
+            stopRecording() {
+                if (!this.isRecording || !this.mediaRecorder) {
+                    console.warn("Not currently recording.");
+                    return;
+                }
+
+                this.mediaRecorder.stop(); // This will trigger the 'onstop' event handler
+                this.isRecording = false;
+                
+                // Disconnect the recorder to save resources
+                if (this.recorderDestination) {
+                    this.masterGain.disconnect(this.recorderDestination);
+                    this.recorderDestination = null;
+                }
+                console.log("Recording stopped.");
+            }
+
             // === EIGEN-FILTER IMPLEMENTATION ===
             
             async startEigenFilter() {
@@ -1213,8 +1380,35 @@
                     }
                 });
             }
+
+            getEigenFilterState() {
+                            if (!this.eigenFilterMode || !this.analyser || !this.filterNodes) {
+                                return null;
+                            }
+
+                            // Get live spectrum data from the input
+                            this.analyser.getByteFrequencyData(this.inputBuffer);
+
+                            // Package all relevant filter state information for the visualizer
+                            const filterStates = this.filterNodes.map(node => ({
+                                eigenvalue: node.eigenvalue,
+                                frequency: node.filter.frequency.value,
+                                Q: node.filter.Q.value,
+                                gain: node.gain.gain.value,
+                            }));
+
+                            return {
+                                inputSpectrum: this.inputBuffer, // Uint8Array of frequency data
+                                filterStates: filterStates,
+                                synthesisRouted: this.routeSynthesisThroughFilter && this.continuousMode,
+                            };
+                        }
+
         }
 
+
+        
+        
         // --- MatrixView Module ---
         class MatrixView {
             constructor(container, onSelectionCallback) {
