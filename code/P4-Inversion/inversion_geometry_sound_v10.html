@@ -2617,74 +2617,74 @@
                 const presets = {
                     ambient: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 110, waveform: 'sine', volume: 0.4, algorithm: 'stereographic', radius: 2.0, center: 0.0, intensity: 0.5, modulation: 0.05 },
-                            { id: 2, enabled: true, frequency: 220, waveform: 'triangle', volume: 0.3, algorithm: 'cardioid', radius: 1.5, center: 0.3, intensity: 0.4, modulation: 0.1 },
-                            { id: 3, enabled: true, frequency: 440, waveform: 'sine', volume: 0.2, algorithm: 'lemniscate', radius: 1.0, center: -0.2, intensity: 0.3, modulation: 0.15 }
+                            { id: 1, enabled: true, frequency: 110, waveform: 'sine', volume: 0.4, algorithm: 'stereographic', radius: 2.0, center: 0.0, intensity: 0.5, modulation: 0.05, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 220, waveform: 'triangle', volume: 0.3, algorithm: 'cardioid', radius: 1.5, center: 0.3, intensity: 0.4, modulation: 0.1, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 440, waveform: 'sine', volume: 0.2, algorithm: 'lemniscate', radius: 1.0, center: -0.2, intensity: 0.3, modulation: 0.15, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     rhythmic: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 80, waveform: 'square', volume: 0.5, algorithm: 'amplitude', radius: 0.8, center: 0.0, intensity: 0.6, modulation: 0.3 },
-                            { id: 2, enabled: true, frequency: 160, waveform: 'sawtooth', volume: 0.4, algorithm: 'cardioid', radius: 1.2, center: 0.5, intensity: 0.5, modulation: 0.25 }
+                            { id: 1, enabled: true, frequency: 80, waveform: 'square', volume: 0.5, algorithm: 'amplitude', radius: 0.8, center: 0.0, intensity: 0.6, modulation: 0.3, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 160, waveform: 'sawtooth', volume: 0.4, algorithm: 'cardioid', radius: 1.2, center: 0.5, intensity: 0.5, modulation: 0.25, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     harmonic: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 220, waveform: 'sine', volume: 0.4, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08 },
-                            { id: 2, enabled: true, frequency: 330, waveform: 'sine', volume: 0.3, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08 },
-                            { id: 3, enabled: true, frequency: 440, waveform: 'sine', volume: 0.25, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08 }
+                            { id: 1, enabled: true, frequency: 220, waveform: 'sine', volume: 0.4, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 330, waveform: 'sine', volume: 0.3, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 440, waveform: 'sine', volume: 0.25, algorithm: 'orthogonal', radius: 1.0, center: 0.0, intensity: 0.5, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     drone: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 55, waveform: 'sine', volume: 0.6, algorithm: 'stereographic', radius: 3.0, center: 0.0, intensity: 0.4, modulation: 0.02 },
-                            { id: 2, enabled: true, frequency: 82.5, waveform: 'triangle', volume: 0.4, algorithm: 'lemniscate', radius: 2.5, center: 0.1, intensity: 0.3, modulation: 0.03 }
+                            { id: 1, enabled: true, frequency: 55, waveform: 'sine', volume: 0.6, algorithm: 'stereographic', radius: 3.0, center: 0.0, intensity: 0.4, modulation: 0.02, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 82.5, waveform: 'triangle', volume: 0.4, algorithm: 'lemniscate', radius: 2.5, center: 0.1, intensity: 0.3, modulation: 0.03, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     crystalline: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 261, waveform: 'square', volume: 0.35, algorithm: 'cardioid', radius: 1.8, center: 0.4, intensity: 0.6, modulation: 0.12 },
-                            { id: 2, enabled: true, frequency: 329, waveform: 'triangle', volume: 0.3, algorithm: 'cardioid', radius: 1.4, center: -0.3, intensity: 0.5, modulation: 0.08 },
-                            { id: 3, enabled: true, frequency: 523, waveform: 'sine', volume: 0.25, algorithm: 'cardioid', radius: 0.9, center: 0.1, intensity: 0.4, modulation: 0.15 }
+                            { id: 1, enabled: true, frequency: 261, waveform: 'square', volume: 0.35, algorithm: 'cardioid', radius: 1.8, center: 0.4, intensity: 0.6, modulation: 0.12, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 329, waveform: 'triangle', volume: 0.3, algorithm: 'cardioid', radius: 1.4, center: -0.3, intensity: 0.5, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 523, waveform: 'sine', volume: 0.25, algorithm: 'cardioid', radius: 0.9, center: 0.1, intensity: 0.4, modulation: 0.15, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     oceanic: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 73, waveform: 'sine', volume: 0.5, algorithm: 'lemniscate', radius: 2.5, center: 0.2, intensity: 0.5, modulation: 0.06 },
-                            { id: 2, enabled: true, frequency: 146, waveform: 'triangle', volume: 0.4, algorithm: 'lemniscate', radius: 1.8, center: -0.4, intensity: 0.4, modulation: 0.09 },
-                            { id: 3, enabled: true, frequency: 98, waveform: 'sawtooth', volume: 0.3, algorithm: 'lemniscate', radius: 3.2, center: 0.0, intensity: 0.3, modulation: 0.04 }
+                            { id: 1, enabled: true, frequency: 73, waveform: 'sine', volume: 0.5, algorithm: 'lemniscate', radius: 2.5, center: 0.2, intensity: 0.5, modulation: 0.06, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 146, waveform: 'triangle', volume: 0.4, algorithm: 'lemniscate', radius: 1.8, center: -0.4, intensity: 0.4, modulation: 0.09, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 98, waveform: 'sawtooth', volume: 0.3, algorithm: 'lemniscate', radius: 3.2, center: 0.0, intensity: 0.3, modulation: 0.04, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     stellar: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 65, waveform: 'sine', volume: 0.45, algorithm: 'stereographic', radius: 4.0, center: 0.1, intensity: 0.5, modulation: 0.03 },
-                            { id: 2, enabled: true, frequency: 130, waveform: 'triangle', volume: 0.35, algorithm: 'stereographic', radius: 2.8, center: -0.2, intensity: 0.4, modulation: 0.07 },
-                            { id: 3, enabled: true, frequency: 195, waveform: 'sine', volume: 0.25, algorithm: 'stereographic', radius: 1.9, center: 0.3, intensity: 0.3, modulation: 0.11 },
-                            { id: 4, enabled: true, frequency: 390, waveform: 'square', volume: 0.2, algorithm: 'stereographic', radius: 1.2, center: 0.0, intensity: 0.3, modulation: 0.16 }
+                            { id: 1, enabled: true, frequency: 65, waveform: 'sine', volume: 0.45, algorithm: 'stereographic', radius: 4.0, center: 0.1, intensity: 0.5, modulation: 0.03, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 130, waveform: 'triangle', volume: 0.35, algorithm: 'stereographic', radius: 2.8, center: -0.2, intensity: 0.4, modulation: 0.07, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 195, waveform: 'sine', volume: 0.25, algorithm: 'stereographic', radius: 1.9, center: 0.3, intensity: 0.3, modulation: 0.11, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 4, enabled: true, frequency: 390, waveform: 'square', volume: 0.2, algorithm: 'stereographic', radius: 1.2, center: 0.0, intensity: 0.3, modulation: 0.16, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     fractal: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 110, waveform: 'sawtooth', volume: 0.4, algorithm: 'crossratio', radius: 1.6, center: 0.0, intensity: 0.5, modulation: 0.1 },
-                            { id: 2, enabled: true, frequency: 165, waveform: 'square', volume: 0.35, algorithm: 'crossratio', radius: 1.3, center: 0.4, intensity: 0.4, modulation: 0.13 },
-                            { id: 3, enabled: true, frequency: 247, waveform: 'triangle', volume: 0.3, algorithm: 'crossratio', radius: 1.0, center: -0.3, intensity: 0.3, modulation: 0.17 },
-                            { id: 4, enabled: true, frequency: 371, waveform: 'sine', volume: 0.25, algorithm: 'crossratio', radius: 0.8, center: 0.2, intensity: 0.3, modulation: 0.21 }
+                            { id: 1, enabled: true, frequency: 110, waveform: 'sawtooth', volume: 0.4, algorithm: 'crossratio', radius: 1.6, center: 0.0, intensity: 0.5, modulation: 0.1, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 165, waveform: 'square', volume: 0.35, algorithm: 'crossratio', radius: 1.3, center: 0.4, intensity: 0.4, modulation: 0.13, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 247, waveform: 'triangle', volume: 0.3, algorithm: 'crossratio', radius: 1.0, center: -0.3, intensity: 0.3, modulation: 0.17, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 4, enabled: true, frequency: 371, waveform: 'sine', volume: 0.25, algorithm: 'crossratio', radius: 0.8, center: 0.2, intensity: 0.3, modulation: 0.21, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     temporal: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 87, waveform: 'sine', volume: 0.5, algorithm: 'mobius', radius: 2.2, center: 0.1, intensity: 0.5, modulation: 0.08 },
-                            { id: 2, enabled: true, frequency: 131, waveform: 'triangle', volume: 0.4, algorithm: 'mobius', radius: 1.7, center: -0.2, intensity: 0.4, modulation: 0.12 },
-                            { id: 3, enabled: true, frequency: 196, waveform: 'sawtooth', volume: 0.3, algorithm: 'mobius', radius: 1.3, center: 0.3, intensity: 0.3, modulation: 0.16 }
+                            { id: 1, enabled: true, frequency: 87, waveform: 'sine', volume: 0.5, algorithm: 'mobius', radius: 2.2, center: 0.1, intensity: 0.5, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 131, waveform: 'triangle', volume: 0.4, algorithm: 'mobius', radius: 1.7, center: -0.2, intensity: 0.4, modulation: 0.12, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 196, waveform: 'sawtooth', volume: 0.3, algorithm: 'mobius', radius: 1.3, center: 0.3, intensity: 0.3, modulation: 0.16, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     },
                     microtonal: () => {
                         this.soundscapeLayers = [
-                            { id: 1, enabled: true, frequency: 256, waveform: 'sine', volume: 0.35, algorithm: 'orthogonal', radius: 1.1, center: 0.0, intensity: 0.5, modulation: 0.06 },
-                            { id: 2, enabled: true, frequency: 341, waveform: 'sine', volume: 0.3, algorithm: 'orthogonal', radius: 1.0, center: 0.2, intensity: 0.4, modulation: 0.08 },
-                            { id: 3, enabled: true, frequency: 427, waveform: 'sine', volume: 0.25, algorithm: 'orthogonal', radius: 0.9, center: -0.1, intensity: 0.3, modulation: 0.1 },
-                            { id: 4, enabled: true, frequency: 512, waveform: 'triangle', volume: 0.2, algorithm: 'orthogonal', radius: 0.8, center: 0.3, intensity: 0.3, modulation: 0.12 },
-                            { id: 5, enabled: true, frequency: 683, waveform: 'sine', volume: 0.15, algorithm: 'orthogonal', radius: 0.7, center: -0.2, intensity: 0.2, modulation: 0.14 }
+                            { id: 1, enabled: true, frequency: 256, waveform: 'sine', volume: 0.35, algorithm: 'orthogonal', radius: 1.1, center: 0.0, intensity: 0.5, modulation: 0.06, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 2, enabled: true, frequency: 341, waveform: 'sine', volume: 0.3, algorithm: 'orthogonal', radius: 1.0, center: 0.2, intensity: 0.4, modulation: 0.08, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 3, enabled: true, frequency: 427, waveform: 'sine', volume: 0.25, algorithm: 'orthogonal', radius: 0.9, center: -0.1, intensity: 0.3, modulation: 0.1, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 4, enabled: true, frequency: 512, waveform: 'triangle', volume: 0.2, algorithm: 'orthogonal', radius: 0.8, center: 0.3, intensity: 0.3, modulation: 0.12, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 },
+                            { id: 5, enabled: true, frequency: 683, waveform: 'sine', volume: 0.15, algorithm: 'orthogonal', radius: 0.7, center: -0.2, intensity: 0.2, modulation: 0.14, anglePreserve: 1.0, orientation: 0.0, crossRatio: 1.0, complexPhase: 0.0 }
                         ];
                     }
                 };
