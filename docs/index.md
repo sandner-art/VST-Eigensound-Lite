@@ -20,7 +20,7 @@ This documentation covers all aspects of Eigensound Lite, from basic usage to ad
 |--------------|-------------|-----------------|
 | **[User Guide](user-guide.md)** | Everyone | Complete walkthrough of all features and scientific concepts |
 | **[User Guide eigensound - vector](user-guide-eigensound-vector.md)** | Everyone | Research of eigenvectors and eigenvalues sonification |
-| **[Guide eigensound - ingeo](../code\P4-Inversion\README.md)** | Everyone | Inversive Geometry Sound Laboratory |
+| **[Guide eigensound - ingeo](../code/P4-Inversion/README.md)** | Everyone | Inversive Geometry Sound Laboratory |
 | **[Features](features.md)** | Developers, Researchers | Comprehensive feature list with technical details |
 | **[Tips & Exploration](tips.md)** | Musicians, Scientists | Practical tips for creative and scientific exploration |
 

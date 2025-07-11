@@ -1,6 +1,6 @@
 # Advanced Inversive Geometry Sound Laboratory
 
-![A screenshot showing the main interface of the Inversive Geometry Sound Laboratory - eigensound](images\eigensound-inversive-geometry.png)
+![A screenshot showing the main interface of the Inversive Geometry Sound Laboratory - eigensound](images/eigensound-inversive-geometry.png)
 
 This application is an interactive, browser-based sound synthesis and processing tool that uses the principles of **inversive geometry** as its core engine for generating complex and novel sounds.
 
