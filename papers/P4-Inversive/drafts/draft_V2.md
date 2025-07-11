@@ -215,3 +215,116 @@ This paper introduced a novel framework for the sonification of 2D inversive geo
 *   Needham, T. (1997). *Visual Complex Analysis*. Oxford University Press.
 *   Roads, C. (2004). *Microsound*. The MIT Press.
 *   W3C. (2021). *Web Audio API*. W3C Recommendation. Retrieved from https://www.w3.org/TR/webaudio/
+
+
+---
+
+### **Addendum A: Formalisms of Implemented Geometric Transformations**
+
+This addendum details the mathematical formalisms for the key geometric transformations implemented in the sonification framework. For each algorithm, we present the governing equation and describe its specific instantiation as a real-time digital signal processing (DSP) function operating on an audio signal `x(t)`. The parameter `α` represents the user-controlled `intensity` (`0 ≤ α ≤ 1`), which governs the blend between the original (dry) and transformed (wet) signal.
+
+The general form of the output signal `x_out(t)` is a linear interpolation:
+`x_out(t) = (1 - α) * x(t) + α * x_trans(t)`
+where `x_trans(t)` is the result of the specific geometric transformation.
+
+#### **1. Amplitude Inversion (1D Real Inversion)**
+
+This transformation treats the 1D audio signal `x(t)` as a point on the real number line and inverts it with respect to a circle (an interval in 1D) with center `c` and radius `r`.
+
+**Governing Equation:**
+For an input point `x`, the inverted point `x'` is given by:
+`x' = c + r² / (x - c)`
+
+**Implementation:**
+The input audio sample `x(t)` is directly used as `x`. The parameters `c` and `r` are user-controlled. This transformation is applied sample-by-sample.
+
+*   `x ← x(t)`
+*   `x_trans(t) ← c + r² / (x(t) - c)`
+
+**Sonic Implication:** This acts as a highly non-linear waveshaping function where the point of maximum transformation (`c`) is user-definable. It creates a discontinuity (singularity) in the transfer function, leading to extreme dynamic artifacts when `x(t)` is close to `c`.
+
+#### **2. Möbius Transformation**
+
+This transformation operates in the complex plane. The 1D audio signal is first lifted to a complex number `z` before the transformation is applied.
+
+**Governing Equation:**
+The Möbius transformation `f(z)` is defined as:
+`f(z) = (az + b) / (cz + d)`, where `ad - bc ≠ 0`.
+
+**Implementation:**
+The 1D input sample `x(t)` is lifted to a complex number `z(t)` by treating `x(t)` as the real part and introducing a small imaginary component controlled by a user parameter, `φ` (Complex Phase). The coefficients `a, b, c, d` are mapped from user controls for `radius` and `center`.
+
+*   `z(t) ← x(t) + i * k * φ` (where `k` is a small scaling constant)
+*   A specific family of Möbius transformations is used, with coefficients:
+    *   `a ← r` (radius)
+    *   `b ← c` (center)
+    *   `c ← 1.0`
+    *   `d ← 1.0`
+*   The complex result `z'(t) = f(z(t))` is projected back to 1D by taking its real part.
+*   `x_trans(t) ← Re(z'(t))`
+
+**Sonic Implication:** This produces complex, phase-related distortions and resonances. The introduction of the imaginary component allows the 1D signal to be manipulated in a 2D space, resulting in sounds that are qualitatively different from pure 1D waveshaping.
+
+#### **3. Spectral Inversion**
+
+This transformation applies the inversion not to the time-domain signal, but to the frequency axis of its spectral representation.
+
+**Governing Equation:**
+Let `S(ω)` be the Short-Time Fourier Transform (STFT) of the signal `x(t)`, where `ω` is the frequency. The frequency axis is transformed according to the 1D inversion formula:
+`ω' = c_f + r_f² / (ω - c_f)`
+where `c_f` and `r_f` are the center and radius of inversion in the frequency domain. The new spectrum `S'(ω')` is then constructed from `S(ω)`.
+
+**Implementation (Conceptual):**
+This algorithm is implemented as a spectral warping process.
+
+1.  Compute the STFT of a block of `x(t)` to get `S(ω_k)` for each frequency bin `k`.
+2.  For each bin frequency `ω_k`, calculate its transformed frequency `ω'_k` using the equation above.
+3.  Re-sample the original spectrum `S(ω_k)` at the new locations `ω'_k` to generate the output spectrum `S'(ω)`. This typically involves interpolation for non-integer bin locations.
+4.  Compute the Inverse STFT of `S'(ω)` to obtain the transformed audio block `x_trans(t)`.
+
+**Sonic Implication:** This method directly manipulates the timbre of a sound by non-linearly re-mapping its partials. It can transform a harmonic spectrum into an inharmonic one, creating metallic and bell-like sounds from simple sources.
+
+#### **4. Stereographic Projection**
+
+This algorithm maps the audio signal to a point on a unit sphere in 3D, performs a stereographic projection onto a 2D plane, and derives the final output from the properties of the projected point.
+
+**Governing Equations:**
+1.  **Mapping to Sphere:** The signal `x(t)` and a time variable `t` are mapped to the spherical coordinates `(φ, θ)`.
+    `φ = k_φ * x(t)` (latitude)
+    `θ = k_θ * t` (longitude)
+    This gives a point `P(X, Y, U)` on the unit sphere:
+    `P = (cos(φ)cos(θ), cos(φ)sin(θ), sin(φ))`
+
+2.  **Stereographic Projection:** `P` is projected from the North Pole `(0,0,1)` to a point `p(x_p, y_p)` on the plane `U=0`.
+    `x_p = X / (1 - U)`
+    `y_p = Y / (1 - U)`
+
+**Implementation:**
+The final transformed signal is derived from the magnitude (distance from the origin) of the projected point `p`.
+
+*   `φ(t) ← π * x(t)`
+*   `θ(t) ← 2π * f_mod * t` (where `f_mod` is a low frequency)
+*   Calculate `P(X, Y, U)` using the mapping above.
+*   Calculate the projected point `p(x_p, y_p)`.
+*   `x_trans(t) ← |p| = sqrt(x_p² + y_p²) `
+
+**Sonic Implication:** The audio signal is used to control the latitude of a point being traced on a sphere. The resulting projection creates a complex modulation signal. This method excels at generating rich, evolving drones and textures where the temporal evolution is intrinsically linked to the signal's own dynamics.
+
+#### **5. Geometric Shape Modulation (Cardioid & Lemniscate)**
+
+These algorithms use the polar equations of classic geometric shapes as time-varying modulation sources that are applied to the input signal.
+
+**Governing Equations:**
+*   **Cardioid:** `R(θ) = a(1 + cos(θ))`
+*   **Lemniscate of Bernoulli:** `R²(θ) = a²cos(2θ)`
+
+**Implementation:**
+A time-varying angle `θ(t)` is generated. This is used to trace a point `p(t)` along the specified geometric curve in polar coordinates, which is then converted to Cartesian coordinates `(x_c(t), y_c(t))`. One of these components is used as a modulator.
+
+1.  `θ(t) ← 2π * f_mod * t`
+2.  Calculate `R(t)` using the appropriate polar equation, where `a` is controlled by user parameter `r` (radius).
+3.  `x_c(t) ← R(t)cos(θ(t))`
+4.  The Cartesian component `x_c(t)` is used to modulate the original signal.
+5.  `x_trans(t) ← x(t) * (1 + k_mod * x_c(t))` (where `k_mod` is a modulation index).
+
+**Sonic Implication:** This method imposes the periodic but non-sinusoidal motion of a geometric trace onto the audio signal. It creates complex amplitude modulation or filtering effects that have a clear, coherent rhythmic or gestural quality derived from the underlying geometry.
