@@ -1,10 +1,4 @@
-# **Paper Outline: Sonification of Inversive Geometry for Complex Sound Synthesis**
-
-Here is a draft of the scientific paper, crafted to meet the standards of a top-tier journal in the field of computer music or human-computer interaction (like the *Computer Music Journal*, *Organised Sound*, or proceedings for a conference like NIME). It incorporates our detailed discussion, focuses on factual rigor, and includes relevant, strong references.
-
----
-
-### **A Framework for Real-time Sonification of Inversive Geometry for Complex Sound Synthesis**
+# Real-time Sonification of Inversive Geometry for Complex Sound Synthesis
 
 **Author(s):** Daniel Sandner
 July 2025
