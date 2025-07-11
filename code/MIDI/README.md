@@ -96,7 +96,7 @@ For future versions, consider adding:
 
 # V2-V3
 
-I'll fix the stuck notes issue and implement your requested enhancements. Let me update the synthesizer with these improvements.I've successfully updated the Web Synthesizer with all your requested improvements! Here's what's been fixed and added:
+Need to fix the stuck notes issue and implement your requested enhancements. Here's what's been fixed and added:
 
 ## 🔧 Fixed Issues:
 
