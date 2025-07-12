@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Music Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s;
+        }
+        
+        .controls.hidden {
+            opacity: 0.1;
+        }
+        
+        .controls:hover {
+            opacity: 1;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        button, select, input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover, select:hover {
+            background: #333;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .export-section {
+            border-top: 1px solid #333;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 60px;
+            background: #111;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 10px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>Audio Input:</label>
+            <input type="file" id="audioFile" accept="audio/*">
+            <button id="micButton">🎤 Microphone</button>
+            <button id="demoButton">🎵 Demo</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Visualization Presets:</label>
+            <div class="preset-buttons">
+                <button onclick="setPreset('particles')">Particle Physics</button>
+                <button onclick="setPreset('waves')">Wave Interference</button>
+                <button onclick="setPreset('crystal')">Crystal Growth</button>
+                <button onclick="setPreset('quantum')">Quantum Fields</button>
+                <button onclick="setPreset('fluid')">Fluid Dynamics</button>
+                <button onclick="setPreset('neural')">Neural Network</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Sensitivity: <span id="sensitivityValue">1.0</span></label>
+            <input type="range" id="sensitivity" min="0.1" max="3.0" step="0.1" value="1.0">
+            
+            <label>Color Mode:</label>
+            <select id="colorMode">
+                <option value="spectrum">Spectrum</option>
+                <option value="temperature">Temperature</option>
+                <option value="energy">Energy</option>
+                <option value="harmonic">Harmonic</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Evolution Speed: <span id="evolutionValue">0.5</span></label>
+            <input type="range" id="evolution" min="0" max="2" step="0.1" value="0.5">
+            
+            <label>Complexity: <span id="complexityValue">1.0</span></label>
+            <input type="range" id="complexity" min="0.5" max="2.5" step="0.1" value="1.0">
+        </div>
+        
+        <div class="export-section">
+            <label>Settings Export/Import:</label>
+            <button onclick="exportSettings()">Export</button>
+            <button onclick="importSettings()">Import</button>
+            <textarea id="settingsData" placeholder="Settings JSON will appear here..."></textarea>
+        </div>
+    </div>
+    
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    
+    <div class="status" id="status">
+        Ready - Load audio or enable microphone
+    </div>
+
+    <script>
+        class ScientificMusicVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.audioContext = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.bufferLength = null;
+                this.isPlaying = false;
+                this.animationId = null;
+                
+                // Visualization parameters
+                this.preset = 'particles';
+                this.sensitivity = 1.0;
+                this.colorMode = 'spectrum';
+                this.evolution = 0.5;
+                this.complexity = 1.0;
+                this.time = 0;
+                
+                // Physics systems
+                this.particles = [];
+                this.waves = [];
+                this.crystals = [];
+                this.quantumFields = [];
+                
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.initParticles();
+                this.animate();
+            }
+            
+            setupCanvas() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+            
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('audioFile').addEventListener('change', (e) => this.loadAudioFile(e));
+                document.getElementById('micButton').addEventListener('click', () => this.startMicrophone());
+                document.getElementById('demoButton').addEventListener('click', () => this.startDemo());
+                document.getElementById('sensitivity').addEventListener('input', (e) => {
+                    this.sensitivity = parseFloat(e.target.value);
+                    document.getElementById('sensitivityValue').textContent = this.sensitivity.toFixed(1);
+                });
+                document.getElementById('evolution').addEventListener('input', (e) => {
+                    this.evolution = parseFloat(e.target.value);
+                    document.getElementById('evolutionValue').textContent = this.evolution.toFixed(1);
+                });
+                document.getElementById('complexity').addEventListener('input', (e) => {
+                    this.complexity = parseFloat(e.target.value);
+                    document.getElementById('complexityValue').textContent = this.complexity.toFixed(1);
+                });
+                document.getElementById('colorMode').addEventListener('change', (e) => {
+                    this.colorMode = e.target.value;
+                });
+            }
+            
+            async setupAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 2048;
+                    this.analyser.smoothingTimeConstant = 0.85;
+                    this.bufferLength = this.analyser.frequencyBinCount;
+                    this.dataArray = new Uint8Array(this.bufferLength);
+                }
+                
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+            }
+            
+            async loadAudioFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                await this.setupAudioContext();
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                source.start(0);
+                this.isPlaying = true;
+                this.updateStatus('Playing audio file');
+            }
+            
+            async startMicrophone() {
+                try {
+                    await this.setupAudioContext();
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const source = this.audioContext.createMediaStreamSource(stream);
+                    source.connect(this.analyser);
+                    
+                    this.isPlaying = true;
+                    this.updateStatus('Microphone active');
+                } catch (error) {
+                    this.updateStatus('Microphone access denied');
+                    console.error('Microphone error:', error);
+                }
+            }
+            
+            startDemo() {
+                // Create synthetic audio for demo
+                this.setupAudioContext();
+                
+                const oscillator1 = this.audioContext.createOscillator();
+                const oscillator2 = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator1.frequency.setValueAtTime(220, this.audioContext.currentTime);
+                oscillator2.frequency.setValueAtTime(330, this.audioContext.currentTime);
+                gainNode.gain.value = 0.1;
+                
+                oscillator1.connect(gainNode);
+                oscillator2.connect(gainNode);
+                gainNode.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                oscillator1.start();
+                oscillator2.start();
+                
+                // Add some frequency modulation for more interesting visuals
+                setInterval(() => {
+                    if (this.isPlaying) {
+                        oscillator1.frequency.setValueAtTime(
+                            220 + Math.sin(Date.now() * 0.001) * 100,
+                            this.audioContext.currentTime
+                        );
+                        oscillator2.frequency.setValueAtTime(
+                            330 + Math.cos(Date.now() * 0.0015) * 150,
+                            this.audioContext.currentTime
+                        );
+                    }
+                }, 50);
+                
+                this.isPlaying = true;
+                this.updateStatus('Demo mode active');
+            }
+            
+            initParticles() {
+                this.particles = [];
+                for (let i = 0; i < 200; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 3 + 1,
+                        frequency: i,
+                        phase: Math.random() * Math.PI * 2,
+                        energy: 0
+                    });
+                }
+            }
+            
+            getColor(frequency, amplitude, mode = 'spectrum') {
+                const hue = (frequency / this.bufferLength) * 360;
+                const saturation = 70 + (amplitude / 255) * 30;
+                const lightness = 30 + (amplitude / 255) * 50;
+                
+                switch (mode) {
+                    case 'temperature':
+                        const temp = amplitude / 255;
+                        return `rgb(${255 * temp}, ${100 * temp}, ${50 * (1 - temp)})`;
+                    case 'energy':
+                        const energy = amplitude / 255;
+                        return `rgb(${255 * energy}, ${255 * energy * 0.5}, ${255 * energy * 0.2})`;
+                    case 'harmonic':
+                        const harmonic = Math.sin(frequency * 0.1) * 0.5 + 0.5;
+                        return `hsl(${hue + harmonic * 60}, ${saturation}%, ${lightness}%)`;
+                    default:
+                        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                }
+            }
+            
+            drawParticlePhysics() {
+                if (!this.dataArray) return;
+                
+                // Update particles based on frequency data
+                for (let i = 0; i < this.particles.length && i < this.bufferLength; i++) {
+                    const particle = this.particles[i];
+                    const amplitude = this.dataArray[i] * this.sensitivity;
+                    
+                    // Physics simulation
+                    particle.energy = amplitude / 255;
+                    particle.vx += (Math.random() - 0.5) * particle.energy * 0.5;
+                    particle.vy += (Math.random() - 0.5) * particle.energy * 0.5;
+                    
+                    // Gravitational attraction to center when energy is high
+                    const centerX = this.canvas.width / 2;
+                    const centerY = this.canvas.height / 2;
+                    const dx = centerX - particle.x;
+                    const dy = centerY - particle.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (particle.energy > 0.3) {
+                        particle.vx += (dx / distance) * particle.energy * 0.1;
+                        particle.vy += (dy / distance) * particle.energy * 0.1;
+                    }
+                    
+                    // Apply friction
+                    particle.vx *= 0.98;
+                    particle.vy *= 0.98;
+                    
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    // Wrap around edges
+                    if (particle.x < 0) particle.x = this.canvas.width;
+                    if (particle.x > this.canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = this.canvas.height;
+                    if (particle.y > this.canvas.height) particle.y = 0;
+                    
+                    // Draw particle
+                    const color = this.getColor(i, amplitude, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.7 + particle.energy * 0.3;
+                    
+                    const size = particle.size * (1 + particle.energy * 2);
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Draw trails for high energy particles
+                    if (particle.energy > 0.5) {
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 1;
+                        this.ctx.globalAlpha = 0.3;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(particle.x, particle.y);
+                        this.ctx.lineTo(particle.x - particle.vx * 5, particle.y - particle.vy * 5);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            drawWaveInterference() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                // Create interference pattern from multiple frequency sources
+                const imageData = this.ctx.createImageData(this.canvas.width, this.canvas.height);
+                const data = imageData.data;
+                
+                for (let x = 0; x < this.canvas.width; x += 2) {
+                    for (let y = 0; y < this.canvas.height; y += 2) {
+                        let amplitude = 0;
+                        
+                        // Calculate interference from multiple frequency sources
+                        for (let i = 0; i < Math.min(this.bufferLength, 50); i += 5) {
+                            const freqAmplitude = this.dataArray[i] * this.sensitivity;
+                            const frequency = (i + 1) * 0.01;
+                            
+                            const dx = x - centerX;
+                            const dy = y - centerY;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            const wave = Math.sin(distance * frequency + this.time * this.evolution) 
+                                       * (freqAmplitude / 255);
+                            amplitude += wave;
+                        }
+                        
+                        // Convert amplitude to color
+                        const intensity = Math.abs(amplitude) * 255;
+                        const pixelIndex = (y * this.canvas.width + x) * 4;
+                        
+                        const color = this.getColor(amplitude * 100, intensity, this.colorMode);
+                        const rgb = this.hexToRgb(color);
+                        
+                        if (pixelIndex < data.length) {
+                            data[pixelIndex] = rgb.r;     // Red
+                            data[pixelIndex + 1] = rgb.g; // Green
+                            data[pixelIndex + 2] = rgb.b; // Blue
+                            data[pixelIndex + 3] = 255;   // Alpha
+                        }
+                    }
+                }
+                
+                this.ctx.putImageData(imageData, 0, 0);
+            }
+            
+            drawCrystalGrowth() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                // Grow crystals based on frequency bins
+                for (let i = 0; i < Math.min(this.bufferLength, 100); i += 3) {
+                    const amplitude = this.dataArray[i] * this.sensitivity;
+                    if (amplitude < 30) continue;
+                    
+                    const angle = (i / this.bufferLength) * Math.PI * 2;
+                    const distance = 50 + (amplitude / 255) * 200;
+                    
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+                    
+                    // Draw crystal structure
+                    const color = this.getColor(i, amplitude, this.colorMode);
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 1 + (amplitude / 255) * 3;
+                    this.ctx.globalAlpha = 0.6 + (amplitude / 255) * 0.4;
+                    
+                    // Crystal branches
+                    const branches = Math.floor(3 + (amplitude / 255) * 5);
+                    for (let b = 0; b < branches; b++) {
+                        const branchAngle = angle + (b / branches) * Math.PI * 2;
+                        const branchLength = 20 + (amplitude / 255) * 40;
+                        
+                        const branchX = x + Math.cos(branchAngle) * branchLength;
+                        const branchY = y + Math.sin(branchAngle) * branchLength;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(x, y);
+                        this.ctx.lineTo(branchX, branchY);
+                        this.ctx.stroke();
+                        
+                        // Sub-branches
+                        if (amplitude > 100) {
+                            const subBranchX = branchX + Math.cos(branchAngle + Math.PI/4) * 10;
+                            const subBranchY = branchY + Math.sin(branchAngle + Math.PI/4) * 10;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(branchX, branchY);
+                            this.ctx.lineTo(subBranchX, subBranchY);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            drawQuantumFields() {
+                if (!this.dataArray) return;
+                
+                // Quantum probability clouds
+                for (let i = 0; i < this.bufferLength; i += 8) {
+                    const amplitude = this.dataArray[i] * this.sensitivity;
+                    if (amplitude < 20) continue;
+                    
+                    const probability = amplitude / 255;
+                    const numDots = Math.floor(probability * 50);
+                    
+                    const baseX = (i / this.bufferLength) * this.canvas.width;
+                    const baseY = this.canvas.height / 2;
+                    
+                    for (let j = 0; j < numDots; j++) {
+                        // Gaussian distribution for quantum uncertainty
+                        const sigma = 50 + probability * 100;
+                        const x = baseX + (Math.random() - 0.5) * sigma * Math.sqrt(-2 * Math.log(Math.random()));
+                        const y = baseY + (Math.random() - 0.5) * sigma * Math.sqrt(-2 * Math.log(Math.random()));
+                        
+                        if (x >= 0 && x < this.canvas.width && y >= 0 && y < this.canvas.height) {
+                            const color = this.getColor(i, amplitude, this.colorMode);
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = 0.3 * probability;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.arc(x, y, 1 + probability * 2, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                    }
+                }
+            }
+            
+            drawFluidDynamics() {
+                if (!this.dataArray) return;
+                
+                // Fluid flow visualization
+                const stepSize = 10;
+                
+                for (let x = 0; x < this.canvas.width; x += stepSize) {
+                    for (let y = 0; y < this.canvas.height; y += stepSize) {
+                        let vx = 0, vy = 0;
+                        
+                        // Calculate velocity field based on audio
+                        for (let i = 0; i < Math.min(this.bufferLength, 50); i += 5) {
+                            const amplitude = this.dataArray[i] * this.sensitivity;
+                            const frequency = (i + 1) * 0.001;
+                            
+                            const influence = Math.sin(x * frequency + this.time * this.evolution) *
+                                            Math.cos(y * frequency + this.time * this.evolution) *
+                                            (amplitude / 255);
+                            
+                            vx += influence * Math.cos(i);
+                            vy += influence * Math.sin(i);
+                        }
+                        
+                        // Draw velocity vector
+                        if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
+                            const magnitude = Math.sqrt(vx * vx + vy * vy);
+                            const color = this.getColor(magnitude * 100, magnitude * 255, this.colorMode);
+                            
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = 1 + magnitude * 2;
+                            this.ctx.globalAlpha = 0.6;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y);
+                            this.ctx.lineTo(x + vx * 20, y + vy * 20);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            drawNeuralNetwork() {
+                if (!this.dataArray) return;
+                
+                const nodes = [];
+                const connections = [];
+                
+                // Create neural nodes based on frequency bins
+                for (let i = 0; i < Math.min(this.bufferLength, 80); i += 4) {
+                    const amplitude = this.dataArray[i] * this.sensitivity;
+                    const activation = amplitude / 255;
+                    
+                    const layer = Math.floor(i / 20);
+                    const nodeInLayer = i % 20;
+                    
+                    const x = (layer + 1) * (this.canvas.width / 5);
+                    const y = (nodeInLayer + 1) * (this.canvas.height / 21);
+                    
+                    nodes.push({
+                        x: x,
+                        y: y,
+                        activation: activation,
+                        frequency: i
+                    });
+                }
+                
+                // Draw connections
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < Math.min(nodes.length, i + 10); j++) {
+                        const node1 = nodes[i];
+                        const node2 = nodes[j];
+                        
+                        const weight = (node1.activation + node2.activation) / 2;
+                        if (weight > 0.2) {
+                            this.ctx.strokeStyle = this.getColor(
+                                (node1.frequency + node2.frequency) / 2,
+                                weight * 255,
+                                this.colorMode
+                            );
+                            this.ctx.lineWidth = weight * 3;
+                            this.ctx.globalAlpha = weight * 0.8;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(node1.x, node1.y);
+                            this.ctx.lineTo(node2.x, node2.y);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Draw nodes
+                nodes.forEach(node => {
+                    if (node.activation > 0.1) {
+                        const color = this.getColor(node.frequency, node.activation * 255, this.colorMode);
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.8;
+                        
+                        const size = 3 + node.activation * 8;
+                        this.ctx.beginPath();
+                        this.ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+            }
+            
+            hexToRgb(hex) {
+                // Simple RGB extraction for HSL colors
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = hex;
+                const color = ctx.fillStyle;
+                
+                if (color.startsWith('hsl')) {
+                    // Convert HSL to RGB (simplified)
+                    return { r: 128, g: 128, b: 255 };
+                }
+                
+                return { r: 255, g: 255, b: 255 };
+            }
+            
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+                
+                if (!this.isPlaying) return;
+                
+                // Clear canvas with trailing effect
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Get audio data
+                if (this.analyser) {
+                    this.analyser.getByteFrequencyData(this.dataArray);
+                }
+                
+                // Update time
+                this.time += 0.016; // ~60fps
+                
+                // Reset global alpha
+                this.ctx.globalAlpha = 1.0;
+                
+                // Draw based on current preset
+                switch (this.preset) {
+                    case 'particles':
+                        this.drawParticlePhysics();
+                        break;
+                    case 'waves':
+                        this.drawWaveInterference();
+                        break;
+                    case 'crystal':
+                        this.drawCrystalGrowth();
+                        break;
+                    case 'quantum':
+                        this.drawQuantumFields();
+                        break;
+                    case 'fluid':
+                        this.drawFluidDynamics();
+                        break;
+                    case 'neural':
+                        this.drawNeuralNetwork();
+                        break;
+                }
+            }
+            
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+            }
+        }
+        
+        // Global functions for preset switching
+        let visualizer;
+        
+        function setPreset(preset) {
+            if (visualizer) {
+                visualizer.preset = preset;
+                if (preset === 'particles') {
+                    visualizer.initParticles();
+                }
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function exportSettings() {
+            if (!visualizer) return;
+            
+            const settings = {
+                preset: visualizer.preset,
+                sensitivity: visualizer.sensitivity,
+                colorMode: visualizer.colorMode,
+                evolution: visualizer.evolution,
+                complexity: visualizer.complexity
+            };
+            
+            document.getElementById('settingsData').value = JSON.stringify(settings, null, 2);
+        }
+        
+        function importSettings() {
+            try {
+                const settingsText = document.getElementById('settingsData').value;
+                const settings = JSON.parse(settingsText);
+                
+                if (visualizer) {
+                    visualizer.preset = settings.preset || visualizer.preset;
+                    visualizer.sensitivity = settings.sensitivity || visualizer.sensitivity;
+                    visualizer.colorMode = settings.colorMode || visualizer.colorMode;
+                    visualizer.evolution = settings.evolution || visualizer.evolution;
+                    visualizer.complexity = settings.complexity || visualizer.complexity;
+                    
+                    // Update UI
+                    document.getElementById('sensitivity').value = visualizer.sensitivity;
+                    document.getElementById('sensitivityValue').textContent = visualizer.sensitivity.toFixed(1);
+                    document.getElementById('evolution').value = visualizer.evolution;
+                    document.getElementById('evolutionValue').textContent = visualizer.evolution.toFixed(1);
+                    document.getElementById('complexity').value = visualizer.complexity;
+                    document.getElementById('complexityValue').textContent = visualizer.complexity.toFixed(1);
+                    document.getElementById('colorMode').value = visualizer.colorMode;
+                }
+            } catch (error) {
+                alert('Invalid settings format');
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            visualizer = new ScientificMusicVisualizer();
+        });
+        
+        // Hide controls after 3 seconds of no mouse movement
+        let hideTimeout;
+        document.addEventListener('mousemove', () => {
+            document.querySelector('.controls').classList.remove('hidden');
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                document.querySelector('.controls').classList.add('hidden');
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

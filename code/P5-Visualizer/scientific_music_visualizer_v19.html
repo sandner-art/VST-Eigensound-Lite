@@ -1,0 +1,2743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eigensound| viz v0.1.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s;
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .controls.hidden {
+            opacity: 0.1;
+        }
+        
+        .controls:hover {
+            opacity: 1;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: #aaa;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        button, select, input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-right: 8px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 11px;
+        }
+        
+        button:hover, select:hover {
+            background: #333;
+        }
+        
+        button.active {
+            background: #0066cc;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .preset-buttons button {
+            padding: 4px 6px;
+            font-size: 10px;
+        }
+        
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            z-index: 100;
+        }
+        
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .app-title {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            z-index: 100;
+            color: #0066cc;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .export-section {
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 50px;
+            background: #111;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 9px;
+            resize: vertical;
+        }
+        
+        .evolution-controls {
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .demo-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+        }
+        
+        .stop-btn {
+            background: #cc2200 !important;
+        }
+        
+        .stop-btn:hover {
+            background: #dd3311 !important;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>Audio Input:</label>
+            <input type="file" id="audioFile" accept="audio/*">
+            <div class="demo-buttons">
+                <button id="micButton">🎤 Mic</button>
+                <button id="demoButton">🎵 Demo</button>
+                <button id="beatsButton">🥁 Beats</button>
+            </div>
+            <button id="stopButton" class="stop-btn">⏹ Stop/Reset</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Physics & Geometry:</label>
+            <div class="preset-buttons">
+                <button onclick="setPreset('particles')">Particles</button>
+                <button onclick="setPreset('waves')">Waves</button>
+                <button onclick="setPreset('crystal')">Crystals</button>
+                <button onclick="setPreset('quantum')">Quantum</button>
+                <button onclick="setPreset('spacetime')">Spacetime</button>
+                <button onclick="setPreset('eigenfields')">EigenFields</button>
+                <button onclick="setPreset('inversive')">Inversive</button>
+                <button onclick="setPreset('plasma')">Plasma</button>
+                <button onclick="setPreset('phonons')">Phonons</button>
+                <button onclick="setPreset('neural')">Neural</button>
+                <button onclick="setPreset('fractals')">Fractals</button>
+                <button onclick="setPreset('hyperbolic')">Hyperbolic</button>
+                <button onclick="setPreset('chamber')">Wilson Chamber</button>
+            </div>
+            
+            <label>Legacy Presets:</label>
+            <div class="preset-buttons">
+                <button onclick="setPreset('quantum_legacy')">Quantum Legacy</button>
+                <button onclick="setPreset('neural_legacy')">Neural Legacy</button>
+                <button onclick="setPreset('fluid')">Fluid Dynamics</button>
+                <button onclick="setPreset('neural_swarm')">Neural Swarm</button>
+                <button onclick="setPreset('neural_web')">Neural Web</button>
+                <button onclick="setPreset('neural_brain')">Neural Brain</button>
+            </div>
+        </div>
+        
+        <div class="evolution-controls">
+            <label>🧬 Preset Evolution:</label>
+            <input type="checkbox" id="autoEvolve"> Auto-Evolve
+            <input type="checkbox" id="presetEvolution"> Preset Evolution
+            <label>Evolution Rate: <span id="evolutionValue">0.5</span></label>
+            <input type="range" id="evolution" min="0" max="2" step="0.1" value="0.5">
+        </div>
+        
+        <div class="control-group">
+            <label>🎯 Center Origin (Click canvas or use keys):</label>
+            <label>X: <span id="centerXValue">50%</span></label>
+            <input type="range" id="centerX" min="0" max="100" step="1" value="50">
+            <label>Y: <span id="centerYValue">50%</span></label>
+            <input type="range" id="centerY" min="0" max="100" step="1" value="50">
+            <button onclick="resetCenter()">Reset Center</button>
+        </div>
+        
+        <div class="control-group">
+            <label>🧠 Neural Integration:</label>
+            <input type="checkbox" id="neuralMerge"> Merge Neural Controls
+            <label>Neural Intensity: <span id="neuralValue">0.5</span></label>
+            <input type="range" id="neuralIntensity" min="0" max="1" step="0.1" value="0.5">
+        </div>
+        
+        <div class="control-group">
+            <label>🎵 Advanced Audio Reaction:</label>
+            <input type="checkbox" id="reactionShift"> Reaction Shift (Beat↔Melody)
+            <input type="checkbox" id="sensitivityOscillation"> Sensitivity Oscillation
+            <label>Reaction Focus: <span id="reactionValue">Balanced</span></label>
+            <input type="range" id="reactionBalance" min="0" max="100" step="1" value="50">
+        </div>
+        
+        <div class="control-group">
+            <label>Sensitivity: <span id="sensitivityValue">1.0</span></label>
+            <input type="range" id="sensitivity" min="0.1" max="5.0" step="0.1" value="1.0">
+            
+            <label>Complexity: <span id="complexityValue">1.0</span></label>
+            <input type="range" id="complexity" min="0.2" max="3.0" step="0.1" value="1.0">
+            
+            <label>Color Mode:</label>
+            <select id="colorMode">
+                <option value="spectrum">Spectrum</option>
+                <option value="temperature">Temperature</option>
+                <option value="energy">Energy</option>
+                <option value="phase">Phase</option>
+                <option value="scientific">Scientific</option>
+            </select>
+        </div>
+        
+        <div class="export-section">
+            <label>Settings Export/Import:</label>
+            <button onclick="exportSettings()">Export</button>
+            <button onclick="importSettings()">Import</button>
+            <textarea id="settingsData" placeholder="Settings JSON..."></textarea>
+        </div>
+    </div>
+    
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    <div class="app-title">eigensound| viz v0.1.0</div>
+    
+    <div class="status" id="status">
+        Ready - Load audio or select demo<br>
+        <small>Keys: Arrows=Center, Space=Pause, Home=Reset, R=Refresh</small>
+    </div>
+
+    <script>
+        class EigenSoundVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.audioContext = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.bufferLength = null;
+                this.isPlaying = false;
+                this.animationId = null;
+                this.currentSource = null;
+                this.sourceNodes = []; // Track all source nodes
+                
+                // Visualization parameters
+                this.preset = 'particles';
+                this.sensitivity = 1.0;
+                this.colorMode = 'spectrum';
+                this.evolution = 0.5;
+                this.complexity = 1.0;
+                this.time = 0;
+                this.autoEvolve = false;
+                this.presetEvolution = false;
+                this.evolutionTimer = 0;
+                this.presetList = ['particles', 'waves', 'crystal', 'quantum', 'spacetime', 'eigenfields', 'inversive', 'plasma', 'phonons', 'neural', 'fractals', 'hyperbolic', 'chamber', 'quantum_legacy', 'neural_legacy', 'fluid', 'neural_swarm', 'neural_web', 'neural_brain'];
+                this.currentPresetIndex = 0;
+                
+                // User controls
+                this.centerX = 0.5;
+                this.centerY = 0.5;
+                this.neuralMerge = false;
+                this.neuralIntensity = 0.5;
+                this.reactionShift = false;
+                this.sensitivityOscillation = false;
+                this.reactionBalance = 0.5;
+                this.currentSensitivity = 1.0;
+                
+                // Audio analysis
+                this.freqHistory = [];
+                this.spectralCentroid = 0;
+                this.spectralFlux = 0;
+                this.harmonics = [];
+                this.currentBeatEnergy = 0;
+                this.currentMelodyEnergy = 0;
+                this.dynamicReactionBalance = 0.5;
+                
+                // Physics systems
+                this.particles = [];
+                this.swarmParticles = null;
+                this.chamberTracks = [];
+                
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.initPhysicsSystems();
+                this.animate();
+            }
+            
+            setupCanvas() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+            
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('audioFile').addEventListener('change', (e) => this.loadAudioFile(e));
+                document.getElementById('micButton').addEventListener('click', () => this.startMicrophone());
+                document.getElementById('demoButton').addEventListener('click', () => this.startDemo());
+                document.getElementById('beatsButton').addEventListener('click', () => this.startBeatsDemo());
+                document.getElementById('stopButton').addEventListener('click', () => this.stopAudio());
+                
+                document.getElementById('autoEvolve').addEventListener('change', (e) => {
+                    this.autoEvolve = e.target.checked;
+                });
+                
+                document.getElementById('presetEvolution').addEventListener('change', (e) => {
+                    this.presetEvolution = e.target.checked;
+                });
+                
+                document.getElementById('sensitivity').addEventListener('input', (e) => {
+                    this.sensitivity = parseFloat(e.target.value);
+                    document.getElementById('sensitivityValue').textContent = this.sensitivity.toFixed(1);
+                });
+                
+                document.getElementById('evolution').addEventListener('input', (e) => {
+                    this.evolution = parseFloat(e.target.value);
+                    document.getElementById('evolutionValue').textContent = this.evolution.toFixed(1);
+                });
+                
+                document.getElementById('complexity').addEventListener('input', (e) => {
+                    this.complexity = parseFloat(e.target.value);
+                    document.getElementById('complexityValue').textContent = this.complexity.toFixed(1);
+                });
+                
+                document.getElementById('colorMode').addEventListener('change', (e) => {
+                    this.colorMode = e.target.value;
+                });
+                
+                // Center origin controls
+                document.getElementById('centerX').addEventListener('input', (e) => {
+                    this.centerX = parseFloat(e.target.value) / 100;
+                    document.getElementById('centerXValue').textContent = e.target.value + '%';
+                });
+                
+                document.getElementById('centerY').addEventListener('input', (e) => {
+                    this.centerY = parseFloat(e.target.value) / 100;
+                    document.getElementById('centerYValue').textContent = e.target.value + '%';
+                });
+                
+                // Neural controls
+                document.getElementById('neuralMerge').addEventListener('change', (e) => {
+                    this.neuralMerge = e.target.checked;
+                });
+                
+                document.getElementById('neuralIntensity').addEventListener('input', (e) => {
+                    this.neuralIntensity = parseFloat(e.target.value);
+                    document.getElementById('neuralValue').textContent = this.neuralIntensity.toFixed(1);
+                });
+                
+                // Advanced audio reaction controls
+                document.getElementById('reactionShift').addEventListener('change', (e) => {
+                    this.reactionShift = e.target.checked;
+                });
+                
+                document.getElementById('sensitivityOscillation').addEventListener('change', (e) => {
+                    this.sensitivityOscillation = e.target.checked;
+                });
+                
+                document.getElementById('reactionBalance').addEventListener('input', (e) => {
+                    this.reactionBalance = parseFloat(e.target.value) / 100;
+                    const labels = ['Beats', 'Rhythm', 'Balanced', 'Harmony', 'Melody'];
+                    const index = Math.floor(this.reactionBalance * (labels.length - 1));
+                    document.getElementById('reactionValue').textContent = labels[index];
+                });
+                
+                // Canvas click for center origin
+                this.canvas.addEventListener('click', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.centerX = (e.clientX - rect.left) / this.canvas.width;
+                    this.centerY = (e.clientY - rect.top) / this.canvas.height;
+                    this.updateCenterUI();
+                });
+                
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    switch(e.code) {
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            this.centerY = Math.max(0, this.centerY - 0.05);
+                            this.updateCenterUI();
+                            break;
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            this.centerY = Math.min(1, this.centerY + 0.05);
+                            this.updateCenterUI();
+                            break;
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            this.centerX = Math.max(0, this.centerX - 0.05);
+                            this.updateCenterUI();
+                            break;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            this.centerX = Math.min(1, this.centerX + 0.05);
+                            this.updateCenterUI();
+                            break;
+                        case 'Space':
+                            e.preventDefault();
+                            this.isPlaying = !this.isPlaying;
+                            this.updateStatus(this.isPlaying ? 'Resumed' : 'Paused');
+                            break;
+                        case 'Home':
+                            e.preventDefault();
+                            this.resetCenter();
+                            break;
+                        case 'KeyR':
+                            e.preventDefault();
+                            this.refreshVisualization();
+                            break;
+                    }
+                });
+            }
+            
+            updateCenterUI() {
+                document.getElementById('centerX').value = Math.floor(this.centerX * 100);
+                document.getElementById('centerY').value = Math.floor(this.centerY * 100);
+                document.getElementById('centerXValue').textContent = Math.floor(this.centerX * 100) + '%';
+                document.getElementById('centerYValue').textContent = Math.floor(this.centerY * 100) + '%';
+            }
+            
+            resetCenter() {
+                this.centerX = 0.5;
+                this.centerY = 0.5;
+                this.updateCenterUI();
+            }
+            
+            refreshVisualization() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.initPhysicsSystems();
+                this.time = 0;
+                this.evolutionTimer = 0;
+                this.updateStatus('Visualization refreshed');
+            }
+            
+            async setupAudioContext() {
+                // Properly close old context first
+                if (this.audioContext && this.audioContext.state !== 'closed') {
+                    await this.audioContext.close();
+                }
+                
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 4096;
+                this.analyser.smoothingTimeConstant = 0.75;
+                this.bufferLength = this.analyser.frequencyBinCount;
+                this.dataArray = new Uint8Array(this.bufferLength);
+                this.sourceNodes = []; // Reset source nodes array
+                
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+            }
+            
+            stopAudio() {
+                // Disconnect all source nodes
+                this.sourceNodes.forEach(node => {
+                    try {
+                        node.stop && node.stop();
+                        node.disconnect && node.disconnect();
+                    } catch (e) {
+                        // Node might already be stopped
+                    }
+                });
+                this.sourceNodes = [];
+                this.currentSource = null;
+                
+                // Close audio context
+                if (this.audioContext && this.audioContext.state !== 'closed') {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                    this.analyser = null;
+                }
+                
+                this.isPlaying = false;
+                this.updateStatus('Audio stopped - Ready for new input');
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            async loadAudioFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                this.stopAudio();
+                await this.setupAudioContext();
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                    
+                    const source = this.audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(this.analyser);
+                    this.analyser.connect(this.audioContext.destination);
+                    
+                    this.sourceNodes.push(source);
+                    source.start(0);
+                    this.isPlaying = true;
+                    this.updateStatus('Playing: ' + file.name);
+                } catch (error) {
+                    this.updateStatus('Error loading audio file');
+                    console.error('Audio loading error:', error);
+                }
+            }
+            
+            async startMicrophone() {
+                try {
+                    this.stopAudio();
+                    await this.setupAudioContext();
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            autoGainControl: false,
+                            noiseSuppression: false
+                        } 
+                    });
+                    
+                    const source = this.audioContext.createMediaStreamSource(stream);
+                    source.connect(this.analyser);
+                    
+                    this.sourceNodes.push(source);
+                    this.isPlaying = true;
+                    this.updateStatus('Microphone active');
+                } catch (error) {
+                    this.updateStatus('Microphone access denied');
+                    console.error('Microphone error:', error);
+                }
+            }
+            
+            async startDemo() {
+                this.stopAudio();
+                await this.setupAudioContext();
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.1;
+                gainNode.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                const frequencies = [220, 440, 660, 880, 1320];
+                
+                frequencies.forEach((freq, i) => {
+                    const osc = this.audioContext.createOscillator();
+                    const oscGain = this.audioContext.createGain();
+                    
+                    osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+                    oscGain.gain.value = 1 / (i + 1);
+                    
+                    osc.connect(oscGain);
+                    oscGain.connect(gainNode);
+                    osc.start();
+                    
+                    this.sourceNodes.push(osc);
+                    
+                    setInterval(() => {
+                        if (this.isPlaying && osc.frequency) {
+                            const modulation = Math.sin(Date.now() * 0.001 * (i + 1)) * 50;
+                            try {
+                                osc.frequency.setValueAtTime(
+                                    freq + modulation,
+                                    this.audioContext.currentTime
+                                );
+                            } catch (e) {
+                                // Oscillator might be stopped
+                            }
+                        }
+                    }, 100);
+                });
+                
+                this.isPlaying = true;
+                this.updateStatus('Harmonic demo active');
+            }
+            
+            async startBeatsDemo() {
+                this.stopAudio();
+                await this.setupAudioContext();
+                
+                const gainNode = this.audioContext.createGain();
+                gainNode.gain.value = 0.15;
+                gainNode.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                const createBeat = (freq, interval, type = 'sine') => {
+                    const beatInterval = setInterval(() => {
+                        if (!this.isPlaying || !this.audioContext) {
+                            clearInterval(beatInterval);
+                            return;
+                        }
+                        
+                        try {
+                            const osc = this.audioContext.createOscillator();
+                            const envelope = this.audioContext.createGain();
+                            
+                            osc.frequency.value = freq;
+                            osc.type = type;
+                            envelope.gain.setValueAtTime(0, this.audioContext.currentTime);
+                            envelope.gain.linearRampToValueAtTime(0.8, this.audioContext.currentTime + 0.01);
+                            envelope.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                            
+                            osc.connect(envelope);
+                            envelope.connect(gainNode);
+                            
+                            osc.start();
+                            osc.stop(this.audioContext.currentTime + 0.3);
+                        } catch (e) {
+                            clearInterval(beatInterval);
+                        }
+                    }, interval);
+                };
+                
+                createBeat(60, 500, 'sine');
+                createBeat(200, 1000, 'triangle');
+                createBeat(8000, 250, 'square');
+                createBeat(150, 750, 'sawtooth');
+                
+                this.isPlaying = true;
+                this.updateStatus('Beat demo active');
+            }
+            
+            initPhysicsSystems() {
+                this.particles = [];
+                for (let i = 0; i < 300; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 2 + 1,
+                        frequency: i,
+                        phase: Math.random() * Math.PI * 2,
+                        energy: 0,
+                        mass: Math.random() * 0.5 + 0.5
+                    });
+                }
+                
+                // Initialize chamber tracks
+                this.chamberTracks = [];
+            }
+            
+            analyzeAudio() {
+                if (!this.analyser || !this.dataArray) return;
+                
+                this.analyser.getByteFrequencyData(this.dataArray);
+                this.calculateAdvancedFeatures();
+                
+                if (this.sensitivityOscillation) {
+                    const oscillation = Math.sin(this.time * 0.5) * 0.3 + 1.0;
+                    this.currentSensitivity = this.sensitivity * oscillation;
+                } else {
+                    this.currentSensitivity = this.sensitivity;
+                }
+                
+                let weightedSum = 0;
+                let magnitudeSum = 0;
+                
+                for (let i = 0; i < this.bufferLength; i++) {
+                    const magnitude = this.dataArray[i];
+                    weightedSum += magnitude * i;
+                    magnitudeSum += magnitude;
+                }
+                
+                this.spectralCentroid = magnitudeSum > 0 ? weightedSum / magnitudeSum : 0;
+                
+                if (this.freqHistory.length > 0) {
+                    let flux = 0;
+                    const prevFrame = this.freqHistory[this.freqHistory.length - 1];
+                    for (let i = 0; i < this.bufferLength; i++) {
+                        const diff = this.dataArray[i] - (prevFrame[i] || 0);
+                        if (diff > 0) flux += diff;
+                    }
+                    this.spectralFlux = flux;
+                }
+                
+                this.freqHistory.push([...this.dataArray]);
+                if (this.freqHistory.length > 10) {
+                    this.freqHistory.shift();
+                }
+                
+                this.harmonics = [];
+                for (let i = 1; i < this.bufferLength / 8; i *= 2) {
+                    if (this.dataArray[i] > 50) {
+                        this.harmonics.push({
+                            frequency: i,
+                            amplitude: this.dataArray[i]
+                        });
+                    }
+                }
+            }
+            
+            calculateAdvancedFeatures() {
+                if (!this.dataArray) return;
+                
+                let beatEnergy = 0;
+                for (let i = 0; i < Math.min(this.bufferLength / 8, 20); i++) {
+                    beatEnergy += this.dataArray[i];
+                }
+                beatEnergy /= 20;
+                
+                let melodyEnergy = 0;
+                const melodyStart = Math.floor(this.bufferLength / 4);
+                const melodyEnd = Math.floor(this.bufferLength / 2);
+                for (let i = melodyStart; i < melodyEnd; i++) {
+                    melodyEnergy += this.dataArray[i];
+                }
+                melodyEnergy /= (melodyEnd - melodyStart);
+                
+                this.currentBeatEnergy = beatEnergy;
+                this.currentMelodyEnergy = melodyEnergy;
+                
+                if (this.reactionShift) {
+                    const totalEnergy = beatEnergy + melodyEnergy;
+                    if (totalEnergy > 0) {
+                        const dynamicBalance = melodyEnergy / totalEnergy;
+                        this.dynamicReactionBalance = this.reactionBalance * 0.7 + dynamicBalance * 0.3;
+                    } else {
+                        this.dynamicReactionBalance = this.reactionBalance;
+                    }
+                } else {
+                    this.dynamicReactionBalance = this.reactionBalance;
+                }
+            }
+            
+            getReactiveAmplitude(index) {
+                if (!this.dataArray) return 0;
+                
+                const rawAmplitude = this.dataArray[index];
+                
+                if (this.reactionShift) {
+                    const beatResponse = this.currentBeatEnergy / 255;
+                    const melodyResponse = this.currentMelodyEnergy / 255;
+                    
+                    const blendedResponse = beatResponse * (1 - this.dynamicReactionBalance) + 
+                                         melodyResponse * this.dynamicReactionBalance;
+                    
+                    return rawAmplitude * this.currentSensitivity * (0.5 + blendedResponse);
+                }
+                
+                return rawAmplitude * this.currentSensitivity;
+            }
+            
+            getScientificColor(value, mode = 'spectrum') {
+                const normalized = Math.max(0, Math.min(1, value));
+                
+                switch (mode) {
+                    case 'temperature':
+                        if (normalized < 0.33) {
+                            return `rgb(${Math.floor(255 * normalized * 3)}, 0, 0)`;
+                        } else if (normalized < 0.66) {
+                            const g = Math.floor(255 * (normalized - 0.33) * 3);
+                            return `rgb(255, ${g}, 0)`;
+                        } else {
+                            const b = Math.floor(255 * (normalized - 0.66) * 3);
+                            return `rgb(255, 255, ${b})`;
+                        }
+                    
+                    case 'phase':
+                        const hue = (normalized * 360 + this.time * 50) % 360;
+                        return `hsl(${hue}, 80%, 60%)`;
+                    
+                    case 'scientific':
+                        const r = Math.floor(255 * Math.sin(normalized * Math.PI));
+                        const g = Math.floor(255 * Math.sin(normalized * Math.PI + Math.PI/3));
+                        const b = Math.floor(255 * Math.sin(normalized * Math.PI + 2*Math.PI/3));
+                        return `rgb(${r}, ${g}, ${b})`;
+                    
+                    case 'energy':
+                        const energy = normalized * normalized;
+                        return `rgb(${Math.floor(255 * energy)}, ${Math.floor(128 * energy)}, ${Math.floor(64 * Math.sqrt(energy))})`;
+                    
+                    default:
+                        const wavelength = 380 + normalized * 320;
+                        return this.wavelengthToRgb(wavelength);
+                }
+            }
+            
+            wavelengthToRgb(wavelength) {
+                let r, g, b;
+                
+                if (wavelength < 440) {
+                    r = -(wavelength - 440) / (440 - 380);
+                    g = 0;
+                    b = 1;
+                } else if (wavelength < 490) {
+                    r = 0;
+                    g = (wavelength - 440) / (490 - 440);
+                    b = 1;
+                } else if (wavelength < 510) {
+                    r = 0;
+                    g = 1;
+                    b = -(wavelength - 510) / (510 - 490);
+                } else if (wavelength < 580) {
+                    r = (wavelength - 510) / (580 - 510);
+                    g = 1;
+                    b = 0;
+                } else if (wavelength < 645) {
+                    r = 1;
+                    g = -(wavelength - 645) / (645 - 580);
+                    b = 0;
+                } else {
+                    r = 1;
+                    g = 0;
+                    b = 0;
+                }
+                
+                return `rgb(${Math.floor(r * 255)}, ${Math.floor(g * 255)}, ${Math.floor(b * 255)})`;
+            }
+            
+            // Wilson Cloud Chamber Visualization - Enhanced
+            drawWilsonChamber() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                // Generate new particle tracks based on audio
+                for (let i = 0; i < Math.min(this.bufferLength, 100); i += 5) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude > 60) {
+                        const particleType = Math.floor((amplitude / 255) * 4);
+                        
+                        // Create particle track with physics-based properties
+                        const track = {
+                            type: particleType, // 0=electron, 1=muon, 2=proton, 3=alpha
+                            startX: centerX + (Math.random() - 0.5) * 400,
+                            startY: centerY + (Math.random() - 0.5) * 400,
+                            angle: Math.random() * Math.PI * 2,
+                            energy: amplitude / 255,
+                            age: 0,
+                            maxAge: 60 + (amplitude / 255) * 120,
+                            points: [],
+                            curvature: 0,
+                            charge: particleType % 2 === 0 ? 1 : -1,
+                            mass: 1,
+                            velocity: 0,
+                            ionization: 0
+                        };
+                        
+                        // Set particle-specific properties based on real physics
+                        switch (particleType) {
+                            case 0: // Electron - light, highly curved
+                                track.curvature = 0.02 * track.charge;
+                                track.thickness = 1;
+                                track.color = 'cyan';
+                                track.mass = 0.511; // MeV/c²
+                                track.velocity = 0.9; // Relativistic
+                                track.ionization = 2;
+                                break;
+                            case 1: // Muon - medium mass, medium curvature
+                                track.curvature = 0.01 * track.charge;
+                                track.thickness = 2;
+                                track.color = 'lightblue';
+                                track.mass = 105.7; // MeV/c²
+                                track.velocity = 0.7;
+                                track.ionization = 3;
+                                break;
+                            case 2: // Proton - heavy, less curved
+                                track.curvature = 0.005 * track.charge;
+                                track.thickness = 3;
+                                track.color = 'white';
+                                track.mass = 938.3; // MeV/c²
+                                track.velocity = 0.5;
+                                track.ionization = 8;
+                                break;
+                            case 3: // Alpha particle - very heavy, short track
+                                track.curvature = 0.003 * track.charge;
+                                track.thickness = 4;
+                                track.color = 'yellow';
+                                track.mass = 3727; // MeV/c²
+                                track.velocity = 0.3;
+                                track.ionization = 20;
+                                track.maxAge = 30; // Shorter range
+                                break;
+                        }
+                        
+                        this.chamberTracks.push(track);
+                    }
+                }
+                
+                // Magnetic field strength from audio
+                const magneticField = (this.currentBeatEnergy + this.currentMelodyEnergy) / 512;
+                
+                // Update and draw tracks
+                this.chamberTracks = this.chamberTracks.filter(track => {
+                    track.age++;
+                    
+                    // Add new point to track with realistic physics
+                    if (track.age % 2 === 0) {
+                        const distance = track.age * (2 + track.velocity * 3);
+                        
+                        // Magnetic field curvature (Lorentz force)
+                        const magneticCurvature = track.curvature * magneticField;
+                        const currentAngle = track.angle + magneticCurvature * track.age / track.mass;
+                        
+                        // Energy loss and scattering
+                        const energyLoss = track.age * 0.001 * track.ionization;
+                        const scattering = (Math.random() - 0.5) * 0.05 * track.ionization;
+                        
+                        const x = track.startX + Math.cos(currentAngle + scattering) * distance * (1 - energyLoss);
+                        const y = track.startY + Math.sin(currentAngle + scattering) * distance * (1 - energyLoss);
+                        
+                        track.points.push({ x, y, energy: 1 - energyLoss });
+                        
+                        // Limit track length
+                        if (track.points.length > 50) {
+                            track.points.shift();
+                        }
+                    }
+                    
+                    // Draw track with realistic ionization
+                    if (track.points.length > 1) {
+                        const alpha = Math.max(0, 1 - (track.age / track.maxAge));
+                        
+                        for (let i = 0; i < track.points.length - 1; i++) {
+                            const point1 = track.points[i];
+                            const point2 = track.points[i + 1];
+                            
+                            const segmentAlpha = alpha * (i / track.points.length) * point1.energy;
+                            
+                            // Main track
+                            this.ctx.strokeStyle = track.color;
+                            this.ctx.lineWidth = track.thickness * point1.energy;
+                            this.ctx.globalAlpha = segmentAlpha;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(point1.x, point1.y);
+                            this.ctx.lineTo(point2.x, point2.y);
+                            this.ctx.stroke();
+                            
+                            // Ionization trail (vapor condensation)
+                            if (i % 3 === 0 && segmentAlpha > 0.3) {
+                                for (let j = 0; j < track.ionization; j++) {
+                                    const offsetX = (Math.random() - 0.5) * 4;
+                                    const offsetY = (Math.random() - 0.5) * 4;
+                                    
+                                    this.ctx.fillStyle = track.color;
+                                    this.ctx.globalAlpha = segmentAlpha * 0.5;
+                                    this.ctx.beginPath();
+                                    this.ctx.arc(point1.x + offsetX, point1.y + offsetY, 0.5, 0, Math.PI * 2);
+                                    this.ctx.fill();
+                                }
+                            }
+                        }
+                        
+                        // Draw particle at track end with glow effect
+                        const lastPoint = track.points[track.points.length - 1];
+                        this.ctx.fillStyle = track.color;
+                        this.ctx.globalAlpha = alpha;
+                        
+                        // Particle core
+                        this.ctx.beginPath();
+                        this.ctx.arc(lastPoint.x, lastPoint.y, track.thickness, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        // Particle glow
+                        this.ctx.globalAlpha = alpha * 0.3;
+                        this.ctx.beginPath();
+                        this.ctx.arc(lastPoint.x, lastPoint.y, track.thickness * 3, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    return track.age < track.maxAge;
+                });
+                
+                // Draw chamber apparatus with realistic design
+                this.ctx.strokeStyle = 'rgba(150, 150, 150, 0.6)';
+                this.ctx.lineWidth = 3;
+                this.ctx.globalAlpha = 0.4;
+                
+                // Main chamber cylinder
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 300, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Inner observation window
+                this.ctx.strokeStyle = 'rgba(100, 150, 255, 0.5)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 250, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Magnetic field coils (superconducting)
+                this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+                this.ctx.lineWidth = 4;
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const x = centerX + Math.cos(angle) * 320;
+                    const y = centerY + Math.sin(angle) * 320;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 12, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+                
+                // Draw magnetic field lines with audio modulation
+                if (magneticField > 0.1) {
+                    this.ctx.strokeStyle = `rgba(0, 150, 255, ${magneticField * 0.6})`;
+                    this.ctx.lineWidth = 1;
+                    
+                    for (let i = 0; i < 15; i++) {
+                        const radius = 80 + i * 15;
+                        const fieldStrength = magneticField * (1 - i * 0.05);
+                        
+                        if (fieldStrength > 0) {
+                            this.ctx.globalAlpha = fieldStrength;
+                            this.ctx.beginPath();
+                            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Particle detector arrays
+                this.ctx.strokeStyle = 'rgba(255, 255, 100, 0.5)';
+                this.ctx.lineWidth = 2;
+                this.ctx.globalAlpha = 0.6;
+                
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const x1 = centerX + Math.cos(angle) * 270;
+                    const y1 = centerY + Math.sin(angle) * 270;
+                    const x2 = centerX + Math.cos(angle) * 290;
+                    const y2 = centerY + Math.sin(angle) * 290;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x1, y1);
+                    this.ctx.lineTo(x2, y2);
+                    this.ctx.stroke();
+                }
+                
+                // Chamber status and scientific readouts
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                this.ctx.font = '12px monospace';
+                this.ctx.globalAlpha = 0.8;
+                
+                const stats = [
+                    `Active Tracks: ${this.chamberTracks.length}`,
+                    `B-Field: ${(magneticField * 10).toFixed(2)} T`,
+                    `Pressure: ${(0.1 + magneticField * 0.9).toFixed(2)} atm`,
+                    `Temperature: ${(273 - magneticField * 50).toFixed(1)} K`,
+                    `Supersaturation: ${(magneticField * 100).toFixed(1)}%`
+                ];
+                
+                stats.forEach((stat, i) => {
+                    this.ctx.fillText(stat, centerX - 280, centerY - 200 + i * 15);
+                });
+                
+                // Particle type legend with physics data
+                const particles = [
+                    { name: 'e⁻', color: 'cyan', mass: '0.511 MeV/c²', desc: 'electron' },
+                    { name: 'μ⁻', color: 'lightblue', mass: '105.7 MeV/c²', desc: 'muon' },
+                    { name: 'p⁺', color: 'white', mass: '938.3 MeV/c²', desc: 'proton' },
+                    { name: 'α', color: 'yellow', mass: '3.7 GeV/c²', desc: 'alpha particle' }
+                ];
+                
+                this.ctx.font = '10px monospace';
+                particles.forEach((particle, i) => {
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.fillText(`${particle.name} ${particle.desc}`, centerX + 180, centerY - 180 + i * 20);
+                    this.ctx.fillStyle = 'rgba(200, 200, 200, 0.7)';
+                    this.ctx.fillText(particle.mass, centerX + 180, centerY - 168 + i * 20);
+                });
+                
+                // Event rate meter
+                const eventRate = this.chamberTracks.length;
+                this.ctx.fillStyle = eventRate > 10 ? 'rgba(255, 100, 100, 0.8)' : 'rgba(100, 255, 100, 0.8)';
+                this.ctx.fillRect(centerX - 290, centerY + 180, eventRate * 5, 10);
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                this.ctx.fillText(`Event Rate: ${eventRate}/s`, centerX - 290, centerY + 200);
+                
+                // Real-time energy spectrum display
+                this.ctx.strokeStyle = 'rgba(100, 255, 100, 0.6)';
+                this.ctx.lineWidth = 1;
+                this.ctx.globalAlpha = 0.7;
+                
+                this.ctx.beginPath();
+                for (let i = 0; i < Math.min(this.bufferLength, 100); i += 2) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    const x = centerX - 200 + i * 2;
+                    const y = centerY + 250 - (amplitude / 255) * 50;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                this.ctx.stroke();
+                
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                this.ctx.font = '10px monospace';
+                this.ctx.fillText('Energy Spectrum (keV)', centerX - 200, centerY + 270);
+            }
+            
+            // Enhanced Particle Physics
+            drawParticlePhysics() {
+                if (!this.dataArray) return;
+                
+                const scaledC = 50;
+                
+                for (let i = 0; i < this.particles.length && i < this.bufferLength; i++) {
+                    const particle = this.particles[i];
+                    const amplitude = this.getReactiveAmplitude(i);
+                    
+                    const velocity = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                    const gamma = 1 / Math.sqrt(1 - (velocity * velocity) / (scaledC * scaledC));
+                    particle.energy = (amplitude / 255) * gamma;
+                    
+                    let fx = 0, fy = 0;
+                    
+                    for (let j = 0; j < this.particles.length; j += 10) {
+                        if (i === j) continue;
+                        const other = this.particles[j];
+                        
+                        const dx = other.x - particle.x;
+                        const dy = other.y - particle.y;
+                        const r = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (r > 0 && r < 100) {
+                            const force = (particle.energy * other.energy) / (r * r) * 100;
+                            fx += (dx / r) * force;
+                            fy += (dy / r) * force;
+                        }
+                    }
+                    
+                    const fieldStrength = this.spectralCentroid / this.bufferLength;
+                    fx += Math.sin(this.time * 0.1 + i * 0.1) * fieldStrength * 10;
+                    fy += Math.cos(this.time * 0.1 + i * 0.1) * fieldStrength * 10;
+                    
+                    const relativistic_mass = particle.mass * gamma;
+                    particle.vx += fx / relativistic_mass * 0.1;
+                    particle.vy += fy / relativistic_mass * 0.1;
+                    
+                    const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                    if (speed > scaledC * 0.9) {
+                        particle.vx = (particle.vx / speed) * scaledC * 0.9;
+                        particle.vy = (particle.vy / speed) * scaledC * 0.9;
+                    }
+                    
+                    particle.x += particle.vx * 0.5;
+                    particle.y += particle.vy * 0.5;
+                    
+                    if (particle.x < 0 || particle.x > this.canvas.width) particle.vx *= -0.8;
+                    if (particle.y < 0 || particle.y > this.canvas.height) particle.vy *= -0.8;
+                    particle.x = Math.max(0, Math.min(this.canvas.width, particle.x));
+                    particle.y = Math.max(0, Math.min(this.canvas.height, particle.y));
+                    
+                    const color = this.getScientificColor(particle.energy, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.6 + particle.energy * 0.4;
+                    
+                    const size = particle.size * (1 + particle.energy * 3) / gamma;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    if (particle.energy > 0.3) {
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = 0.5;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(particle.x, particle.y);
+                        this.ctx.lineTo(particle.x + particle.vx * 2, particle.y + particle.vy * 2);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            // Wave Interference - Optimized
+            drawWaveInterference() {
+                if (!this.dataArray) return;
+                
+                const stepSize = 4;
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                const sources = [];
+                for (let i = 0; i < Math.min(this.bufferLength, 20); i += 3) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude > 30) {
+                        sources.push({
+                            x: centerX + Math.cos(i * 0.1) * 200,
+                            y: centerY + Math.sin(i * 0.1) * 200,
+                            amplitude: amplitude / 255,
+                            frequency: (i + 1) * 0.02
+                        });
+                    }
+                }
+                
+                for (let x = 0; x < this.canvas.width; x += stepSize) {
+                    for (let y = 0; y < this.canvas.height; y += stepSize) {
+                        let totalAmplitude = 0;
+                        
+                        sources.forEach(source => {
+                            const dx = x - source.x;
+                            const dy = y - source.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            const wave = Math.sin(distance * source.frequency + this.time * this.evolution) * source.amplitude;
+                            totalAmplitude += wave;
+                        });
+                        
+                        if (Math.abs(totalAmplitude) > 0.1) {
+                            const intensity = Math.abs(totalAmplitude);
+                            const color = this.getScientificColor(intensity, this.colorMode);
+                            
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = intensity * 0.8;
+                            this.ctx.fillRect(x, y, stepSize, stepSize);
+                        }
+                    }
+                }
+            }
+            
+            // Advanced Crystal Growth - Crystallographic
+            drawCrystalGrowth() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                const crystalSystems = [
+                    { name: 'cubic', angles: [0, Math.PI/2, Math.PI, 3*Math.PI/2] },
+                    { name: 'hexagonal', angles: [0, Math.PI/3, 2*Math.PI/3, Math.PI, 4*Math.PI/3, 5*Math.PI/3] },
+                    { name: 'tetragonal', angles: [0, Math.PI/2, Math.PI, 3*Math.PI/2, Math.PI/4, 3*Math.PI/4, 5*Math.PI/4, 7*Math.PI/4] }
+                ];
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 60); i += 4) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude < 40) continue;
+                    
+                    const systemIndex = Math.floor(i / 20) % crystalSystems.length;
+                    const system = crystalSystems[systemIndex];
+                    const energy = amplitude / 255;
+                    
+                    const h = Math.floor((i % 3) + 1);
+                    const k = Math.floor(((i + 1) % 3) + 1);
+                    const l = Math.floor(((i + 2) % 3) + 1);
+                    
+                    system.angles.forEach(angle => {
+                        const distance = 80 + energy * 150;
+                        const x = centerX + Math.cos(angle) * distance;
+                        const y = centerY + Math.sin(angle) * distance;
+                        
+                        const cellSize = 10 + energy * 20;
+                        const color = this.getScientificColor(energy * (h + k + l) / 9, this.colorMode);
+                        
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 1 + energy * 2;
+                        this.ctx.globalAlpha = 0.7;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.rect(x - cellSize/2, y - cellSize/2, cellSize, cellSize);
+                        this.ctx.stroke();
+                        
+                        const atomPositions = this.getAtomicPositions(system.name, cellSize);
+                        atomPositions.forEach(pos => {
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = energy;
+                            this.ctx.beginPath();
+                            this.ctx.arc(x + pos.x, y + pos.y, 2 + energy * 3, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        });
+                        
+                        if (energy > 0.5) {
+                            system.angles.forEach(nextAngle => {
+                                const nextX = centerX + Math.cos(nextAngle) * distance;
+                                const nextY = centerY + Math.sin(nextAngle) * distance;
+                                const dx = Math.abs(nextX - x);
+                                const dy = Math.abs(nextY - y);
+                                
+                                if (dx < 100 && dy < 100) {
+                                    this.ctx.beginPath();
+                                    this.ctx.moveTo(x, y);
+                                    this.ctx.lineTo(nextX, nextY);
+                                    this.ctx.stroke();
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+            
+            getAtomicPositions(crystalType, size) {
+                const positions = [];
+                const half = size / 2;
+                
+                switch (crystalType) {
+                    case 'cubic':
+                        positions.push({x: -half, y: -half}, {x: half, y: -half}, {x: half, y: half}, {x: -half, y: half});
+                        break;
+                    case 'hexagonal':
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (i * Math.PI) / 3;
+                            positions.push({
+                                x: Math.cos(angle) * half * 0.8,
+                                y: Math.sin(angle) * half * 0.8
+                            });
+                        }
+                        break;
+                    case 'tetragonal':
+                        positions.push({x: 0, y: -half}, {x: half, y: 0}, {x: 0, y: half}, {x: -half, y: 0});
+                        break;
+                }
+                
+                return positions;
+            }
+            
+            // Quantum Field Visualization with Superposition
+            drawQuantumFields() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 50); i += 3) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude < 25) continue;
+                    
+                    const probability = amplitude / 255;
+                    const energy = i * 0.1;
+                    
+                    for (let x = 0; x < this.canvas.width; x += 5) {
+                        const xi = (x - centerX) / 100;
+                        
+                        let psi = 0;
+                        const n = Math.floor(energy) % 4;
+                        
+                        switch (n) {
+                            case 0:
+                                psi = Math.exp(-xi * xi / 2);
+                                break;
+                            case 1:
+                                psi = 2 * xi * Math.exp(-xi * xi / 2);
+                                break;
+                            case 2:
+                                psi = (4 * xi * xi - 2) * Math.exp(-xi * xi / 2);
+                                break;
+                            case 3:
+                                psi = (8 * xi * xi * xi - 12 * xi) * Math.exp(-xi * xi / 2);
+                                break;
+                        }
+                        
+                        const phase = energy * this.time * 0.1;
+                        const realPart = psi * Math.cos(phase) * probability;
+                        const imagPart = psi * Math.sin(phase) * probability;
+                        
+                        const probDensity = realPart * realPart + imagPart * imagPart;
+                        
+                        if (probDensity > 0.01) {
+                            const y = centerY + realPart * 200;
+                            const color = this.getScientificColor(probDensity, this.colorMode);
+                            
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = probDensity * 2;
+                            this.ctx.beginPath();
+                            this.ctx.arc(x, y, 2 + probDensity * 5, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            
+                            if (Math.abs(xi) > 2 && probDensity > 0.05) {
+                                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                                this.ctx.lineWidth = 1;
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(x, centerY);
+                                this.ctx.lineTo(x, y);
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                }
+                
+                for (let n = 0; n < 8; n++) {
+                    const energy = (n + 0.5) * 30;
+                    const y = this.canvas.height - 100 - energy * 2;
+                    const amplitude = this.dataArray[n * 10] || 0;
+                    
+                    if (amplitude > 30) {
+                        const color = this.getScientificColor(amplitude / 255, this.colorMode);
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = amplitude / 255;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(50, y);
+                        this.ctx.lineTo(150, y);
+                        this.ctx.stroke();
+                        
+                        this.ctx.fillStyle = color;
+                        this.ctx.fillRect(160, y - 2, amplitude / 5, 4);
+                    }
+                }
+            }
+            
+            // Continue with all other visualization methods...
+            // [All other methods would be included here in the complete version]
+            
+            // Legacy implementations
+            drawQuantumLegacy() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                for (let i = 0; i < this.bufferLength; i += 8) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude < 20) continue;
+                    
+                    const probability = amplitude / 255;
+                    const numDots = Math.floor(probability * 50 * this.complexity);
+                    
+                    const baseX = (i / this.bufferLength) * this.canvas.width;
+                    const baseY = centerY;
+                    
+                    for (let j = 0; j < numDots; j++) {
+                        const sigma = 50 + probability * 100;
+                        const x = baseX + (Math.random() - 0.5) * sigma * Math.sqrt(-2 * Math.log(Math.random()));
+                        const y = baseY + (Math.random() - 0.5) * sigma * Math.sqrt(-2 * Math.log(Math.random()));
+                        
+                        if (x >= 0 && x < this.canvas.width && y >= 0 && y < this.canvas.height) {
+                            const color = this.getScientificColor(i / this.bufferLength, this.colorMode);
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = 0.3 * probability;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.arc(x, y, 1 + probability * 2, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                    }
+                }
+            }
+            
+            drawNeuralLegacy() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                const nodes = [];
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 80); i += 4) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    const activation = amplitude / 255;
+                    
+                    const layer = Math.floor(i / 20);
+                    const nodeInLayer = i % 20;
+                    
+                    const x = centerX + (layer - 2) * 150;
+                    const y = centerY + (nodeInLayer - 10) * 30;
+                    
+                    nodes.push({
+                        x: x,
+                        y: y,
+                        activation: activation,
+                        frequency: i
+                    });
+                }
+                
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < Math.min(nodes.length, i + 10); j++) {
+                        const node1 = nodes[i];
+                        const node2 = nodes[j];
+                        
+                        const weight = (node1.activation + node2.activation) / 2;
+                        if (weight > 0.2) {
+                            this.ctx.strokeStyle = this.getScientificColor(
+                                (node1.frequency + node2.frequency) / (2 * this.bufferLength),
+                                this.colorMode
+                            );
+                            this.ctx.lineWidth = weight * 3;
+                            this.ctx.globalAlpha = weight * 0.8;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(node1.x, node1.y);
+                            this.ctx.lineTo(node2.x, node2.y);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+                
+                nodes.forEach(node => {
+                    if (node.activation > 0.1) {
+                        const color = this.getScientificColor(node.frequency / this.bufferLength, this.colorMode);
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.8;
+                        
+                        const size = 3 + node.activation * 8;
+                        this.ctx.beginPath();
+                        this.ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+            }
+            
+            drawFluidDynamics() {
+                if (!this.dataArray) return;
+                
+                const stepSize = 15;
+                
+                for (let x = 0; x < this.canvas.width; x += stepSize) {
+                    for (let y = 0; y < this.canvas.height; y += stepSize) {
+                        let vx = 0, vy = 0;
+                        
+                        for (let i = 0; i < Math.min(this.bufferLength, 50); i += 5) {
+                            const amplitude = this.getReactiveAmplitude(i);
+                            const frequency = (i + 1) * 0.001;
+                            
+                            const influence = Math.sin(x * frequency + this.time * this.evolution) *
+                                            Math.cos(y * frequency + this.time * this.evolution) *
+                                            (amplitude / 255);
+                            
+                            vx += influence * Math.cos(i);
+                            vy += influence * Math.sin(i);
+                        }
+                        
+                        if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
+                            const magnitude = Math.sqrt(vx * vx + vy * vy);
+                            const color = this.getScientificColor(magnitude / 10, this.colorMode);
+                            
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = 1 + magnitude * 2;
+                            this.ctx.globalAlpha = 0.6;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y);
+                            this.ctx.lineTo(x + vx * 20, y + vy * 20);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Neural Swarm Implementation
+            drawNeuralSwarm() {
+                if (!this.dataArray) return;
+                
+                if (!this.swarmParticles) {
+                    this.swarmParticles = [];
+                    for (let i = 0; i < 100; i++) {
+                        this.swarmParticles.push({
+                            x: Math.random() * this.canvas.width,
+                            y: Math.random() * this.canvas.height,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            activation: 0
+                        });
+                    }
+                }
+                
+                this.swarmParticles.forEach((particle, i) => {
+                    const freqIndex = i % this.bufferLength;
+                    particle.activation = this.getReactiveAmplitude(freqIndex) / 255;
+                    
+                    let separationX = 0, separationY = 0;
+                    let alignmentX = 0, alignmentY = 0;
+                    let cohesionX = 0, cohesionY = 0;
+                    let neighbors = 0;
+                    
+                    this.swarmParticles.forEach((other, j) => {
+                        if (i === j) return;
+                        
+                        const dx = other.x - particle.x;
+                        const dy = other.y - particle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 50 && distance > 0) {
+                            neighbors++;
+                            
+                            separationX -= dx / distance;
+                            separationY -= dy / distance;
+                            
+                            alignmentX += other.vx;
+                            alignmentY += other.vy;
+                            
+                            cohesionX += dx;
+                            cohesionY += dy;
+                        }
+                    });
+                    
+                    if (neighbors > 0) {
+                        alignmentX /= neighbors;
+                        alignmentY /= neighbors;
+                        cohesionX /= neighbors;
+                        cohesionY /= neighbors;
+                    }
+                    
+                    const neuralForce = particle.activation * this.neuralIntensity;
+                    particle.vx += (separationX * 0.1 + alignmentX * 0.1 + cohesionX * 0.01) * neuralForce;
+                    particle.vy += (separationY * 0.1 + alignmentY * 0.1 + cohesionY * 0.01) * neuralForce;
+                    
+                    const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                    if (speed > 5) {
+                        particle.vx = (particle.vx / speed) * 5;
+                        particle.vy = (particle.vy / speed) * 5;
+                    }
+                    
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    if (particle.x < 0) particle.x = this.canvas.width;
+                    if (particle.x > this.canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = this.canvas.height;
+                    if (particle.y > this.canvas.height) particle.y = 0;
+                    
+                    const color = this.getScientificColor(particle.activation, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.7 + particle.activation * 0.3;
+                    
+                    const size = 2 + particle.activation * 6;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    if (particle.activation > 0.3) {
+                        this.swarmParticles.forEach(other => {
+                            const dx = other.x - particle.x;
+                            const dy = other.y - particle.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < 80 && other.activation > 0.3) {
+                                this.ctx.strokeStyle = color;
+                                this.ctx.lineWidth = 1;
+                                this.ctx.globalAlpha = (particle.activation + other.activation) * 0.3;
+                                
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(particle.x, particle.y);
+                                this.ctx.lineTo(other.x, other.y);
+                                this.ctx.stroke();
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Spacetime Curvature Visualization (General Relativity)
+            drawSpacetime() {
+                if (!this.dataArray) return;
+                
+                const gridSize = 30;
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                for (let i = 0; i < this.canvas.width; i += gridSize) {
+                    for (let j = 0; j < this.canvas.height; j += gridSize) {
+                        let curvature = 0;
+                        
+                        for (let k = 0; k < Math.min(this.bufferLength, 50); k += 5) {
+                            const amplitude = this.getReactiveAmplitude(k);
+                            const mass = amplitude / 255;
+                            
+                            const massX = centerX + Math.cos(k * 0.1 + this.time * 0.5) * 200;
+                            const massY = centerY + Math.sin(k * 0.1 + this.time * 0.5) * 200;
+                            
+                            const dx = i - massX;
+                            const dy = j - massY;
+                            const r = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (r > 0) {
+                                curvature += mass / (r * r) * 10000;
+                            }
+                        }
+                        
+                        const warp = Math.min(curvature, 20);
+                        const color = this.getScientificColor(curvature / 20, this.colorMode);
+                        
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 1;
+                        this.ctx.globalAlpha = 0.6;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(i, j);
+                        this.ctx.quadraticCurveTo(i + warp, j + gridSize/2, i, j + gridSize);
+                        this.ctx.stroke();
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(i, j);
+                        this.ctx.quadraticCurveTo(i + gridSize/2, j + warp, i + gridSize, j);
+                        this.ctx.stroke();
+                        
+                        if (curvature > 5) {
+                            this.ctx.strokeStyle = 'white';
+                            this.ctx.lineWidth = 2;
+                            this.ctx.globalAlpha = curvature / 20;
+                            
+                            const bendAngle = curvature * 0.1;
+                            const rayLength = 40;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(i, j);
+                            this.ctx.lineTo(
+                                i + Math.cos(bendAngle) * rayLength,
+                                j + Math.sin(bendAngle) * rayLength
+                            );
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Eigenvalue/Eigenvector Field Visualization
+            drawEigenFields() {
+                if (!this.dataArray) return;
+                
+                const matrix = this.createCovarianceMatrix();
+                const eigenData = this.calculateEigenvalues(matrix);
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                eigenData.vectors.forEach((vector, i) => {
+                    const eigenvalue = eigenData.values[i];
+                    const magnitude = Math.abs(eigenvalue) * 100;
+                    
+                    if (magnitude > 10) {
+                        for (let x = 50; x < this.canvas.width - 50; x += 60) {
+                            for (let y = 50; y < this.canvas.height - 50; y += 60) {
+                                const vx = vector.x * magnitude * 0.5;
+                                const vy = vector.y * magnitude * 0.5;
+                                
+                                const color = this.getScientificColor(Math.abs(eigenvalue), this.colorMode);
+                                this.ctx.strokeStyle = color;
+                                this.ctx.lineWidth = 2;
+                                this.ctx.globalAlpha = 0.7;
+                                
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(x, y);
+                                this.ctx.lineTo(x + vx, y + vy);
+                                this.ctx.stroke();
+                                
+                                const arrowSize = 5;
+                                const angle = Math.atan2(vy, vx);
+                                
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(x + vx, y + vy);
+                                this.ctx.lineTo(
+                                    x + vx - arrowSize * Math.cos(angle - Math.PI/6),
+                                    y + vy - arrowSize * Math.sin(angle - Math.PI/6)
+                                );
+                                this.ctx.moveTo(x + vx, y + vy);
+                                this.ctx.lineTo(
+                                    x + vx - arrowSize * Math.cos(angle + Math.PI/6),
+                                    y + vy - arrowSize * Math.sin(angle + Math.PI/6)
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                });
+                
+                eigenData.values.forEach((eigenvalue, i) => {
+                    const x = centerX + (i - eigenData.values.length/2) * 40;
+                    const y = centerY;
+                    const height = Math.abs(eigenvalue) * 200;
+                    
+                    const color = this.getScientificColor(Math.abs(eigenvalue), this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.8;
+                    
+                    this.ctx.fillRect(x - 10, y - height/2, 20, height);
+                });
+            }
+            
+            createCovarianceMatrix() {
+                const size = Math.min(8, Math.floor(this.bufferLength / 100));
+                const matrix = [];
+                
+                for (let i = 0; i < size; i++) {
+                    matrix[i] = [];
+                    for (let j = 0; j < size; j++) {
+                        const idx1 = i * Math.floor(this.bufferLength / size);
+                        const idx2 = j * Math.floor(this.bufferLength / size);
+                        
+                        const val1 = this.dataArray[idx1] || 0;
+                        const val2 = this.dataArray[idx2] || 0;
+                        
+                        matrix[i][j] = (val1 * val2) / (255 * 255);
+                    }
+                }
+                
+                return matrix;
+            }
+            
+            calculateEigenvalues(matrix) {
+                if (matrix.length >= 2) {
+                    const a = matrix[0][0];
+                    const b = matrix[0][1];
+                    const c = matrix[1][0];
+                    const d = matrix[1][1];
+                    
+                    const trace = a + d;
+                    const det = a * d - b * c;
+                    const discriminant = trace * trace - 4 * det;
+                    
+                    if (discriminant >= 0) {
+                        const sqrt_disc = Math.sqrt(discriminant);
+                        const lambda1 = (trace + sqrt_disc) / 2;
+                        const lambda2 = (trace - sqrt_disc) / 2;
+                        
+                        const v1 = { x: 1, y: (lambda1 - a) / b || 1 };
+                        const v2 = { x: 1, y: (lambda2 - a) / b || -1 };
+                        
+                        return {
+                            values: [lambda1, lambda2],
+                            vectors: [v1, v2]
+                        };
+                    }
+                }
+                
+                return { values: [0, 0], vectors: [{x: 1, y: 0}, {x: 0, y: 1}] };
+            }
+            
+            // Inversive Geometry
+            drawInversiveGeometry() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                const baseRadius = 200;
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 100); i += 10) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude < 30) continue;
+                    
+                    const energy = amplitude / 255;
+                    const angle = (i / this.bufferLength) * Math.PI * 2;
+                    
+                    const origX = centerX + Math.cos(angle) * baseRadius * energy;
+                    const origY = centerY + Math.sin(angle) * baseRadius * energy;
+                    const origR = 20 + energy * 30;
+                    
+                    const k = 1 + energy;
+                    const dist = Math.sqrt(origX * origX + origY * origY);
+                    
+                    if (dist > 0) {
+                        const inversionFactor = (k * k) / (dist * dist);
+                        const invX = origX * inversionFactor;
+                        const invY = origY * inversionFactor;
+                        const invR = origR * inversionFactor;
+                        
+                        const color = this.getScientificColor(energy, this.colorMode);
+                        
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = 0.6;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(origX, origY, origR, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        
+                        this.ctx.globalAlpha = 0.4;
+                        this.ctx.beginPath();
+                        this.ctx.arc(centerX + invX, centerY + invY, Math.abs(invR), 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        
+                        this.ctx.globalAlpha = 0.3;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(origX, origY);
+                        this.ctx.lineTo(centerX + invX, centerY + invY);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            // Plasma Dynamics
+            drawPlasma() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                const gridSize = 20;
+                
+                for (let x = 0; x < this.canvas.width; x += gridSize) {
+                    for (let y = 0; y < this.canvas.height; y += gridSize) {
+                        
+                        let Ex = 0, Ey = 0, Bz = 0;
+                        
+                        for (let i = 0; i < Math.min(this.bufferLength, 30); i += 3) {
+                            const amplitude = this.getReactiveAmplitude(i);
+                            const charge = (amplitude / 255) * 2 - 1;
+                            
+                            const sourceX = centerX + Math.cos(i * 0.2) * 200;
+                            const sourceY = centerY + Math.sin(i * 0.2 + this.time * 0.1) * 150;
+                            
+                            const dx = x - sourceX;
+                            const dy = y - sourceY;
+                            const r = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (r > 0) {
+                                const fieldStrength = charge / (r * r) * 1000;
+                                Ex += (dx / r) * fieldStrength;
+                                Ey += (dy / r) * fieldStrength;
+                                
+                                Bz += charge * Math.sin(this.time * 0.05 + i * 0.2) / r * 500;
+                            }
+                        }
+                        
+                        const B_mag = Math.abs(Bz);
+                        const E_mag = Math.sqrt(Ex * Ex + Ey * Ey);
+                        const plasma_beta = E_mag / (B_mag + 1);
+                        
+                        if (E_mag > 5) {
+                            const color = this.getScientificColor(plasma_beta, this.colorMode);
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = Math.min(3, E_mag / 10);
+                            this.ctx.globalAlpha = 0.6;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y);
+                            this.ctx.lineTo(x + Ex * 0.5, y + Ey * 0.5);
+                            this.ctx.stroke();
+                        }
+                        
+                        if (B_mag > 10) {
+                            const color = this.getScientificColor(B_mag / 50, 'phase');
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.globalAlpha = 0.4;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.arc(x, y, Math.abs(Bz) * 0.1, 0, Math.PI * 2);
+                            this.ctx.stroke();
+                        }
+                        
+                        if (plasma_beta > 2) {
+                            const instability = Math.sin(x * 0.1 + this.time * 2) * Math.cos(y * 0.1 + this.time * 1.5);
+                            if (Math.abs(instability) > 0.8) {
+                                this.ctx.fillStyle = this.getScientificColor(Math.abs(instability), 'energy');
+                                this.ctx.globalAlpha = 0.3;
+                                this.ctx.fillRect(x - 5, y - 5, 10, 10);
+                            }
+                        }
+                    }
+                }
+                
+                this.ctx.fillStyle = this.getScientificColor(1.0, 'energy');
+                this.ctx.globalAlpha = 0.8;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            // Phonon Dispersion
+            drawPhonons() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                const latticeSpacing = 40;
+                
+                for (let i = -5; i <= 5; i++) {
+                    for (let j = -5; j <= 5; j++) {
+                        const baseX = centerX + i * latticeSpacing;
+                        const baseY = centerY + j * latticeSpacing;
+                        
+                        let displacementX = 0;
+                        let displacementY = 0;
+                        
+                        for (let k = 0; k < Math.min(this.bufferLength, 100); k += 10) {
+                            const amplitude = this.getReactiveAmplitude(k);
+                            const frequency = k * 0.01;
+                            
+                            const kx = Math.cos(k * 0.1) * frequency;
+                            const ky = Math.sin(k * 0.1) * frequency;
+                            
+                            const phase = kx * i + ky * j - frequency * this.time * 0.1;
+                            const modeAmplitude = (amplitude / 255) * 10;
+                            
+                            if (k % 20 < 10) {
+                                displacementX += modeAmplitude * Math.cos(phase);
+                                displacementY += modeAmplitude * Math.sin(phase);
+                            } else {
+                                displacementX += modeAmplitude * Math.cos(phase + Math.PI);
+                                displacementY += modeAmplitude * Math.sin(phase + Math.PI);
+                            }
+                        }
+                        
+                        const x = baseX + displacementX;
+                        const y = baseY + displacementY;
+                        
+                        const energy = Math.sqrt(displacementX * displacementX + displacementY * displacementY);
+                        const color = this.getScientificColor(energy / 20, this.colorMode);
+                        
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.8;
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, 3 + energy * 0.5, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        if (i < 5) {
+                            const neighborX = baseX + latticeSpacing + displacementX;
+                            const neighborY = baseY + displacementY;
+                            
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.globalAlpha = 0.4;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y);
+                            this.ctx.lineTo(neighborX, neighborY);
+                            this.ctx.stroke();
+                        }
+                        
+                        if (j < 5) {
+                            const neighborX = baseX + displacementX;
+                            const neighborY = baseY + latticeSpacing + displacementY;
+                            
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = 1;
+                            this.ctx.globalAlpha = 0.4;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y);
+                            this.ctx.lineTo(neighborX, neighborY);
+                            this.ctx.stroke();
+                        }
+                    }
+                }
+                
+                const dispersionY = this.canvas.height - 150;
+                for (let k = 0; k < 200; k++) {
+                    const kValue = k / 50;
+                    const omega = Math.sqrt(kValue * kValue + 1);
+                    
+                    const x = 50 + k * 2;
+                    const y = dispersionY - omega * 20;
+                    
+                    const binIndex = Math.floor(k / 2);
+                    const amplitude = this.dataArray[binIndex] || 0;
+                    const color = this.getScientificColor(amplitude / 255, this.colorMode);
+                    
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = amplitude / 255;
+                    this.ctx.fillRect(x, y, 2, 2);
+                }
+            }
+            
+            // Enhanced Neural Network
+            drawNeuralNetwork() {
+                if (!this.dataArray) return;
+                
+                const neurons = [];
+                const layers = 4;
+                const neuronsPerLayer = 12;
+                
+                for (let layer = 0; layer < layers; layer++) {
+                    for (let n = 0; n < neuronsPerLayer; n++) {
+                        const x = (layer + 1) * (this.canvas.width / (layers + 1));
+                        const y = (n + 1) * (this.canvas.height / (neuronsPerLayer + 1));
+                        
+                        const freqIndex = layer * neuronsPerLayer + n;
+                        const amplitude = this.dataArray[freqIndex % this.bufferLength] || 0;
+                        const activation = amplitude / 255;
+                        
+                        neurons.push({
+                            x: x,
+                            y: y,
+                            layer: layer,
+                            activation: activation,
+                            spike: activation > 0.6,
+                            potential: activation,
+                            connections: []
+                        });
+                    }
+                }
+                
+                neurons.forEach((neuron, i) => {
+                    neurons.forEach((target, j) => {
+                        if (target.layer === neuron.layer + 1) {
+                            const weight = (Math.sin(i + j + this.time * 0.1) + 1) / 2;
+                            neuron.connections.push({ target: j, weight: weight });
+                        }
+                    });
+                });
+                
+                neurons.forEach((neuron, i) => {
+                    neuron.connections.forEach(conn => {
+                        const target = neurons[conn.target];
+                        if (!target) return;
+                        
+                        const activity = neuron.activation * target.activation * conn.weight;
+                        
+                        if (activity > 0.1) {
+                            const color = this.getScientificColor(activity, this.colorMode);
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = activity * 4;
+                            this.ctx.globalAlpha = activity;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(neuron.x, neuron.y);
+                            this.ctx.lineTo(target.x, target.y);
+                            this.ctx.stroke();
+                            
+                            if (neuron.spike) {
+                                const progress = (this.time * 5) % 1;
+                                const spikeX = neuron.x + (target.x - neuron.x) * progress;
+                                const spikeY = neuron.y + (target.y - neuron.y) * progress;
+                                
+                                this.ctx.fillStyle = 'white';
+                                this.ctx.globalAlpha = 1 - progress;
+                                this.ctx.beginPath();
+                                this.ctx.arc(spikeX, spikeY, 3, 0, Math.PI * 2);
+                                this.ctx.fill();
+                            }
+                        }
+                    });
+                });
+                
+                neurons.forEach(neuron => {
+                    const color = this.getScientificColor(neuron.activation, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.8;
+                    
+                    const size = 4 + neuron.activation * 8;
+                    this.ctx.beginPath();
+                    this.ctx.arc(neuron.x, neuron.y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    if (neuron.spike) {
+                        this.ctx.strokeStyle = 'white';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = 1;
+                        this.ctx.beginPath();
+                        this.ctx.arc(neuron.x, neuron.y, size + 5, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                    }
+                });
+            }
+            
+            // High-Performance Fractals
+            drawFractals() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                const avgAmplitude = this.dataArray.reduce((a, b) => a + b, 0) / this.bufferLength;
+                const cReal = -0.8 + (this.spectralCentroid / this.bufferLength) * 1.6;
+                const cImag = 0.156 + Math.sin(this.time * 0.1) * 0.4;
+                
+                const scale = 300 + avgAmplitude;
+                const maxIter = 20;
+                
+                for (let px = 0; px < this.canvas.width; px += 3) {
+                    for (let py = 0; py < this.canvas.height; py += 3) {
+                        let x = (px - centerX) / scale;
+                        let y = (py - centerY) / scale;
+                        
+                        let iteration = 0;
+                        while (x * x + y * y <= 4 && iteration < maxIter) {
+                            const xtemp = x * x - y * y + cReal;
+                            y = 2 * x * y + cImag;
+                            x = xtemp;
+                            iteration++;
+                        }
+                        
+                        if (iteration < maxIter) {
+                            const t = iteration / maxIter;
+                            const freqIndex = Math.floor(t * this.bufferLength) % this.bufferLength;
+                            const audioInfluence = this.getReactiveAmplitude(freqIndex) / 255;
+                            
+                            const color = this.getScientificColor(t * audioInfluence, this.colorMode);
+                            this.ctx.fillStyle = color;
+                            this.ctx.globalAlpha = 0.8;
+                            this.ctx.fillRect(px, py, 3, 3);
+                        }
+                    }
+                }
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 30); i += 5) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude > 50) {
+                        const spiralPoints = [];
+                        const turns = 3 + (amplitude / 255) * 5;
+                        
+                        for (let t = 0; t < turns * Math.PI * 2; t += 0.2) {
+                            const r = (amplitude / 255) * 100 * (t / (turns * Math.PI * 2));
+                            const x = centerX + r * Math.cos(t + this.time * 0.5);
+                            const y = centerY + r * Math.sin(t + this.time * 0.5);
+                            spiralPoints.push({ x, y });
+                        }
+                        
+                        const color = this.getScientificColor(amplitude / 255, this.colorMode);
+                        this.ctx.strokeStyle = color;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.globalAlpha = 0.6;
+                        
+                        this.ctx.beginPath();
+                        spiralPoints.forEach((point, idx) => {
+                            if (idx === 0) {
+                                this.ctx.moveTo(point.x, point.y);
+                            } else {
+                                this.ctx.lineTo(point.x, point.y);
+                            }
+                        });
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            // Hyperbolic Geometry
+            drawHyperbolic() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                const radius = Math.min(centerX, centerY) * 0.8;
+                
+                this.ctx.strokeStyle = 'white';
+                this.ctx.lineWidth = 2;
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 60); i += 6) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    if (amplitude < 30) continue;
+                    
+                    const energy = amplitude / 255;
+                    const angle = (i / 60) * Math.PI * 2;
+                    
+                    const hyperbolicR = Math.tanh(energy * 2) * radius * 0.9;
+                    
+                    const x = centerX + Math.cos(angle) * hyperbolicR;
+                    const y = centerY + Math.sin(angle) * hyperbolicR;
+                    
+                    const sides = 5 + Math.floor(energy * 3);
+                    const polyRadius = 10 + energy * 20;
+                    
+                    const color = this.getScientificColor(energy, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.globalAlpha = 0.6;
+                    
+                    this.ctx.beginPath();
+                    for (let j = 0; j < sides; j++) {
+                        const vertexAngle = (j / sides) * Math.PI * 2;
+                        const vertexX = x + Math.cos(vertexAngle) * polyRadius;
+                        const vertexY = y + Math.sin(vertexAngle) * polyRadius;
+                        
+                        if (j === 0) {
+                            this.ctx.moveTo(vertexX, vertexY);
+                        } else {
+                            this.ctx.lineTo(vertexX, vertexY);
+                        }
+                    }
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                }
+                
+                this.drawHyperbolicGrid(centerX, centerY, radius);
+            }
+            
+            drawHyperbolicGrid(centerX, centerY, radius) {
+                const divisions = 8;
+                
+                for (let i = 0; i < divisions; i++) {
+                    const angle = (i / divisions) * Math.PI * 2;
+                    
+                    this.ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.globalAlpha = 0.3;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(centerX, centerY);
+                    this.ctx.lineTo(
+                        centerX + Math.cos(angle) * radius,
+                        centerY + Math.sin(angle) * radius
+                    );
+                    this.ctx.stroke();
+                }
+                
+                for (let r = 0.2; r < 1; r += 0.2) {
+                    const hyperbolicRadius = Math.tanh(r * 2) * radius;
+                    
+                    this.ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.globalAlpha = 0.2;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(centerX, centerY, hyperbolicRadius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+            }
+            
+            // Neural Web
+            drawNeuralWeb() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                const webNodes = [];
+                const radius = Math.min(this.canvas.width, this.canvas.height) * 0.3;
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 50); i += 3) {
+                    const angle = (i / 50) * Math.PI * 2;
+                    const distance = radius * (0.3 + (i / 50) * 0.7);
+                    
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+                    
+                    const amplitude = this.getReactiveAmplitude(i);
+                    const activation = amplitude / 255;
+                    
+                    webNodes.push({
+                        x: x,
+                        y: y,
+                        activation: activation,
+                        index: i
+                    });
+                }
+                
+                webNodes.forEach((node, i) => {
+                    webNodes.forEach((target, j) => {
+                        if (i >= j) return;
+                        
+                        const distance = Math.sqrt(
+                            (target.x - node.x) * (target.x - node.x) +
+                            (target.y - node.y) * (target.y - node.y)
+                        );
+                        
+                        const connectionStrength = (node.activation + target.activation) / 2;
+                        
+                        if (connectionStrength > 0.2 && distance < radius) {
+                            const color = this.getScientificColor(connectionStrength, this.colorMode);
+                            this.ctx.strokeStyle = color;
+                            this.ctx.lineWidth = connectionStrength * 3;
+                            this.ctx.globalAlpha = connectionStrength * 0.6;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(node.x, node.y);
+                            this.ctx.lineTo(target.x, target.y);
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+                
+                webNodes.forEach(node => {
+                    if (node.activation > 0.1) {
+                        const color = this.getScientificColor(node.activation, this.colorMode);
+                        this.ctx.fillStyle = color;
+                        this.ctx.globalAlpha = 0.8;
+                        
+                        const size = 4 + node.activation * 10;
+                        this.ctx.beginPath();
+                        this.ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        
+                        if (node.activation > 0.7) {
+                            this.ctx.strokeStyle = 'white';
+                            this.ctx.lineWidth = 2;
+                            this.ctx.globalAlpha = Math.sin(this.time * 10) * 0.5 + 0.5;
+                            this.ctx.beginPath();
+                            this.ctx.arc(node.x, node.y, size + 5, 0, Math.PI * 2);
+                            this.ctx.stroke();
+                        }
+                    }
+                });
+            }
+            
+            // Neural Brain
+            drawNeuralBrain() {
+                if (!this.dataArray) return;
+                
+                const centerX = this.canvas.width * this.centerX;
+                const centerY = this.canvas.height * this.centerY;
+                
+                const leftHemisphere = [];
+                const rightHemisphere = [];
+                
+                for (let i = 0; i < Math.min(this.bufferLength, 40); i += 2) {
+                    const amplitude = this.getReactiveAmplitude(i);
+                    const activation = amplitude / 255;
+                    
+                    if (activation > 0.1) {
+                        const region = {
+                            x: centerX + (Math.random() - 0.5) * 200,
+                            y: centerY + (Math.random() - 0.5) * 150,
+                            activation: activation,
+                            type: i % 3,
+                            connections: []
+                        };
+                        
+                        if (region.x < centerX) {
+                            leftHemisphere.push(region);
+                        } else {
+                            rightHemisphere.push(region);
+                        }
+                    }
+                }
+                
+                leftHemisphere.forEach(leftRegion => {
+                    rightHemisphere.forEach(rightRegion => {
+                        const connectionStrength = (leftRegion.activation + rightRegion.activation) / 2;
+                        
+                        if (connectionStrength > 0.4) {
+                            this.ctx.strokeStyle = this.getScientificColor(connectionStrength, 'phase');
+                            this.ctx.lineWidth = connectionStrength * 2;
+                            this.ctx.globalAlpha = connectionStrength * 0.4;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(leftRegion.x, leftRegion.y);
+                            this.ctx.lineTo(rightRegion.x, rightRegion.y);
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+                
+                [...leftHemisphere, ...rightHemisphere].forEach(region => {
+                    const color = this.getScientificColor(region.activation, this.colorMode);
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.7 + region.activation * 0.3;
+                    
+                    const size = 8 + region.activation * 15;
+                    this.ctx.beginPath();
+                    this.ctx.arc(region.x, region.y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    if (region.type === 0) {
+                        this.ctx.strokeStyle = 'red';
+                    } else if (region.type === 1) {
+                        this.ctx.strokeStyle = 'blue';
+                    } else {
+                        this.ctx.strokeStyle = 'green';
+                    }
+                    
+                    this.ctx.lineWidth = 2;
+                    this.ctx.globalAlpha = region.activation;
+                    this.ctx.beginPath();
+                    this.ctx.arc(region.x, region.y, size + 3, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                });
+            }
+            
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+                
+                if (!this.isPlaying) return;
+                
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.analyzeAudio();
+                this.time += 0.016;
+                
+                if (this.autoEvolve) {
+                    this.evolutionTimer += this.evolution;
+                    if (this.evolutionTimer > 300) {
+                        this.currentPresetIndex = (this.currentPresetIndex + 1) % this.presetList.length;
+                        this.preset = this.presetList[this.currentPresetIndex];
+                        this.evolutionTimer = 0;
+                        this.updateStatus(`Auto-evolved to: ${this.preset}`);
+                    }
+                }
+                
+                this.ctx.globalAlpha = 1.0;
+                
+                switch (this.preset) {
+                    case 'particles':
+                        this.drawParticlePhysics();
+                        break;
+                    case 'waves':
+                        this.drawWaveInterference();
+                        break;
+                    case 'crystal':
+                        this.drawCrystalGrowth();
+                        break;
+                    case 'quantum':
+                        this.drawQuantumFields();
+                        break;
+                    case 'spacetime':
+                        this.drawSpacetime();
+                        break;
+                    case 'eigenfields':
+                        this.drawEigenFields();
+                        break;
+                    case 'inversive':
+                        this.drawInversiveGeometry();
+                        break;
+                    case 'plasma':
+                        this.drawPlasma();
+                        break;
+                    case 'phonons':
+                        this.drawPhonons();
+                        break;
+                    case 'neural':
+                        this.drawNeuralNetwork();
+                        break;
+                    case 'fractals':
+                        this.drawFractals();
+                        break;
+                    case 'hyperbolic':
+                        this.drawHyperbolic();
+                        break;
+                    case 'chamber':
+                        this.drawWilsonChamber();
+                        break;
+                    case 'quantum_legacy':
+                        this.drawQuantumLegacy();
+                        break;
+                    case 'neural_legacy':
+                        this.drawNeuralLegacy();
+                        break;
+                    case 'fluid':
+                        this.drawFluidDynamics();
+                        break;
+                    case 'neural_swarm':
+                        this.drawNeuralSwarm();
+                        break;
+                    case 'neural_web':
+                        this.drawNeuralWeb();
+                        break;
+                    case 'neural_brain':
+                        this.drawNeuralBrain();
+                        break;
+                    default:
+                        this.drawParticlePhysics(); // Fallback
+                        break;
+                }
+                
+                if (this.neuralMerge && this.preset !== 'neural' && !this.preset.includes('neural')) {
+                    this.ctx.globalAlpha = this.neuralIntensity * 0.3;
+                    this.drawNeuralOverlay();
+                }
+            }
+            
+            drawNeuralOverlay() {
+                const nodes = [];
+                const numNodes = 20;
+                
+                for (let i = 0; i < numNodes; i++) {
+                    const x = (i + 1) * (this.canvas.width / (numNodes + 1));
+                    const y = this.canvas.height / 2 + Math.sin(i * 0.5 + this.time) * 100;
+                    
+                    const freqIndex = Math.floor(i * this.bufferLength / numNodes);
+                    const amplitude = this.getReactiveAmplitude(freqIndex);
+                    const activation = amplitude / 255;
+                    
+                    nodes.push({ x, y, activation });
+                }
+                
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    const node1 = nodes[i];
+                    const node2 = nodes[i + 1];
+                    
+                    const weight = (node1.activation + node2.activation) / 2;
+                    if (weight > 0.1) {
+                        this.ctx.strokeStyle = this.getScientificColor(weight, 'phase');
+                        this.ctx.lineWidth = weight * 2;
+                        this.ctx.globalAlpha = this.neuralIntensity * 0.4;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(node1.x, node1.y);
+                        this.ctx.lineTo(node2.x, node2.y);
+                        this.ctx.stroke();
+                    }
+                }
+                
+                nodes.forEach(node => {
+                    if (node.activation > 0.1) {
+                        this.ctx.fillStyle = this.getScientificColor(node.activation, 'energy');
+                        this.ctx.globalAlpha = this.neuralIntensity * 0.6;
+                        
+                        const size = 2 + node.activation * 4;
+                        this.ctx.beginPath();
+                        this.ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+            }
+            
+            updateStatus(message) {
+                document.getElementById('status').innerHTML = 
+                    message + '<br><small>Keys: Arrows=Center, Space=Pause, Home=Reset, R=Refresh</small>';
+            }
+        }
+        
+        // Global functions
+        let visualizer;
+        
+        function setPreset(preset) {
+            if (visualizer) {
+                visualizer.preset = preset;
+                
+                document.querySelectorAll('.preset-buttons button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                if (preset === 'neural_swarm') {
+                    visualizer.swarmParticles = null;
+                }
+                
+                visualizer.updateStatus(`Switched to: ${preset}`);
+            }
+        }
+        
+        function resetCenter() {
+            if (visualizer) {
+                visualizer.resetCenter();
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function exportSettings() {
+            if (!visualizer) return;
+            
+            const settings = {
+                preset: visualizer.preset,
+                sensitivity: visualizer.sensitivity,
+                colorMode: visualizer.colorMode,
+                evolution: visualizer.evolution,
+                complexity: visualizer.complexity,
+                autoEvolve: visualizer.autoEvolve,
+                presetEvolution: visualizer.presetEvolution,
+                centerX: visualizer.centerX,
+                centerY: visualizer.centerY,
+                neuralMerge: visualizer.neuralMerge,
+                neuralIntensity: visualizer.neuralIntensity,
+                reactionShift: visualizer.reactionShift,
+                sensitivityOscillation: visualizer.sensitivityOscillation,
+                reactionBalance: visualizer.reactionBalance
+            };
+            
+            document.getElementById('settingsData').value = JSON.stringify(settings, null, 2);
+        }
+        
+        function importSettings() {
+            try {
+                const settingsText = document.getElementById('settingsData').value;
+                const settings = JSON.parse(settingsText);
+                
+                if (visualizer) {
+                    Object.assign(visualizer, settings);
+                    
+                    document.getElementById('sensitivity').value = visualizer.sensitivity;
+                    document.getElementById('sensitivityValue').textContent = visualizer.sensitivity.toFixed(1);
+                    document.getElementById('evolution').value = visualizer.evolution;
+                    document.getElementById('evolutionValue').textContent = visualizer.evolution.toFixed(1);
+                    document.getElementById('complexity').value = visualizer.complexity;
+                    document.getElementById('complexityValue').textContent = visualizer.complexity.toFixed(1);
+                    document.getElementById('colorMode').value = visualizer.colorMode;
+                    document.getElementById('autoEvolve').checked = visualizer.autoEvolve;
+                    document.getElementById('presetEvolution').checked = visualizer.presetEvolution || false;
+                    
+                    visualizer.updateCenterUI();
+                    
+                    document.getElementById('neuralMerge').checked = visualizer.neuralMerge || false;
+                    document.getElementById('neuralIntensity').value = visualizer.neuralIntensity || 0.5;
+                    document.getElementById('neuralValue').textContent = (visualizer.neuralIntensity || 0.5).toFixed(1);
+                    
+                    document.getElementById('reactionShift').checked = visualizer.reactionShift || false;
+                    document.getElementById('sensitivityOscillation').checked = visualizer.sensitivityOscillation || false;
+                    document.getElementById('reactionBalance').value = (visualizer.reactionBalance || 0.5) * 100;
+                    
+                    const labels = ['Beats', 'Rhythm', 'Balanced', 'Harmony', 'Melody'];
+                    const index = Math.floor((visualizer.reactionBalance || 0.5) * (labels.length - 1));
+                    document.getElementById('reactionValue').textContent = labels[index];
+                }
+            } catch (error) {
+                alert('Invalid settings format');
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            visualizer = new EigenSoundVisualizer();
+        });
+        
+        // Auto-hide controls
+        let hideTimeout;
+        document.addEventListener('mousemove', () => {
+            document.querySelector('.controls').classList.remove('hidden');
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                document.querySelector('.controls').classList.add('hidden');
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
