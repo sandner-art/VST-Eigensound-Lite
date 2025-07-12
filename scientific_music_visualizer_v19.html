@@ -696,7 +696,16 @@
                 // Initialize chamber tracks
                 this.chamberTracks = [];
                 this.brainConnections = []; //Neural Brain
+                    // --- These for the new Neural Brain ---
+                this.brainNeurons = []; // This will store all our growing neurons
+                this.maxNeurons = 300; // Performance cap
+                this.lastPruneTime = 0;
                 this.initReactionDiffusionGrid(); //Turing
+                this.latticeAtoms = []; // Crystal growth
+                this.spacetimeMasses = [];
+                this.spacetimePhotons = [];
+                this.inversiveCircles = [];
+                this.inversionCenters = [];
             }
             
             analyzeAudio() {
@@ -1273,74 +1282,131 @@
                 }
             }
             
-            // Advanced Crystal Growth - Crystallographic
-            drawCrystalGrowth() {
-                if (!this.dataArray) return;
-                
-                const centerX = this.canvas.width * this.centerX;
-                const centerY = this.canvas.height * this.centerY;
-                
-                const crystalSystems = [
-                    { name: 'cubic', angles: [0, Math.PI/2, Math.PI, 3*Math.PI/2] },
-                    { name: 'hexagonal', angles: [0, Math.PI/3, 2*Math.PI/3, Math.PI, 4*Math.PI/3, 5*Math.PI/3] },
-                    { name: 'tetragonal', angles: [0, Math.PI/2, Math.PI, 3*Math.PI/2, Math.PI/4, 3*Math.PI/4, 5*Math.PI/4, 7*Math.PI/4] }
-                ];
-                
-                for (let i = 0; i < Math.min(this.bufferLength, 60); i += 4) {
-                    const amplitude = this.getReactiveAmplitude(i);
-                    if (amplitude < 40) continue;
+/**
+ * NEW PRESET: Quantum Lattice/Crystal Growth
+ * This simulates a crystal lattice where audio waves become phonons (vibrations).
+ * Light rays are traced through the lattice, scattering off vibrating atoms. The color
+ * of scattered light is determined by the phonon's energy, modeling diffraction.
+ */
+drawCrystalGrowth() {
+    if (!this.dataArray) return;
+
+    const centerX = this.canvas.width * this.centerX;
+    const centerY = this.canvas.height * this.centerY;
+    const latticeSpacing = 50;
+    const gridSize = 15; // The size of our simulated lattice patch
+
+    // --- 1. Initialize or Update the Lattice Atom Positions ---
+    if (this.latticeAtoms.length === 0) {
+        for (let i = -gridSize; i <= gridSize; i++) {
+            for (let j = -gridSize; j <= gridSize; j++) {
+                this.latticeAtoms.push({
+                    baseX: centerX + i * latticeSpacing,
+                    baseY: centerY + j * latticeSpacing,
+                    x: centerX + i * latticeSpacing,
+                    y: centerY + j * latticeSpacing,
+                    vx: 0, vy: 0, // Velocity for returning to position
+                    vibrationalEnergy: 0,
+                });
+            }
+        }
+    }
+
+    // --- 2. Propagate Phonons (Vibrations) Through the Lattice ---
+    this.latticeAtoms.forEach(atom => {
+        // Each atom is sensitive to a frequency based on its position
+        const freqIndex = Math.abs(Math.floor(atom.baseX + atom.baseY)) % this.bufferLength;
+        const phononEnergy = this.getReactiveAmplitude(freqIndex) / 255.0;
+
+        // Apply a force based on the phonon energy
+        const angle = (this.time * 5) + (atom.baseX / 100);
+        const force = phononEnergy * 15;
+        atom.vx += Math.cos(angle) * force;
+        atom.vy += Math.sin(angle) * force;
+
+        // Add a restoring force to pull it back to its lattice site
+        atom.vx += (atom.baseX - atom.x) * 0.1;
+        atom.vy += (atom.baseY - atom.y) * 0.1;
+
+        // Apply damping and update position
+        atom.vx *= 0.85;
+        atom.vy *= 0.85;
+        atom.x += atom.vx;
+        atom.y += atom.vy;
+
+        atom.vibrationalEnergy = Math.sqrt(atom.vx * atom.vx + atom.vy * atom.vy);
+    });
+
+    // --- 3. Trace "Light" Rays and Simulate Scattering ---
+    const rayCount = 10 + Math.floor(this.currentMelodyEnergy / 10);
+    for (let i = 0; i < rayCount; i++) {
+        const rayAngle = (i / rayCount) * Math.PI * 2 + this.time * 0.1;
+        let rayX = centerX;
+        let rayY = centerY;
+        let rayVX = Math.cos(rayAngle);
+        let rayVY = Math.sin(rayAngle);
+        let rayColor = 'rgba(255, 255, 255, 0.5)';
+        let rayStrength = 1.0;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(rayX, rayY);
+
+        for (let step = 0; step < 200; step++) {
+            rayX += rayVX * 5;
+            rayY += rayVY * 5;
+
+            // Check for interaction with a nearby atom
+            let scattered = false;
+            for (const atom of this.latticeAtoms) {
+                const dx = rayX - atom.x;
+                const dy = rayY - atom.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 15 && atom.vibrationalEnergy > 0.5) {
+                    // Scatter the ray!
+                    const scatterStrength = Math.min(1, atom.vibrationalEnergy / 10);
+                    rayVX += (Math.random() - 0.5) * scatterStrength;
+                    rayVY += (Math.random() - 0.5) * scatterStrength;
                     
-                    const systemIndex = Math.floor(i / 20) % crystalSystems.length;
-                    const system = crystalSystems[systemIndex];
-                    const energy = amplitude / 255;
-                    
-                    const h = Math.floor((i % 3) + 1);
-                    const k = Math.floor(((i + 1) % 3) + 1);
-                    const l = Math.floor(((i + 2) % 3) + 1);
-                    
-                    system.angles.forEach(angle => {
-                        const distance = 80 + energy * 150;
-                        const x = centerX + Math.cos(angle) * distance;
-                        const y = centerY + Math.sin(angle) * distance;
-                        
-                        const cellSize = 10 + energy * 20;
-                        const color = this.getScientificColor(energy * (h + k + l) / 9, this.colorMode);
-                        
-                        this.ctx.strokeStyle = color;
-                        this.ctx.lineWidth = 1 + energy * 2;
-                        this.ctx.globalAlpha = 0.7;
-                        
-                        this.ctx.beginPath();
-                        this.ctx.rect(x - cellSize/2, y - cellSize/2, cellSize, cellSize);
-                        this.ctx.stroke();
-                        
-                        const atomPositions = this.getAtomicPositions(system.name, cellSize);
-                        atomPositions.forEach(pos => {
-                            this.ctx.fillStyle = color;
-                            this.ctx.globalAlpha = energy;
-                            this.ctx.beginPath();
-                            this.ctx.arc(x + pos.x, y + pos.y, 2 + energy * 3, 0, Math.PI * 2);
-                            this.ctx.fill();
-                        });
-                        
-                        if (energy > 0.5) {
-                            system.angles.forEach(nextAngle => {
-                                const nextX = centerX + Math.cos(nextAngle) * distance;
-                                const nextY = centerY + Math.sin(nextAngle) * distance;
-                                const dx = Math.abs(nextX - x);
-                                const dy = Math.abs(nextY - y);
-                                
-                                if (dx < 100 && dy < 100) {
-                                    this.ctx.beginPath();
-                                    this.ctx.moveTo(x, y);
-                                    this.ctx.lineTo(nextX, nextY);
-                                    this.ctx.stroke();
-                                }
-                            });
-                        }
-                    });
+                    // Normalize velocity
+                    const speed = Math.sqrt(rayVX*rayVX + rayVY*rayVY);
+                    rayVX /= speed;
+                    rayVY /= speed;
+
+                    // The color of the scattered ray is determined by the atom's energy
+                    rayColor = this.getScientificColor(atom.vibrationalEnergy / 15, this.colorMode);
+                    rayStrength = 0.4 + scatterStrength * 0.6;
+                    scattered = true;
+                    break;
                 }
             }
+            if (scattered) break; // Stop this ray's path after one scatter
+        }
+        
+        this.ctx.lineTo(rayX, rayY);
+        this.ctx.strokeStyle = rayColor;
+        this.ctx.lineWidth = 1 + rayStrength * 2;
+        this.ctx.globalAlpha = rayStrength;
+        this.ctx.stroke();
+    }
+
+    // --- 4. Draw the Atoms as Probability Clouds ---
+    this.latticeAtoms.forEach(atom => {
+        const energy = atom.vibrationalEnergy;
+        if (energy < 0.1) return; // Don't draw static atoms
+
+        const size = 2 + energy * 0.5;
+        const color = this.getScientificColor(energy / 15, 'energy');
+        
+        const gradient = this.ctx.createRadialGradient(atom.x, atom.y, 0, atom.x, atom.y, size * 2);
+        gradient.addColorStop(0, `${color.slice(0,-1)}, 0.8)`);
+        gradient.addColorStop(1, `${color.slice(0,-1)}, 0)`);
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.globalAlpha = 0.5 + energy / 30;
+        this.ctx.fillRect(atom.x - size * 2, atom.y - size * 2, size * 4, size * 4);
+    });
+}
             
             getAtomicPositions(crystalType, size) {
                 const positions = [];
@@ -1889,70 +1955,111 @@ drawReactionDiffusion() {
                 });
             }
             
-            // Spacetime Curvature Visualization (General Relativity)
-            drawSpacetime() {
-                if (!this.dataArray) return;
-                
-                const gridSize = 30;
-                const centerX = this.canvas.width * this.centerX;
-                const centerY = this.canvas.height * this.centerY;
-                
-                for (let i = 0; i < this.canvas.width; i += gridSize) {
-                    for (let j = 0; j < this.canvas.height; j += gridSize) {
-                        let curvature = 0;
-                        
-                        for (let k = 0; k < Math.min(this.bufferLength, 50); k += 5) {
-                            const amplitude = this.getReactiveAmplitude(k);
-                            const mass = amplitude / 255;
-                            
-                            const massX = centerX + Math.cos(k * 0.1 + this.time * 0.5) * 200;
-                            const massY = centerY + Math.sin(k * 0.1 + this.time * 0.5) * 200;
-                            
-                            const dx = i - massX;
-                            const dy = j - massY;
-                            const r = Math.sqrt(dx * dx + dy * dy);
-                            
-                            if (r > 0) {
-                                curvature += mass / (r * r) * 10000;
-                            }
-                        }
-                        
-                        const warp = Math.min(curvature, 20);
-                        const color = this.getScientificColor(curvature / 20, this.colorMode);
-                        
-                        this.ctx.strokeStyle = color;
-                        this.ctx.lineWidth = 1;
-                        this.ctx.globalAlpha = 0.6;
-                        
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(i, j);
-                        this.ctx.quadraticCurveTo(i + warp, j + gridSize/2, i, j + gridSize);
-                        this.ctx.stroke();
-                        
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(i, j);
-                        this.ctx.quadraticCurveTo(i + gridSize/2, j + warp, i + gridSize, j);
-                        this.ctx.stroke();
-                        
-                        if (curvature > 5) {
-                            this.ctx.strokeStyle = 'white';
-                            this.ctx.lineWidth = 2;
-                            this.ctx.globalAlpha = curvature / 20;
-                            
-                            const bendAngle = curvature * 0.1;
-                            const rayLength = 40;
-                            
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(i, j);
-                            this.ctx.lineTo(
-                                i + Math.cos(bendAngle) * rayLength,
-                                j + Math.sin(bendAngle) * rayLength
-                            );
-                            this.ctx.stroke();
-                        }
-                    }
+/**
+ * NEW PRESET: Geodesic Flow - Spacetime
+ * Models spacetime curvature as massive objects (from bass) that deflect the paths
+ * of photons (from treble). This creates a minimalist and powerful visualization
+ * of gravity, focusing on gravitational lensing and geodesic paths.
+ */
+drawSpacetime() {
+    if (!this.dataArray) return;
+
+    // --- 1. Update or Create Massive Objects from Bass/Mids ---
+    if (this.spacetimeMasses.length === 0) {
+        this.spacetimeMasses.push({ x: this.canvas.width * 0.3, y: this.canvas.height * 0.5, mass: 0 });
+        this.spacetimeMasses.push({ x: this.canvas.width * 0.7, y: this.canvas.height * 0.5, mass: 0 });
+    }
+
+    const bassEnergy = this.getReactiveAmplitude(2);
+    const midEnergy = this.getReactiveAmplitude(15);
+    this.spacetimeMasses[0].mass = this.spacetimeMasses[0].mass * 0.95 + bassEnergy * 2;
+    this.spacetimeMasses[1].mass = this.spacetimeMasses[1].mass * 0.95 + midEnergy * 2;
+
+    // --- 2. Emit Bursts of Photons from Treble/Transients ---
+    const trebleEnergy = this.getReactiveAmplitude(80);
+    if (trebleEnergy > 150 && this.spacetimePhotons.length < 500) {
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            this.spacetimePhotons.push({
+                x: this.canvas.width * this.centerX,
+                y: this.canvas.height * this.centerY,
+                vx: Math.cos(angle) * 5,
+                vy: Math.sin(angle) * 5,
+                path: [], // To store the last few positions for a trail
+                life: 150,
+                color: this.getScientificColor(i / 20, 'phase')
+            });
+        }
+    }
+
+    // --- 3. Update and Draw Photon Geodesics ---
+    this.ctx.lineCap = 'round';
+    this.spacetimePhotons = this.spacetimePhotons.filter(p => {
+        // Calculate gravitational force from each mass
+        this.spacetimeMasses.forEach(m => {
+            if (m.mass > 10) {
+                const dx = m.x - p.x;
+                const dy = m.y - p.y;
+                const distSq = dx * dx + dy * dy;
+                if (distSq > 100) { // Avoid singularity
+                    const force = m.mass / distSq;
+                    p.vx += force * dx / Math.sqrt(distSq);
+                    p.vy += force * dy / Math.sqrt(distSq);
                 }
             }
+        });
+        
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        
+        p.path.push({ x: p.x, y: p.y });
+        if (p.path.length > 15) p.path.shift();
+
+        // Draw the photon's trail
+        if (p.path.length > 2) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(p.path[0].x, p.path[0].y);
+            for(let i = 1; i < p.path.length; i++) {
+                this.ctx.lineTo(p.path[i].x, p.path[i].y);
+            }
+            this.ctx.strokeStyle = p.color;
+            this.ctx.lineWidth = 2;
+            this.ctx.globalAlpha = (p.life / 150) * 0.8;
+            this.ctx.stroke();
+        }
+
+        return p.life > 0 && p.x > 0 && p.x < this.canvas.width && p.y > 0 && p.y < this.canvas.height;
+    });
+
+    // --- 4. Draw the Massive Objects and Their Gravity Wells ---
+    this.spacetimeMasses.forEach(m => {
+        if (m.mass < 10) return;
+        const radius = Math.min(200, 5 + m.mass / 10);
+
+        // Draw the gravity well as elegant concentric rings
+        for (let i = 1; i <= 5; i++) {
+            this.ctx.beginPath();
+            const ringRadius = radius * (i / 5);
+            this.ctx.arc(m.x, m.y, ringRadius, 0, Math.PI * 2);
+            this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 - i * 0.05})`;
+            this.ctx.lineWidth = 1;
+            this.ctx.globalAlpha = m.mass / 512;
+            this.ctx.stroke();
+        }
+        
+        // Draw the central mass with a powerful glow
+        const coreRadius = Math.min(50, radius * 0.2);
+        const gradient = this.ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, coreRadius * 2);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.beginPath();
+        this.ctx.arc(m.x, m.y, coreRadius * 2, 0, Math.PI * 2);
+        this.ctx.fill();
+    });
+}
             
             // Eigenvalue/Eigenvector Field Visualization
             drawEigenFields() {
@@ -2066,57 +2173,99 @@ drawReactionDiffusion() {
                 return { values: [0, 0], vectors: [{x: 1, y: 0}, {x: 0, y: 1}] };
             }
             
-            // Inversive Geometry
-            drawInversiveGeometry() {
-                if (!this.dataArray) return;
+/**
+ * NEW PRESET: Inversive Dream
+ * A dynamic simulation of inversive geometry. Audio creates flowing circles and moving
+ * inversion centers. A feedback loop allows inverted circles to be re-inverted,
+ * creating chaotic, evolving, fractal-like structures.
+ */
+drawInversiveGeometry() {
+    if (!this.dataArray) return;
+
+    // --- 1. Create and Update "Real" Flowing Circles ---
+    const midEnergy = this.getReactiveAmplitude(25);
+    if (midEnergy > 80 && this.inversiveCircles.length < 100) {
+        this.inversiveCircles.push({
+            x: Math.random() * this.canvas.width,
+            y: this.canvas.height + 20,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -1 - Math.random() * 2,
+            radius: 10 + Math.random() * 20,
+            life: 200
+        });
+    }
+
+    // --- 2. Create and Update Dynamic Inversion Centers ---
+    const bassEnergy = this.getReactiveAmplitude(3);
+    if (this.inversionCenters.length === 0) {
+        this.inversionCenters.push({ x: 0, y: 0, k: 800 }); // Inversion radius
+    }
+    // Bass makes the inversion centers throb and move
+    this.inversionCenters[0].x = this.canvas.width / 2 + Math.cos(this.time) * bassEnergy;
+    this.inversionCenters[0].y = this.canvas.height / 2 + Math.sin(this.time) * bassEnergy;
+    this.inversionCenters[0].k = 600 + Math.sin(this.time * 0.5) * 300;
+
+
+    // --- 3. Update, Draw, and Invert Circles ---
+    const allCircles = [];
+    this.ctx.globalCompositeOperation = 'lighter'; // Additive blending looks great here
+
+    this.inversiveCircles.forEach(c => {
+        c.x += c.vx;
+        c.y += c.vy;
+        c.life--;
+
+        // Draw the "real" circle
+        this.ctx.strokeStyle = 'cyan';
+        this.ctx.lineWidth = 2;
+        this.ctx.globalAlpha = (c.life / 200) * 0.5;
+        this.ctx.beginPath();
+        this.ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        allCircles.push(c);
+
+        // --- Perform and Draw the Inversion ---
+        this.inversionCenters.forEach(center => {
+            const dx = c.x - center.x;
+            const dy = c.y - center.y;
+            const distSq = dx * dx + dy * dy;
+            
+            if (distSq > 0.001) {
+                const kSq = center.k * center.k;
+                const inversionFactor = kSq / (distSq - c.radius * c.radius);
                 
-                const centerX = this.canvas.width * this.centerX;
-                const centerY = this.canvas.height * this.centerY;
-                const baseRadius = 200;
-                
-                for (let i = 0; i < Math.min(this.bufferLength, 100); i += 10) {
-                    const amplitude = this.getReactiveAmplitude(i);
-                    if (amplitude < 30) continue;
+                if(Math.abs(inversionFactor) < 100) { // Clamp to avoid extreme sizes
+                    const invX = center.x + dx * inversionFactor;
+                    const invY = center.y + dy * inversionFactor;
+                    const invR = Math.abs(c.radius * inversionFactor);
                     
-                    const energy = amplitude / 255;
-                    const angle = (i / this.bufferLength) * Math.PI * 2;
-                    
-                    const origX = centerX + Math.cos(angle) * baseRadius * energy;
-                    const origY = centerY + Math.sin(angle) * baseRadius * energy;
-                    const origR = 20 + energy * 30;
-                    
-                    const k = 1 + energy;
-                    const dist = Math.sqrt(origX * origX + origY * origY);
-                    
-                    if (dist > 0) {
-                        const inversionFactor = (k * k) / (dist * dist);
-                        const invX = origX * inversionFactor;
-                        const invY = origY * inversionFactor;
-                        const invR = origR * inversionFactor;
-                        
-                        const color = this.getScientificColor(energy, this.colorMode);
-                        
-                        this.ctx.strokeStyle = color;
-                        this.ctx.lineWidth = 2;
-                        this.ctx.globalAlpha = 0.6;
-                        
+                    if(invR < this.canvas.width) { // Don't draw giant circles
+                        // Draw the "inverted" circle
+                        this.ctx.strokeStyle = this.getScientificColor(Math.abs(inversionFactor) / 10, 'phase');
+                        this.ctx.lineWidth = 1.5;
+                        this.ctx.globalAlpha = (c.life / 200) * 0.8;
                         this.ctx.beginPath();
-                        this.ctx.arc(origX, origY, origR, 0, Math.PI * 2);
+                        this.ctx.arc(invX, invY, invR, 0, Math.PI * 2);
                         this.ctx.stroke();
-                        
-                        this.ctx.globalAlpha = 0.4;
-                        this.ctx.beginPath();
-                        this.ctx.arc(centerX + invX, centerY + invY, Math.abs(invR), 0, Math.PI * 2);
-                        this.ctx.stroke();
-                        
-                        this.ctx.globalAlpha = 0.3;
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(origX, origY);
-                        this.ctx.lineTo(centerX + invX, centerY + invY);
-                        this.ctx.stroke();
+                        allCircles.push({x: invX, y: invY, radius: invR, life: c.life/2});
                     }
                 }
             }
+        });
+    });
+
+    this.inversiveCircles = this.inversiveCircles.filter(c => c.life > 0);
+
+    // --- 4. Inversive Feedback Event ---
+    const highTransient = this.getReactiveAmplitude(90);
+    if (highTransient > 200 && allCircles.length > 10 && allCircles.length < 200) {
+        // Take a snapshot of all circles and add them to the main list
+        this.inversiveCircles.push(...allCircles.map(c => ({...c, life: 100})));
+    }
+    
+    this.ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
+}
             
             // Plasma Dynamics
             drawPlasma() {
@@ -2617,130 +2766,154 @@ drawReactionDiffusion() {
             }
             
 /**
- * NEW PRESET: Neural Brain (Evolving Connectome)
- * This visualization models a simplified brain with distinct regions mapped to audio frequencies.
- * It uses Hebbian learning ("fire together, wire together") to form and strengthen
- * connections, creating a unique, evolving connectome that reflects the audio's structure.
+ * NEW PRESET: Neural Brain (Connectome Tree)
+ * A generative algorithm that grows, connects, and prunes a neural tree
+ * based on audio input, creating a unique and evolving graph structure.
  */
 drawNeuralBrain() {
     if (!this.dataArray) return;
 
-    const centerX = this.canvas.width * this.centerX;
-    const centerY = this.canvas.height * this.centerY;
-    const brainScale = Math.min(this.canvas.width, this.canvas.height) * 0.4;
-
-    // 1. Define Brain Regions with Frequency Mappings
-    // Each region responds to a different part of the audio spectrum.
-    const regions = {
-        'Frontal Lobe':  { baseAngle: Math.PI * 1.5, radius: 0.8, freqStart: 20, freqEnd: 40, color: 'cyan' },
-        'Parietal Lobe': { baseAngle: Math.PI * 1.2, radius: 0.9, freqStart: 40, freqEnd: 60, color: 'yellow' },
-        'Temporal Lobe': { baseAngle: Math.PI * 0.8, radius: 0.85, freqStart: 5, freqEnd: 20, color: 'lightgreen' },
-        'Occipital Lobe':{ baseAngle: Math.PI * 0.5, radius: 0.9, freqStart: 60, freqEnd: 100, color: 'magenta' },
-        'Cerebellum':    { baseAngle: Math.PI * 0.3, radius: 0.5, freqStart: 0, freqEnd: 5, color: 'white' } // Bass/Rhythm
-    };
-
-    const neurons = [];
-    let totalActivity = 0;
-
-    // 2. Create and Activate Neurons within Regions
-    Object.values(regions).forEach((region, i) => {
-        let regionActivity = 0;
-        for (let j = region.freqStart; j < region.freqEnd; j++) {
-            regionActivity += this.getReactiveAmplitude(j);
+    // --- 1. Initialization and Core Seeding ---
+    // If the neuron list is empty or reset, create the central core.
+    if (this.brainNeurons.length === 0) {
+        for (let i = 0; i < 5; i++) {
+            this.brainNeurons.push({
+                id: this.time + Math.random(),
+                x: this.canvas.width * this.centerX + (Math.random() - 0.5) * 20,
+                y: this.canvas.height * this.centerY + (Math.random() - 0.5) * 20,
+                vx: 0, vy: 0,
+                parent: null,
+                activation: 0,
+                lifespan: 20, // Start with a long lifespan
+                depth: 0, // Core is at depth 0
+            });
         }
-        regionActivity /= (region.freqEnd - region.freqStart);
-        const activation = regionActivity / 255;
-        totalActivity += activation;
+    }
 
-        const numNeuronsInRegion = 5;
-        for (let n = 0; n < numNeuronsInRegion; n++) {
-            const angle = region.baseAngle + (n - numNeuronsInRegion / 2) * 0.15;
-            const r = brainScale * region.radius * (0.9 + Math.random() * 0.2);
+    // --- 2. Neuron Growth and Audio Response ---
+    const newNeurons = [];
+    this.brainNeurons.forEach(neuron => {
+        // Growth probability is higher for active neurons and when audio is dynamic
+        const growthProbability = neuron.activation * 0.05 * (1 + this.spectralFlux / 100000);
 
-            neurons.push({
-                x: centerX + Math.cos(angle) * r,
-                y: centerY - Math.sin(angle) * r, // Use -sin for correct anatomical layout
-                activation: activation,
-                regionIndex: i,
-                id: `${i}-${n}` // Unique ID for connection tracking
+        // Bass/Mids drive new branches
+        const baseGrowthEnergy = (this.getReactiveAmplitude(5) + this.getReactiveAmplitude(15)) / 2;
+
+        if (Math.random() < growthProbability && this.brainNeurons.length < this.maxNeurons && baseGrowthEnergy > 50) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 50;
+
+            newNeurons.push({
+                id: this.time + Math.random(),
+                x: neuron.x + Math.cos(angle) * distance,
+                y: neuron.y + Math.sin(angle) * distance,
+                vx: (Math.random() - 0.5) * 0.1, // Give it a slight push
+                vy: (Math.random() - 0.5) * 0.1,
+                parent: neuron.id,
+                activation: 0,
+                lifespan: 10,
+                depth: neuron.depth + 1,
             });
         }
     });
+    this.brainNeurons.push(...newNeurons);
 
-    // 3. Hebbian Learning: Update Connection Strengths
-    // "Neurons that fire together, wire together"
-    neurons.forEach(n1 => {
-        neurons.forEach(n2 => {
-            if (n1.id >= n2.id) return; // Avoid duplicates and self-connections
+    // --- 3. Update, Prune, and Draw Neurons and Connections ---
+    this.ctx.lineCap = 'round';
+    const neuronsToKeep = [];
 
-            // Find existing connection
-            let conn = this.brainConnections.find(c => c.from === n1.id && c.to === n2.id);
+    this.brainNeurons.forEach(neuron => {
+        // --- Activation & Lifespan ---
+        // Each neuron is sensitive to a frequency based on its depth and position
+        const freqIndex = Math.floor((neuron.depth * 20) + (neuron.x % 50)) % this.bufferLength;
+        const currentActivation = this.getReactiveAmplitude(freqIndex) / 255;
+        neuron.activation = neuron.activation * 0.9 + currentActivation * 0.1; // Smooth the activation
 
-            // If both neurons are active, strengthen or create a connection
-            if (n1.activation > 0.2 && n2.activation > 0.2) {
-                const fireStrength = (n1.activation + n2.activation) / 2;
-                if (conn) {
-                    conn.strength = Math.min(1, conn.strength + 0.05 * fireStrength);
-                } else {
-                    this.brainConnections.push({ from: n1.id, to: n2.id, strength: 0.1 });
-                }
-            }
-        });
-    });
-
-    // 4. Draw Connections and Apply Synaptic Decay
-    this.brainConnections = this.brainConnections.filter(conn => {
-        const n1 = neurons.find(n => n.id === conn.from);
-        const n2 = neurons.find(n => n.id === conn.to);
-
-        if (n1 && n2) {
-            this.ctx.strokeStyle = this.getScientificColor(conn.strength, 'temperature');
-            this.ctx.lineWidth = conn.strength * 2.5;
-            this.ctx.globalAlpha = conn.strength * 0.8;
-            
-            this.ctx.beginPath();
-            this.ctx.moveTo(n1.x, n1.y);
-            this.ctx.lineTo(n2.x, n2.y);
-            this.ctx.stroke();
-
-            // Synchronized Firing Pulse
-            if (conn.strength > 0.8 && n1.activation > 0.7) {
-                const progress = (this.time * 5) % 1;
-                const pulseX = n1.x + (n2.x - n1.x) * progress;
-                const pulseY = n1.y + (n2.y - n1.y) * progress;
-                this.ctx.fillStyle = 'white';
-                this.ctx.globalAlpha = 1 - progress;
-                this.ctx.beginPath();
-                this.ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
+        if (neuron.activation > 0.15) {
+            neuron.lifespan = Math.min(20, neuron.lifespan + 0.2); // Boost lifespan if active
+        } else {
+            neuron.lifespan -= 0.05; // Decay if inactive
+        }
+        
+        // --- Physics and Boundary Check ---
+        let fx = 0, fy = 0;
+        // Gentle pull towards the center to keep it cohesive
+        fx += (this.canvas.width * this.centerX - neuron.x) * 0.0001;
+        fy += (this.canvas.height * this.centerY - neuron.y) * 0.0001;
+        
+        neuron.vx += fx;
+        neuron.vy += fy;
+        neuron.vx *= 0.95; // Damping
+        neuron.vy *= 0.95;
+        neuron.x += neuron.vx;
+        neuron.y += neuron.vy;
+        
+        if (neuron.lifespan > 0) {
+            neuronsToKeep.push(neuron);
         }
 
-        // Synaptic Decay: "Use it or lose it"
-        conn.strength -= 0.001;
-        return conn.strength > 0.05; // Prune weak connections
+        // --- Draw Connections (Tree + Net) ---
+        // Primary "Tree" connection to parent
+        if (neuron.parent) {
+            const parent = this.brainNeurons.find(p => p.id === neuron.parent);
+            if (parent) {
+                const strength = (neuron.activation + parent.activation) / 2;
+                if (strength > 0.05) {
+                    this.ctx.strokeStyle = this.getScientificColor(strength, 'temperature');
+                    this.ctx.lineWidth = 0.5 + strength * 2;
+                    this.ctx.globalAlpha = strength * 0.7;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(neuron.x, neuron.y);
+                    this.ctx.lineTo(parent.x, parent.y);
+                    this.ctx.stroke();
+
+                    // Axon Firing Pulse
+                    if (parent.activation > 0.8 && strength > 0.5) {
+                        const progress = (this.time * 8) % 1;
+                        const pulseX = parent.x + (neuron.x - parent.x) * progress;
+                        const pulseY = parent.y + (neuron.y - parent.y) * progress;
+                        this.ctx.fillStyle = 'white';
+                        this.ctx.globalAlpha = 1 - progress;
+                        this.ctx.beginPath();
+                        this.ctx.arc(pulseX, pulseY, 2.5, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        // Secondary "Net" connections to nearby nodes
+        this.brainNeurons.forEach(other => {
+            if(neuron.id === other.id || neuron.parent === other.id) return;
+            const dist = Math.sqrt(Math.pow(neuron.x - other.x, 2) + Math.pow(neuron.y - other.y, 2));
+            if(dist < 80) {
+                const strength = (neuron.activation + other.activation) / 2;
+                 if (strength > 0.3) {
+                    this.ctx.strokeStyle = this.getScientificColor(strength, 'phase');
+                    this.ctx.lineWidth = strength * 1;
+                    this.ctx.globalAlpha = strength * 0.3;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(neuron.x, neuron.y);
+                    this.ctx.lineTo(other.x, other.y);
+                    this.ctx.stroke();
+                 }
+            }
+        });
+
     });
 
+    this.brainNeurons = neuronsToKeep;
 
-    // 5. Draw Neurons
-    neurons.forEach(neuron => {
-        const regionColor = Object.values(regions)[neuron.regionIndex].color;
-        this.ctx.fillStyle = regionColor;
-        this.ctx.globalAlpha = 0.5 + neuron.activation * 0.5;
+    // --- Draw Neurons (on top of connections) ---
+    this.brainNeurons.forEach(neuron => {
+        const color = this.getScientificColor(neuron.activation, this.colorMode);
+        this.ctx.fillStyle = color;
+        this.ctx.globalAlpha = 0.6 + neuron.activation * 0.4;
 
-        const size = 3 + neuron.activation * 12;
+        const size = 1.5 + neuron.activation * (6 + neuron.depth * 0.5);
         this.ctx.beginPath();
         this.ctx.arc(neuron.x, neuron.y, size, 0, Math.PI * 2);
         this.ctx.fill();
-
-        // Add a core glow for highly active neurons
-        if (neuron.activation > 0.6) {
-            this.ctx.fillStyle = 'white';
-            this.ctx.globalAlpha = neuron.activation;
-            this.ctx.beginPath();
-            this.ctx.arc(neuron.x, neuron.y, size * 0.5, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
     });
 }
             
