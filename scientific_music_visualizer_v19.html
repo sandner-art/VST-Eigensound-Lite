@@ -204,6 +204,7 @@
                 <button onclick="setPreset('chamber')">Wilson Chamber</button>
                 <button onclick="setPreset('fluid2')">Fluid Dynamics 2</button>
                 <button onclick="setPreset('chaotica')">Chaotic Attractor</button>
+                <button onclick="setPreset('turing')">Turing Reaction</button> 
             </div>
             
             <label>Legacy Presets:</label>
@@ -694,6 +695,8 @@
                 
                 // Initialize chamber tracks
                 this.chamberTracks = [];
+                this.brainConnections = []; //Neural Brain
+                this.initReactionDiffusionGrid(); //Turing
             }
             
             analyzeAudio() {
@@ -1683,7 +1686,107 @@
                     y = nextY;
                 }
             }
+
             
+/**
+ * Initializes the grid for the Reaction-Diffusion simulation.
+ */
+initReactionDiffusionGrid() {
+    this.rdGridSize = 128; // Lower for performance, higher for detail
+    this.rdGrid = [];
+    this.rdNextGrid = [];
+    for (let i = 0; i < this.rdGridSize; i++) {
+        this.rdGrid[i] = [];
+        this.rdNextGrid[i] = [];
+        for (let j = 0; j < this.rdGridSize; j++) {
+            // Start with all inhibitor and a small patch of activator
+            this.rdGrid[i][j] = { a: 1, b: 0 };
+            this.rdNextGrid[i][j] = { a: 1, b: 0 };
+        }
+    }
+    // Seed the center with activator chemical
+    const center = Math.floor(this.rdGridSize / 2);
+    for(let i = center - 5; i < center + 5; i++) {
+        for(let j = center - 5; j < center + 5; j++) {
+            this.rdGrid[i][j].b = 1;
+        }
+    }
+}
+
+/**
+ * Runs one simulation step for the Reaction-Diffusion system.
+ */
+updateReactionDiffusion() {
+    // Audio-driven parameters
+    const feedRate = 0.0545 + (this.getReactiveAmplitude(10) / 255) * 0.01; // Mids affect feed
+    const killRate = 0.062 + (this.getReactiveAmplitude(50) / 255) * 0.005;  // Highs affect kill
+    const diffA = 1.0;  // Diffusion rate of activator
+    const diffB = 0.5;  // Diffusion rate of inhibitor
+
+    for (let x = 1; x < this.rdGridSize - 1; x++) {
+        for (let y = 1; y < this.rdGridSize - 1; y++) {
+            const a = this.rdGrid[x][y].a;
+            const b = this.rdGrid[x][y].b;
+
+            // Laplacian (sum of neighbors minus self)
+            let laplaceA = 0;
+            laplaceA += this.rdGrid[x+1][y].a;
+            laplaceA += this.rdGrid[x-1][y].a;
+            laplaceA += this.rdGrid[x][y+1].a;
+            laplaceA += this.rdGrid[x][y-1].a;
+            laplaceA *= 0.2; // Corners
+            laplaceA += (this.rdGrid[x+1][y+1].a + this.rdGrid[x+1][y-1].a + this.rdGrid[x-1][y+1].a + this.rdGrid[x-1][y-1].a) * 0.05;
+            laplaceA -= a;
+
+            let laplaceB = 0;
+            laplaceB += this.rdGrid[x+1][y].b;
+            laplaceB += this.rdGrid[x-1][y].b;
+            laplaceB += this.rdGrid[x][y+1].b;
+            laplaceB += this.rdGrid[x][y-1].b;
+            laplaceB *= 0.2;
+            laplaceB += (this.rdGrid[x+1][y+1].b + this.rdGrid[x+1][y-1].b + this.rdGrid[x-1][y+1].b + this.rdGrid[x-1][y-1].b) * 0.05;
+            laplaceB -= b;
+
+            // The Gray-Scott reaction-diffusion equations
+            const reaction = a * b * b;
+            const nextA = a + (diffA * laplaceA - reaction + feedRate * (1 - a));
+            const nextB = b + (diffB * laplaceB + reaction - (killRate + feedRate) * b);
+
+            this.rdNextGrid[x][y] = { a: Math.max(0, Math.min(1, nextA)), b: Math.max(0, Math.min(1, nextB)) };
+        }
+    }
+
+    // Swap grids
+    this.rdGrid = this.rdNextGrid;
+}
+
+/**
+ * NEW PRESET: Reaction-Diffusion (Turing Patterns)
+ * Simulates the interaction of two chemicals to create organic, evolving patterns.
+ * The audio parameters dynamically alter the chemical reaction rates,
+ * morphing the patterns between spots, stripes, and chaotic structures.
+ */
+drawReactionDiffusion() {
+    this.updateReactionDiffusion(); // Run the simulation
+
+    const cellWidth = this.canvas.width / this.rdGridSize;
+    const cellHeight = this.canvas.height / this.rdGridSize;
+
+    for (let x = 0; x < this.rdGridSize; x++) {
+        for (let y = 0; y < this.rdGridSize; y++) {
+            const cell = this.rdGrid[x][y];
+            // The final color is a mix of the two chemical concentrations
+            const value = cell.a - cell.b;
+            if (value > 0.01) {
+                const color = this.getScientificColor(value, this.colorMode);
+                this.ctx.fillStyle = color;
+                this.ctx.globalAlpha = Math.min(1, value * 2);
+                this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+            }
+        }
+    }
+}
+
             // Neural Swarm Implementation
             drawNeuralSwarm() {
                 if (!this.dataArray) return;
@@ -2513,79 +2616,133 @@
                 });
             }
             
-            // Neural Brain
-            drawNeuralBrain() {
-                if (!this.dataArray) return;
-                
-                const centerX = this.canvas.width * this.centerX;
-                const centerY = this.canvas.height * this.centerY;
-                
-                const leftHemisphere = [];
-                const rightHemisphere = [];
-                
-                for (let i = 0; i < Math.min(this.bufferLength, 40); i += 2) {
-                    const amplitude = this.getReactiveAmplitude(i);
-                    const activation = amplitude / 255;
-                    
-                    if (activation > 0.1) {
-                        const region = {
-                            x: centerX + (Math.random() - 0.5) * 200,
-                            y: centerY + (Math.random() - 0.5) * 150,
-                            activation: activation,
-                            type: i % 3,
-                            connections: []
-                        };
-                        
-                        if (region.x < centerX) {
-                            leftHemisphere.push(region);
-                        } else {
-                            rightHemisphere.push(region);
-                        }
-                    }
+/**
+ * NEW PRESET: Neural Brain (Evolving Connectome)
+ * This visualization models a simplified brain with distinct regions mapped to audio frequencies.
+ * It uses Hebbian learning ("fire together, wire together") to form and strengthen
+ * connections, creating a unique, evolving connectome that reflects the audio's structure.
+ */
+drawNeuralBrain() {
+    if (!this.dataArray) return;
+
+    const centerX = this.canvas.width * this.centerX;
+    const centerY = this.canvas.height * this.centerY;
+    const brainScale = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+
+    // 1. Define Brain Regions with Frequency Mappings
+    // Each region responds to a different part of the audio spectrum.
+    const regions = {
+        'Frontal Lobe':  { baseAngle: Math.PI * 1.5, radius: 0.8, freqStart: 20, freqEnd: 40, color: 'cyan' },
+        'Parietal Lobe': { baseAngle: Math.PI * 1.2, radius: 0.9, freqStart: 40, freqEnd: 60, color: 'yellow' },
+        'Temporal Lobe': { baseAngle: Math.PI * 0.8, radius: 0.85, freqStart: 5, freqEnd: 20, color: 'lightgreen' },
+        'Occipital Lobe':{ baseAngle: Math.PI * 0.5, radius: 0.9, freqStart: 60, freqEnd: 100, color: 'magenta' },
+        'Cerebellum':    { baseAngle: Math.PI * 0.3, radius: 0.5, freqStart: 0, freqEnd: 5, color: 'white' } // Bass/Rhythm
+    };
+
+    const neurons = [];
+    let totalActivity = 0;
+
+    // 2. Create and Activate Neurons within Regions
+    Object.values(regions).forEach((region, i) => {
+        let regionActivity = 0;
+        for (let j = region.freqStart; j < region.freqEnd; j++) {
+            regionActivity += this.getReactiveAmplitude(j);
+        }
+        regionActivity /= (region.freqEnd - region.freqStart);
+        const activation = regionActivity / 255;
+        totalActivity += activation;
+
+        const numNeuronsInRegion = 5;
+        for (let n = 0; n < numNeuronsInRegion; n++) {
+            const angle = region.baseAngle + (n - numNeuronsInRegion / 2) * 0.15;
+            const r = brainScale * region.radius * (0.9 + Math.random() * 0.2);
+
+            neurons.push({
+                x: centerX + Math.cos(angle) * r,
+                y: centerY - Math.sin(angle) * r, // Use -sin for correct anatomical layout
+                activation: activation,
+                regionIndex: i,
+                id: `${i}-${n}` // Unique ID for connection tracking
+            });
+        }
+    });
+
+    // 3. Hebbian Learning: Update Connection Strengths
+    // "Neurons that fire together, wire together"
+    neurons.forEach(n1 => {
+        neurons.forEach(n2 => {
+            if (n1.id >= n2.id) return; // Avoid duplicates and self-connections
+
+            // Find existing connection
+            let conn = this.brainConnections.find(c => c.from === n1.id && c.to === n2.id);
+
+            // If both neurons are active, strengthen or create a connection
+            if (n1.activation > 0.2 && n2.activation > 0.2) {
+                const fireStrength = (n1.activation + n2.activation) / 2;
+                if (conn) {
+                    conn.strength = Math.min(1, conn.strength + 0.05 * fireStrength);
+                } else {
+                    this.brainConnections.push({ from: n1.id, to: n2.id, strength: 0.1 });
                 }
-                
-                leftHemisphere.forEach(leftRegion => {
-                    rightHemisphere.forEach(rightRegion => {
-                        const connectionStrength = (leftRegion.activation + rightRegion.activation) / 2;
-                        
-                        if (connectionStrength > 0.4) {
-                            this.ctx.strokeStyle = this.getScientificColor(connectionStrength, 'phase');
-                            this.ctx.lineWidth = connectionStrength * 1.1;
-                            this.ctx.globalAlpha = connectionStrength * 0.4;
-                            
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(leftRegion.x, leftRegion.y);
-                            this.ctx.lineTo(rightRegion.x, rightRegion.y);
-                            this.ctx.stroke();
-                        }
-                    });
-                });
-                
-                [...leftHemisphere, ...rightHemisphere].forEach(region => {
-                    const color = this.getScientificColor(region.activation, this.colorMode);
-                    this.ctx.fillStyle = color;
-                    this.ctx.globalAlpha = 0.7 + region.activation * 0.3;
-                    
-                    const size = 8 + region.activation * 15;
-                    this.ctx.beginPath();
-                    this.ctx.arc(region.x, region.y, size, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    
-                    if (region.type === 0) {
-                        this.ctx.strokeStyle = 'red';
-                    } else if (region.type === 1) {
-                        this.ctx.strokeStyle = 'blue';
-                    } else {
-                        this.ctx.strokeStyle = 'green';
-                    }
-                    
-                    this.ctx.lineWidth = 1;
-                    this.ctx.globalAlpha = region.activation;
-                    this.ctx.beginPath();
-                    this.ctx.arc(region.x, region.y, size + 6, 0, Math.PI * 2);
-                    this.ctx.stroke();
-                });
             }
+        });
+    });
+
+    // 4. Draw Connections and Apply Synaptic Decay
+    this.brainConnections = this.brainConnections.filter(conn => {
+        const n1 = neurons.find(n => n.id === conn.from);
+        const n2 = neurons.find(n => n.id === conn.to);
+
+        if (n1 && n2) {
+            this.ctx.strokeStyle = this.getScientificColor(conn.strength, 'temperature');
+            this.ctx.lineWidth = conn.strength * 2.5;
+            this.ctx.globalAlpha = conn.strength * 0.8;
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(n1.x, n1.y);
+            this.ctx.lineTo(n2.x, n2.y);
+            this.ctx.stroke();
+
+            // Synchronized Firing Pulse
+            if (conn.strength > 0.8 && n1.activation > 0.7) {
+                const progress = (this.time * 5) % 1;
+                const pulseX = n1.x + (n2.x - n1.x) * progress;
+                const pulseY = n1.y + (n2.y - n1.y) * progress;
+                this.ctx.fillStyle = 'white';
+                this.ctx.globalAlpha = 1 - progress;
+                this.ctx.beginPath();
+                this.ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        }
+
+        // Synaptic Decay: "Use it or lose it"
+        conn.strength -= 0.001;
+        return conn.strength > 0.05; // Prune weak connections
+    });
+
+
+    // 5. Draw Neurons
+    neurons.forEach(neuron => {
+        const regionColor = Object.values(regions)[neuron.regionIndex].color;
+        this.ctx.fillStyle = regionColor;
+        this.ctx.globalAlpha = 0.5 + neuron.activation * 0.5;
+
+        const size = 3 + neuron.activation * 12;
+        this.ctx.beginPath();
+        this.ctx.arc(neuron.x, neuron.y, size, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Add a core glow for highly active neurons
+        if (neuron.activation > 0.6) {
+            this.ctx.fillStyle = 'white';
+            this.ctx.globalAlpha = neuron.activation;
+            this.ctx.beginPath();
+            this.ctx.arc(neuron.x, neuron.y, size * 0.5, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    });
+}
             
             animate() {
                 this.animationId = requestAnimationFrame(() => this.animate());
@@ -2650,6 +2807,9 @@
                     case 'chamber':
                         this.drawWilsonChamber();
                         break;
+                    case 'turing':
+                        this.drawReactionDiffusion();
+                        break;                        
                     case 'quantum_legacy':
                         this.drawQuantumLegacy();
                         break;
@@ -2663,7 +2823,10 @@
                         this.drawFluidDynamics2();
                     case 'chaotica':
                         this.drawChaoticAttractor();                        
-                        break;                        
+                        break;
+                    case 'turing':
+                        this.drawReactionDiffusion();                        
+                        break;                                                
                     case 'neural_swarm':
                         this.drawNeuralSwarm();
                         break;
