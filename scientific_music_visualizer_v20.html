@@ -204,7 +204,9 @@
                 <button onclick="setPreset('chamber')">Wilson Chamber</button>
                 <button onclick="setPreset('fluid2')">Fluid Dynamics 2</button>
                 <button onclick="setPreset('chaotica')">Chaotic Attractor</button>
-                <button onclick="setPreset('turing')">Turing Reaction</button> 
+                <button onclick="setPreset('turing')">Turing Reaction</button>
+                <button onclick="setPreset('synaptic')">Synaptic Synth</button>
+                <button onclick="setPreset('harmonic')">Harmonic Oscillator</button> 
             </div>
             
             <label>Legacy Presets:</label>
@@ -706,6 +708,8 @@
                 this.spacetimePhotons = [];
                 this.inversiveCircles = [];
                 this.inversionCenters = [];
+                this.synthNeurons = [];
+                this.synthConnections = [];
             }
             
             analyzeAudio() {
@@ -1710,6 +1714,9 @@ drawCrystalGrowth() {
             }
         }
 
+
+
+
 /**
  * Chaotica: Clifford Attractor
  * This function uses a strange attractor to generate complex, evolving fractal patterns
@@ -1753,6 +1760,164 @@ drawCrystalGrowth() {
                 }
             }
 
+
+/**
+ * NEW PRESET: Synaptic Synthesizer
+ * A neural graph where connections are synthesized waveforms. Neurons specialize in
+ * frequency bands and dynamically route signals, with the waveform's shape
+ * determined by the audio's timbre.
+ */
+drawSynapticSynthesizer() {
+    if (!this.dataArray) return;
+
+    // --- 1. Neuron Management: Create and Activate Specialist Neurons ---
+    if (this.synthNeurons.length === 0) {
+        const neuronTypes = {
+            'BASS': { count: 5, freqStart: 0, freqEnd: 8, wave: 'sine' },
+            'MELODY': { count: 10, freqStart: 10, freqEnd: 40, wave: 'sawtooth' },
+            'TRANSIENT': { count: 8, freqStart: 50, freqEnd: 100, wave: 'square' }
+        };
+        Object.entries(neuronTypes).forEach(([type, props]) => {
+            for (let i = 0; i < props.count; i++) {
+                this.synthNeurons.push({
+                    id: `${type}_${i}`,
+                    x: Math.random() * this.canvas.width,
+                    y: Math.random() * this.canvas.height,
+                    type: type,
+                    wave: props.wave,
+                    freqRange: [props.freqStart, props.freqEnd],
+                    activation: 0
+                });
+            }
+        });
+    }
+
+    // Update neuron activation and apply a small physics push
+    this.synthNeurons.forEach(n => {
+        let energy = 0;
+        for (let i = n.freqRange[0]; i < n.freqRange[1]; i++) {
+            energy += this.getReactiveAmplitude(i);
+        }
+        energy /= (n.freqRange[1] - n.freqRange[0]);
+        n.activation = n.activation * 0.9 + (energy / 255) * 0.1; // Smoothed activation
+
+        // Jiggle based on activation
+        n.x += (Math.random() - 0.5) * n.activation * 2;
+        n.y += (Math.random() - 0.5) * n.activation * 2;
+        // Keep them within bounds
+        n.x = Math.max(50, Math.min(this.canvas.width - 50, n.x));
+        n.y = Math.max(50, Math.min(this.canvas.height - 50, n.y));
+    });
+
+    // --- 2. Connection Logic: Dynamic Signal Routing ---
+    // Prune old connections
+    this.synthConnections = this.synthConnections.filter(c => {
+        c.life -= 0.02;
+        return c.life > 0;
+    });
+
+    // Create new connections based on coherent activity
+    const activeNeurons = this.synthNeurons.filter(n => n.activation > 0.3);
+    activeNeurons.forEach(source => {
+        // Find a different, also active neuron to connect to
+        const potentialTargets = activeNeurons.filter(t => t.id !== source.id);
+        if (potentialTargets.length > 0) {
+            const target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
+            
+            // Avoid creating too many connections
+            if (this.synthConnections.length < 100) {
+                this.synthConnections.push({
+                    from: source,
+                    to: target,
+                    life: 1.0 // Lifespan starts at 1
+                });
+            }
+        }
+    });
+
+    // --- 3. Drawing Logic: Render Waveform Connections and Neurons ---
+    this.ctx.globalCompositeOperation = 'lighter';
+    this.synthConnections.forEach(c => {
+        const from = c.from;
+        const to = c.to;
+        const strength = (from.activation + to.activation) / 2;
+
+        this.drawWaveformConnection(
+            from, to,
+            from.wave, // The source neuron determines the waveform shape
+            strength,
+            c.life
+        );
+    });
+    this.ctx.globalCompositeOperation = 'source-over';
+
+    // Draw the neurons themselves
+    this.synthNeurons.forEach(n => {
+        if (n.activation < 0.05) return;
+        const size = 5 + n.activation * 25;
+        const color = this.getScientificColor(n.activation, 'energy');
+        
+        const gradient = this.ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, size);
+        gradient.addColorStop(0, `${color.slice(0,-1)}, 1)`);
+        gradient.addColorStop(0.5, `${color.slice(0,-1)}, 0.5)`);
+        gradient.addColorStop(1, `${color.slice(0,-1)}, 0)`);
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.globalAlpha = n.activation * 0.9;
+        this.ctx.beginPath();
+        this.ctx.arc(n.x, n.y, size, 0, Math.PI * 2);
+        this.ctx.fill();
+    });
+}
+
+/**
+ * Helper function to draw a synthesized waveform between two points.
+ */
+drawWaveformConnection(p1, p2, waveType, strength, life) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    const waveFrequency = 3 + strength * 10; // How many peaks in the wave
+    const waveAmplitude = 10 + strength * 40; // How high the peaks are
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(p1.x, p1.y);
+    this.ctx.globalAlpha = strength * life * 0.8;
+    this.ctx.strokeStyle = this.getScientificColor(strength, 'phase');
+    this.ctx.lineWidth = 1 + strength * 3;
+
+    const steps = Math.floor(distance / 5);
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps; // Progress along the line (0 to 1)
+        
+        let displacement = 0;
+        const phase = t * waveFrequency * Math.PI * 2 + this.time * 20;
+
+        // --- Synthesize the waveform ---
+        switch (waveType) {
+            case 'sine':
+                displacement = Math.sin(phase) * waveAmplitude;
+                break;
+            case 'sawtooth':
+                displacement = (1 - 2 * ((phase / (Math.PI*2)) % 1)) * waveAmplitude;
+                break;
+            case 'square':
+                displacement = Math.sign(Math.sin(phase)) * waveAmplitude;
+                break;
+        }
+
+        const currentX = p1.x + Math.cos(angle) * (t * distance);
+        const currentY = p1.y + Math.sin(angle) * (t * distance);
+        
+        const perpX = Math.cos(angle + Math.PI / 2) * displacement;
+        const perpY = Math.sin(angle + Math.PI / 2) * displacement;
+
+        this.ctx.lineTo(currentX + perpX, currentY + perpY);
+    }
+    this.ctx.stroke();
+}            
             
 /**
  * Initializes the grid for the Reaction-Diffusion simulation.
@@ -1954,7 +2119,114 @@ drawReactionDiffusion() {
                     }
                 });
             }
+
             
+/**
+ * NEW PRESET: Harmonic Oscillator Network
+ * Models a fixed lattice of coupled oscillators. Audio input "plucks" nodes,
+ * and the visualization shows the resulting waves of energy and phase propagating
+ * and interfering throughout the network.
+ */
+drawHarmonicOscillatorNetwork() {
+    if (!this.dataArray) return;
+
+    // --- 1. Setup the Oscillator Grid (if not already done) ---
+    if (!this.oscillatorGrid) {
+        this.oscillatorGrid = [];
+        const gridSize = 20;
+        for (let i = 0; i < gridSize; i++) {
+            this.oscillatorGrid[i] = [];
+            for (let j = 0; j < gridSize; j++) {
+                this.oscillatorGrid[i][j] = {
+                    x: (i + 1) * (this.canvas.width / (gridSize + 1)),
+                    y: (j + 1) * (this.canvas.height / (gridSize + 1)),
+                    phase: Math.random() * Math.PI * 2,
+                    amplitude: 0,
+                    // Natural frequency is higher near the center
+                    naturalFreq: 0.1 + (1 - (i/gridSize*2-1)**2) * 0.5
+                };
+            }
+        }
+    }
+
+    // --- 2. Update Oscillators: Audio Input and Coupling ---
+    this.oscillatorGrid.forEach((row, i) => {
+        row.forEach((osc, j) => {
+            // Audio "plucks" the oscillator
+            const freqIndex = (i * row.length + j) % this.bufferLength;
+            const drivingForce = this.getReactiveAmplitude(freqIndex) / 255;
+            osc.amplitude += drivingForce * 0.2;
+
+            // Coupling with neighbors (the core of the simulation)
+            let phaseInfluence = 0;
+            let neighborCount = 0;
+            const neighbors = [[i-1,j],[i+1,j],[i,j-1],[i,j+1]];
+            neighbors.forEach(([ni, nj]) => {
+                if (this.oscillatorGrid[ni] && this.oscillatorGrid[ni][nj]) {
+                    const neighbor = this.oscillatorGrid[ni][nj];
+                    // The oscillator is pulled towards its neighbors' phase
+                    phaseInfluence += Math.sin(neighbor.phase - osc.phase) * neighbor.amplitude;
+                    neighborCount++;
+                }
+            });
+            
+            if (neighborCount > 0) {
+                osc.phase += (phaseInfluence / neighborCount) * 0.1;
+            }
+
+            // Internal oscillation and damping
+            osc.phase += osc.naturalFreq * this.evolution;
+            osc.amplitude *= 0.95; // Energy dissipates
+        });
+    });
+
+    // --- 3. Draw the Network ---
+    this.ctx.globalCompositeOperation = 'lighter';
+    this.oscillatorGrid.forEach((row, i) => {
+        row.forEach((osc, j) => {
+            // Draw connections
+            if (i < row.length - 1) {
+                const neighbor = this.oscillatorGrid[i + 1][j];
+                const avgAmp = (osc.amplitude + neighbor.amplitude) / 2;
+                if (avgAmp > 0.05) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(osc.x, osc.y);
+                    this.ctx.lineTo(neighbor.x, neighbor.y);
+                    this.ctx.lineWidth = avgAmp * 5;
+                    this.ctx.strokeStyle = this.getScientificColor(avgAmp, 'temperature');
+                    this.ctx.globalAlpha = avgAmp;
+                    this.ctx.stroke();
+                }
+            }
+            if (j < this.oscillatorGrid.length - 1) {
+                const neighbor = this.oscillatorGrid[i][j + 1];
+                const avgAmp = (osc.amplitude + neighbor.amplitude) / 2;
+                if (avgAmp > 0.05) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(osc.x, osc.y);
+                    this.ctx.lineTo(neighbor.x, neighbor.y);
+                    this.ctx.lineWidth = avgAmp * 5;
+                    this.ctx.strokeStyle = this.getScientificColor(avgAmp, 'temperature');
+                    this.ctx.globalAlpha = avgAmp;
+                    this.ctx.stroke();
+                }
+            }
+
+            // Draw nodes: color by phase, size by amplitude
+            if (osc.amplitude > 0.05) {
+                const size = 3 + osc.amplitude * 20;
+                const phaseColor = (osc.phase % (Math.PI * 2)) / (Math.PI * 2);
+                this.ctx.fillStyle = this.getScientificColor(phaseColor, 'phase');
+                this.ctx.globalAlpha = 0.5 + osc.amplitude * 0.5;
+                this.ctx.beginPath();
+                this.ctx.arc(osc.x, osc.y, size, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        });
+    });
+    this.ctx.globalCompositeOperation = 'source-over';
+}
+
 /**
  * NEW PRESET: Geodesic Flow - Spacetime
  * Models spacetime curvature as massive objects (from bass) that deflect the paths
@@ -3009,6 +3281,12 @@ drawNeuralBrain() {
                     case 'neural_brain':
                         this.drawNeuralBrain();
                         break;
+                    case 'synaptic':
+                        this.drawSynapticSynthesizer();
+                        break;
+                    case 'harmonic':
+                        this.drawHarmonicOscillatorNetwork();
+                        break;                                                
                     default:
                         this.drawParticlePhysics(); // Fallback
                         break;
