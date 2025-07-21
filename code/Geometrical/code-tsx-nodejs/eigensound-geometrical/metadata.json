@@ -1,0 +1,6 @@
+{
+  "name": "Geometric Rhythm Lab",
+  "description": "An experimental interactive rhythm application that generates polyrhythms from geometric shapes. Watch as points travel along polygons, triggering sounds at each vertex to create complex, visually-driven musical patterns.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

@@ -2257,50 +2257,73 @@ drawSpacetime() {
                 y: this.canvas.height * this.centerY,
                 vx: Math.cos(angle) * 5,
                 vy: Math.sin(angle) * 5,
-                path: [], // To store the last few positions for a trail
+                path: [],
                 life: 150,
-                color: this.getScientificColor(i / 20, 'phase')
+                // REMOVED: The static 'color' property has been removed from here.
             });
         }
     }
 
-    // --- 3. Update and Draw Photon Geodesics ---
+    // --- 3. Update and Draw Photon Geodesics with Dynamic Color ---
     this.ctx.lineCap = 'round';
     this.spacetimePhotons = this.spacetimePhotons.filter(p => {
-        // Calculate gravitational force from each mass
+        // --- Physics Calculation ---
         this.spacetimeMasses.forEach(m => {
             if (m.mass > 10) {
                 const dx = m.x - p.x;
                 const dy = m.y - p.y;
                 const distSq = dx * dx + dy * dy;
-                if (distSq > 100) { // Avoid singularity
+                if (distSq > 100) {
                     const force = m.mass / distSq;
                     p.vx += force * dx / Math.sqrt(distSq);
                     p.vy += force * dy / Math.sqrt(distSq);
                 }
             }
         });
-        
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
-        
         p.path.push({ x: p.x, y: p.y });
-        if (p.path.length > 15) p.path.shift();
+        if (p.path.length > 20) p.path.shift();
 
-        // Draw the photon's trail
+        // --- Dynamic Color and Gradient Trail Drawing ---
         if (p.path.length > 2) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(p.path[0].x, p.path[0].y);
-            for(let i = 1; i < p.path.length; i++) {
-                this.ctx.lineTo(p.path[i].x, p.path[i].y);
-            }
-            this.ctx.strokeStyle = p.color;
-            this.ctx.lineWidth = 2;
-            this.ctx.globalAlpha = (p.life / 150) * 0.8;
-            this.ctx.stroke();
-        }
+            // Find distance to the most influential mass
+            let minDistSq = Infinity;
+            this.spacetimeMasses.forEach(m => {
+                if (m.mass > 10) {
+                    const dx = m.x - p.x;
+                    const dy = m.y - p.y;
+                    minDistSq = Math.min(minDistSq, dx * dx + dy * dy);
+                }
+            });
 
+            // Calculate potential energy (0 for far, 1 for close)
+            const influenceRadius = Math.pow(this.canvas.width / 2, 2);
+            const gravitationalPotential = 1.0 - Math.min(1.0, minDistSq / influenceRadius);
+
+            // Draw the path as a series of segments with a fading gradient
+            for (let i = 1; i < p.path.length; i++) {
+                const segmentProgress = i / p.path.length;
+                const startPoint = p.path[i - 1];
+                const endPoint = p.path[i];
+                
+                // Color is based on the photon's current potential, respecting the UI mode.
+                // The trail smoothly inherits this color.
+                const trailColor = this.getScientificColor(gravitationalPotential * segmentProgress, this.colorMode);
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(startPoint.x, startPoint.y);
+                this.ctx.lineTo(endPoint.x, endPoint.y);
+                
+                this.ctx.strokeStyle = trailColor;
+                this.ctx.lineWidth = 1 + gravitationalPotential * 2.5;
+                // Trail fades towards its tail and as the photon ages
+                this.ctx.globalAlpha = (p.life / 150) * segmentProgress * 0.9;
+                this.ctx.stroke();
+            }
+        }
+        
         return p.life > 0 && p.x > 0 && p.x < this.canvas.width && p.y > 0 && p.y < this.canvas.height;
     });
 
@@ -2309,7 +2332,7 @@ drawSpacetime() {
         if (m.mass < 10) return;
         const radius = Math.min(200, 5 + m.mass / 10);
 
-        // Draw the gravity well as elegant concentric rings
+        // Draw gravity well rings
         for (let i = 1; i <= 5; i++) {
             this.ctx.beginPath();
             const ringRadius = radius * (i / 5);
@@ -2320,7 +2343,7 @@ drawSpacetime() {
             this.ctx.stroke();
         }
         
-        // Draw the central mass with a powerful glow
+        // Draw the central mass glow
         const coreRadius = Math.min(50, radius * 0.2);
         const gradient = this.ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, coreRadius * 2);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
