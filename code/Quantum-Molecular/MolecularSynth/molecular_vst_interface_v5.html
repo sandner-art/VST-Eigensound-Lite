@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MolecularSynth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+
+        .header {
+            height: 40px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            flex-shrink: 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00d4aa;
+            letter-spacing: 1px;
+        }
+
+        .modes {
+            display: flex;
+            gap: 6px;
+        }
+
+        .mode {
+            padding: 4px 8px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #333;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 9px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .mode.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        .workspace {
+            flex: 1;
+            background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        .molecule-area {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 400px;
+            background: radial-gradient(ellipse at center, rgba(0,212,170,0.05) 0%, transparent 70%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 1px solid rgba(0,212,170,0.1);
+        }
+
+        .molecule-svg {
+            width: 90%;
+            height: 90%;
+            max-width: 400px;
+            max-height: 300px;
+        }
+
+        .atom {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 0 3px rgba(0,212,170,0.4));
+        }
+
+        .atom:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 6px rgba(0,212,170,0.6));
+        }
+
+        .atom.playing {
+            animation: atomPing 1.2s ease-out;
+        }
+
+        @keyframes atomPing {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.2); filter: drop-shadow(0 0 12px rgba(0,212,170,1)); }
+            100% { transform: scale(1); }
+        }
+
+        .bond {
+            stroke: #444;
+            stroke-width: 1.5;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .bond:hover {
+            stroke: #00d4aa;
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 4px rgba(0,212,170,0.5));
+        }
+
+        .bond.playing {
+            animation: bondGlow 0.8s ease-out;
+        }
+
+        @keyframes bondGlow {
+            0% { stroke: #444; stroke-width: 1.5; }
+            30% { stroke: #00d4aa; stroke-width: 3; filter: drop-shadow(0 0 8px rgba(0,212,170,0.8)); }
+            100% { stroke: #444; stroke-width: 1.5; }
+        }
+
+        .info {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.3;
+            border: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .controls {
+            width: 240px;
+            background: linear-gradient(135deg, #111 0%, #0f0f0f 100%);
+            padding: 10px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            border-left: 1px solid #333;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 9px;
+            color: #00d4aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .control {
+            margin-bottom: 10px;
+        }
+
+        .control-label {
+            font-size: 9px;
+            color: #999;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0,212,170,0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 8px rgba(0,212,170,0.3);
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .preset {
+            padding: 6px;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            font-size: 8px;
+            text-align: center;
+            border-radius: 3px;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            border: 1px solid #333;
+        }
+
+        .preset:hover {
+            background: rgba(0,212,170,0.1);
+            border-color: #00d4aa;
+            color: #00d4aa;
+        }
+
+        .preset.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .bottom {
+            height: 60px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+            flex-shrink: 0;
+            border-top: 1px solid #333;
+        }
+
+        .transport {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.15s;
+            border: 1px solid #333;
+        }
+
+        .btn:hover {
+            background: rgba(0,212,170,0.1);
+            border-color: #00d4aa;
+            color: #00d4aa;
+        }
+
+        .btn.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .visualizer {
+            flex: 1;
+            height: 24px;
+            background: #222;
+            border-radius: 3px;
+            display: flex;
+            align-items: end;
+            padding: 2px;
+            gap: 1px;
+            margin: 0 10px;
+            border: 1px solid #333;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #00d4aa 0%, rgba(0,212,170,0.6) 100%);
+            border-radius: 1px;
+            min-height: 1px;
+            transition: height 0.1s ease;
+        }
+
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .volume-slider {
+            width: 60px;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Mobile Landscape */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .main {
+                flex-direction: row;
+            }
+            
+            .controls {
+                width: 200px;
+                border-left: 1px solid #222;
+            }
+            
+            .header {
+                height: 35px;
+            }
+            
+            .bottom {
+                height: 50px;
+            }
+        }
+
+        /* Mobile Portrait */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .main {
+                flex-direction: column;
+            }
+            
+            .controls {
+                width: 100%;
+                height: 180px;
+                border-top: 1px solid #222;
+                border-left: none;
+            }
+            
+            .section {
+                margin-bottom: 10px;
+            }
+            
+            .presets {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .modes {
+                gap: 4px;
+            }
+            
+            .mode {
+                padding: 3px 6px;
+                font-size: 8px;
+            }
+            
+            .logo {
+                font-size: 12px;
+            }
+        }
+
+        .quantum-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 9px;
+            color: #666;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .mode-indicator {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            font-size: 8px;
+            color: #00d4aa;
+            background: rgba(0,212,170,0.1);
+            padding: 3px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0,212,170,0.3);
+        }
+
+        .soundscape-ambient {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            border: 1px solid rgba(0,212,170,0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .soundscape-ambient.active {
+            opacity: 0.3;
+            animation: soundscapePulse 4s ease-in-out infinite;
+        }
+
+        @keyframes soundscapePulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="logo">MolecularSynth</div>
+            <div class="modes">
+                <button class="mode active" data-mode="structural">Structural</button>
+                <button class="mode" data-mode="melodic">Melodic</button>
+                <button class="mode" data-mode="electronic">Electronic</button>
+                <button class="mode" data-mode="soundscape">Soundscape</button>
+                <button class="mode" data-mode="spectral">Spectral</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="workspace">
+                <div class="molecule-area">
+                    <svg class="molecule-svg" viewBox="0 0 300 200" id="moleculeDisplay">
+                        <!-- Molecule structure will be dynamically generated -->
+                    </svg>
+
+                    <div class="soundscape-ambient" id="soundscapeAura"></div>
+
+                    <div class="info">
+                        <div id="mol-name">Caffeine (C₈H₁₀N₄O₂)</div>
+                        <div id="mol-props">MW: 194.19 g/mol</div>
+                        <div id="mol-key">HOMO-LUMO: 4.2 eV</div>
+                    </div>
+
+                    <div class="quantum-indicator" id="quantumProps">
+                        <div>Dipole: 3.64 D</div>
+                        <div>χ: 2.0-2.5</div>
+                    </div>
+
+                    <div class="mode-indicator" id="currentMode">
+                        Structural Learning
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="section">
+                    <div class="section-title">Sonification Model</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Parameter Mapping</span>
+                            <span id="mapping-val">quantum</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="3" value="2" id="mapping" step="1">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Harmonic Complexity</span>
+                            <span id="harmony-val">65%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="65" id="harmony">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Electronic Resonance</span>
+                            <span id="resonance-val">40%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="40" id="resonance">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Molecular Dynamics</span>
+                            <span id="dynamics-val">75%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="75" id="dynamics">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Performance</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Tempo (BPM)</span>
+                            <span id="tempo-val">120</span>
+                        </div>
+                        <input type="range" class="slider" min="60" max="200" value="120" id="tempo">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Expression Depth</span>
+                            <span id="expression-val">50%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="50" id="expression">
+                    </div>
+
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Spatial Width</span>
+                            <span id="spatial-val">30%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="30" id="spatial">
+                    </div>
+
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Atmosphere</span>
+                            <span id="atmosphere-val">20%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="20" id="atmosphere">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Molecules</div>
+                    <div class="presets">
+                        <div class="preset active" data-mol="caffeine">Caffeine</div>
+                        <div class="preset" data-mol="dopamine">Dopamine</div>
+                        <div class="preset" data-mol="water">Water</div>
+                        <div class="preset" data-mol="ethanol">Ethanol</div>
+                        <div class="preset" data-mol="glucose">Glucose</div>
+                        <div class="preset" data-mol="benzene">Benzene</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom">
+            <div class="transport">
+                <button class="btn" id="play-btn">▶</button>
+                <button class="btn" id="stop-btn">⏹</button>
+                <button class="btn" id="rec-btn">⏺</button>
+                <button class="btn" id="loop-btn">🔄</button>
+            </div>
+            
+            <div class="visualizer">
+                <div class="bar" style="height: 30%"></div>
+                <div class="bar" style="height: 60%"></div>
+                <div class="bar" style="height: 40%"></div>
+                <div class="bar" style="height: 80%"></div>
+                <div class="bar" style="height: 20%"></div>
+                <div class="bar" style="height: 70%"></div>
+                <div class="bar" style="height: 50%"></div>
+                <div class="bar" style="height: 90%"></div>
+                <div class="bar" style="height: 35%"></div>
+                <div class="bar" style="height: 65%"></div>
+                <div class="bar" style="height: 25%"></div>
+                <div class="bar" style="height: 85%"></div>
+            </div>
+
+            <div class="volume">
+                <span>🔊</span>
+                <input type="range" class="volume-slider" min="0" max="100" value="70" id="master-vol">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Audio Engine
+        let audioCtx;
+        let masterGain;
+        let atmosphereGain;
+        let isPlaying = false;
+        let isLooping = false;
+        let tempo = 120;
+        let sequenceTimeout;
+        let currentMolecule = 'caffeine';
+        let currentMode = 'structural';
+        let atmosphereOscillators = [];
+        let sustainedOscillators = [];
+
+        // Musical scales for melodic mode
+        const musicalScales = {
+            'major': [0, 2, 4, 5, 7, 9, 11],
+            'minor': [0, 2, 3, 5, 7, 8, 10],
+            'pentatonic': [0, 2, 4, 7, 9],
+            'blues': [0, 3, 5, 6, 7, 10],
+            'dorian': [0, 2, 3, 5, 7, 9, 10]
+        };
+
+        // Enhanced element data
+        const elementData = {
+            'C': { 
+                wave: 'sawtooth', 
+                color: '#666', 
+                electronegativity: 2.55,
+                atomicRadius: 70,
+                baseFreq: 261.63,
+                harmonics: [1, 2, 3, 5, 8],
+                scale: 'minor'
+            },
+            'N': { 
+                wave: 'square', 
+                color: '#4a90e2', 
+                electronegativity: 3.04,
+                atomicRadius: 65,
+                baseFreq: 329.63,
+                harmonics: [1, 3, 5, 7, 9],
+                scale: 'dorian'
+            },
+            'O': { 
+                wave: 'triangle', 
+                color: '#e74c3c', 
+                electronegativity: 3.44,
+                atomicRadius: 60,
+                baseFreq: 415.30,
+                harmonics: [1, 2, 4, 6, 8],
+                scale: 'major'
+            },
+            'H': { 
+                wave: 'sine', 
+                color: '#fff', 
+                electronegativity: 2.20,
+                atomicRadius: 25,
+                baseFreq: 523.25,
+                harmonics: [1],
+                scale: 'pentatonic'
+            }
+        };
+
+        // Bond types for sonification
+        const bondTypes = {
+            'single': { wave: 'sine', freq: 110, duration: 0.4 },
+            'double': { wave: 'sawtooth', freq: 220, duration: 0.6 },
+            'triple': { wave: 'square', freq: 330, duration: 0.8 },
+            'aromatic': { wave: 'triangle', freq: 165, duration: 1.0 }
+        };
+
+        // Molecule database with enhanced properties
+        const moleculeDB = {
+            caffeine: {
+                name: 'Caffeine (C₈H₁₀N₄O₂)',
+                formula: 'C8H10N4O2',
+                mw: 194.19,
+                homoLumo: 4.2,
+                dipole: 3.64,
+                electronegativity: 2.3,
+                key: 'A Minor',
+                tempo: 120,
+                atmosphere: { type: 'stimulant', freq: 40, depth: 0.3 },
+                structure: {
+                    atoms: [
+                        {x: 80, y: 100, element: 'C', freq: 261.63},
+                        {x: 120, y: 80, element: 'N', freq: 329.63},
+                        {x: 160, y: 100, element: 'C', freq: 392.00},
+                        {x: 160, y: 140, element: 'N', freq: 466.16},
+                        {x: 120, y: 160, element: 'C', freq: 523.25},
+                        {x: 80, y: 140, element: 'C', freq: 587.33},
+                        {x: 200, y: 80, element: 'C', freq: 659.25},
+                        {x: 240, y: 100, element: 'O', freq: 698.46},
+                        {x: 240, y: 140, element: 'N', freq: 783.99},
+                        {x: 200, y: 160, element: 'C', freq: 880.00}
+                    ],
+                    bonds: [
+                        {x1: 80, y1: 100, x2: 120, y2: 80, type: 'aromatic'},
+                        {x1: 120, y1: 80, x2: 160, y2: 100, type: 'double'},
+                        {x1: 160, y1: 100, x2: 160, y2: 140, type: 'single'},
+                        {x1: 160, y1: 140, x2: 120, y2: 160, type: 'double'},
+                        {x1: 120, y1: 160, x2: 80, y2: 140, type: 'single'},
+                        {x1: 80, y1: 140, x2: 80, y2: 100, type: 'double'},
+                        {x1: 160, y1: 100, x2: 200, y2: 80, type: 'single'},
+                        {x1: 200, y1: 80, x2: 240, y2: 100, type: 'double'},
+                        {x1: 240, y1: 100, x2: 240, y2: 140, type: 'single'},
+                        {x1: 240, y1: 140, x2: 200, y2: 160, type: 'double'},
+                        {x1: 200, y1: 160, x2: 160, y2: 140, type: 'single'}
+                    ]
+                }
+            },
+            water: {
+                name: 'Water (H₂O)',
+                formula: 'H2O',
+                mw: 18.02,
+                homoLumo: 12.6,
+                dipole: 1.85,
+                electronegativity: 3.1,
+                key: 'F Major',
+                tempo: 90,
+                atmosphere: { type: 'fluid', freq: 80, depth: 0.2 },
+                structure: {
+                    atoms: [
+                        {x: 150, y: 100, element: 'O', freq: 415.30},
+                        {x: 120, y: 80, element: 'H', freq: 523.25, size: 6},
+                        {x: 180, y: 80, element: 'H', freq: 659.25, size: 6}
+                    ],
+                    bonds: [
+                        {x1: 150, y1: 100, x2: 120, y2: 80, type: 'single'},
+                        {x1: 150, y1: 100, x2: 180, y2: 80, type: 'single'}
+                    ]
+                }
+            },
+            dopamine: {
+                name: 'Dopamine (C₈H₁₁NO₂)',
+                formula: 'C8H11NO2',
+                mw: 153.18,
+                homoLumo: 3.8,
+                dipole: 2.1,
+                electronegativity: 2.4,
+                key: 'C Major',
+                tempo: 140,
+                atmosphere: { type: 'euphoric', freq: 7, depth: 0.4 },
+                structure: {
+                    atoms: [
+                        {x: 60, y: 120, element: 'C', freq: 261.63},
+                        {x: 100, y: 100, element: 'C', freq: 293.66},
+                        {x: 140, y: 120, element: 'C', freq: 329.63},
+                        {x: 140, y: 160, element: 'C', freq: 369.99},
+                        {x: 100, y: 180, element: 'C', freq: 415.30},
+                        {x: 60, y: 160, element: 'C', freq: 466.16},
+                        {x: 180, y: 140, element: 'O', freq: 523.25},
+                        {x: 180, y: 180, element: 'O', freq: 587.33},
+                        {x: 220, y: 120, element: 'C', freq: 659.25},
+                        {x: 260, y: 140, element: 'C', freq: 698.46},
+                        {x: 280, y: 180, element: 'N', freq: 783.99}
+                    ],
+                    bonds: [
+                        {x1: 60, y1: 120, x2: 100, y2: 100, type: 'aromatic'},
+                        {x1: 100, y1: 100, x2: 140, y2: 120, type: 'aromatic'},
+                        {x1: 140, y1: 120, x2: 140, y2: 160, type: 'aromatic'},
+                        {x1: 140, y1: 160, x2: 100, y2: 180, type: 'aromatic'},
+                        {x1: 100, y1: 180, x2: 60, y2: 160, type: 'aromatic'},
+                        {x1: 60, y1: 160, x2: 60, y2: 120, type: 'aromatic'},
+                        {x1: 140, y1: 120, x2: 180, y2: 140, type: 'single'},
+                        {x1: 140, y1: 160, x2: 180, y2: 180, type: 'single'},
+                        {x1: 180, y1: 140, x2: 220, y2: 120, type: 'single'},
+                        {x1: 220, y1: 120, x2: 260, y2: 140, type: 'single'},
+                        {x1: 260, y1: 140, x2: 280, y2: 180, type: 'single'}
+                    ]
+                }
+            },
+            ethanol: {
+                name: 'Ethanol (C₂H₆O)',
+                formula: 'C2H6O',
+                mw: 46.07,
+                homoLumo: 8.9,
+                dipole: 1.69,
+                electronegativity: 2.3,
+                key: 'G Minor',
+                tempo: 110,
+                atmosphere: { type: 'relaxed', freq: 60, depth: 0.25 },
+                structure: {
+                    atoms: [
+                        {x: 120, y: 100, element: 'C', freq: 261.63},
+                        {x: 180, y: 100, element: 'C', freq: 329.63},
+                        {x: 220, y: 80, element: 'O', freq: 415.30}
+                    ],
+                    bonds: [
+                        {x1: 120, y1: 100, x2: 180, y2: 100, type: 'single'},
+                        {x1: 180, y1: 100, x2: 220, y2: 80, type: 'single'}
+                    ]
+                }
+            },
+            glucose: {
+                name: 'Glucose (C₆H₁₂O₆)',
+                formula: 'C6H12O6',
+                mw: 180.16,
+                homoLumo: 5.1,
+                dipole: 2.8,
+                electronegativity: 2.5,
+                key: 'D Major',
+                tempo: 100,
+                atmosphere: { type: 'crystalline', freq: 120, depth: 0.2 },
+                structure: {
+                    atoms: [
+                        {x: 60, y: 120, element: 'C', freq: 261.63},
+                        {x: 120, y: 100, element: 'C', freq: 293.66},
+                        {x: 180, y: 120, element: 'C', freq: 329.63},
+                        {x: 220, y: 160, element: 'C', freq: 369.99},
+                        {x: 180, y: 200, element: 'C', freq: 415.30},
+                        {x: 120, y: 180, element: 'C', freq: 466.16},
+                        {x: 60, y: 80, element: 'O', freq: 523.25},
+                        {x: 120, y: 60, element: 'O', freq: 587.33},
+                        {x: 220, y: 100, element: 'O', freq: 659.25},
+                        {x: 260, y: 180, element: 'O', freq: 698.46},
+                        {x: 220, y: 220, element: 'O', freq: 783.99},
+                        {x: 80, y: 200, element: 'O', freq: 880.00}
+                    ],
+                    bonds: [
+                        {x1: 60, y1: 120, x2: 120, y2: 100, type: 'single'},
+                        {x1: 120, y1: 100, x2: 180, y2: 120, type: 'single'},
+                        {x1: 180, y1: 120, x2: 220, y2: 160, type: 'single'},
+                        {x1: 220, y1: 160, x2: 180, y2: 200, type: 'single'},
+                        {x1: 180, y1: 200, x2: 120, y2: 180, type: 'single'},
+                        {x1: 120, y1: 180, x2: 60, y2: 120, type: 'single'}
+                    ]
+                }
+            },
+            benzene: {
+                name: 'Benzene (C₆H₆)',
+                formula: 'C6H6',
+                mw: 78.11,
+                homoLumo: 6.8,
+                dipole: 0.0,
+                electronegativity: 2.5,
+                key: 'E Minor',
+                tempo: 132,
+                atmosphere: { type: 'aromatic', freq: 50, depth: 0.35 },
+                structure: {
+                    atoms: [
+                        {x: 150, y: 80, element: 'C', freq: 261.63},
+                        {x: 190, y: 110, element: 'C', freq: 293.66},
+                        {x: 190, y: 150, element: 'C', freq: 329.63},
+                        {x: 150, y: 180, element: 'C', freq: 369.99},
+                        {x: 110, y: 150, element: 'C', freq: 415.30},
+                        {x: 110, y: 110, element: 'C', freq: 466.16}
+                    ],
+                    bonds: [
+                        {x1: 150, y1: 80, x2: 190, y2: 110, type: 'aromatic'},
+                        {x1: 190, y1: 110, x2: 190, y2: 150, type: 'aromatic'},
+                        {x1: 190, y1: 150, x2: 150, y2: 180, type: 'aromatic'},
+                        {x1: 150, y1: 180, x2: 110, y2: 150, type: 'aromatic'},
+                        {x1: 110, y1: 150, x2: 110, y2: 110, type: 'aromatic'},
+                        {x1: 110, y1: 110, x2: 150, y2: 80, type: 'aromatic'}
+                    ]
+                }
+            }
+        };
+
+        // Initialize audio with atmosphere support
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                atmosphereGain = audioCtx.createGain();
+                
+                masterGain.connect(audioCtx.destination);
+                atmosphereGain.connect(masterGain);
+                
+                masterGain.gain.value = 0.7;
+                atmosphereGain.gain.value = 0.2;
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Create molecular atmosphere (background soundscape)
+        function createAtmosphere() {
+            stopAtmosphere();
+            
+            const mol = moleculeDB[currentMolecule];
+            const atmosphereLevel = document.getElementById('atmosphere').value / 100;
+            
+            if (atmosphereLevel < 0.1 || currentMode !== 'soundscape') return;
+
+            const { type, freq, depth } = mol.atmosphere;
+            
+            // Create multiple layers for rich soundscape
+            for (let i = 0; i < 3; i++) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                const panner = audioCtx.createStereoPanner();
+
+                osc.type = i === 0 ? 'sine' : (i === 1 ? 'sawtooth' : 'triangle');
+                osc.frequency.setValueAtTime(freq * (1 + i * 0.5), audioCtx.currentTime);
+
+                // LFO for organic movement
+                const lfo = audioCtx.createOscillator();
+                const lfoGain = audioCtx.createGain();
+                lfo.frequency.setValueAtTime(0.1 + i * 0.05, audioCtx.currentTime);
+                lfoGain.gain.setValueAtTime(freq * 0.1, audioCtx.currentTime);
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(freq * (8 - i * 2), audioCtx.currentTime);
+                filter.Q.setValueAtTime(5, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(
+                    depth * atmosphereLevel * (0.3 - i * 0.1), 
+                    audioCtx.currentTime + 2
+                );
+
+                panner.pan.setValueAtTime((i - 1) * 0.3, audioCtx.currentTime);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(panner);
+                panner.connect(atmosphereGain);
+
+                osc.start(audioCtx.currentTime);
+                lfo.start(audioCtx.currentTime);
+
+                atmosphereOscillators.push({ osc, lfo, gain });
+            }
+
+            // Show visual atmosphere indicator
+            const aura = document.getElementById('soundscapeAura');
+            aura.classList.add('active');
+        }
+
+        function stopAtmosphere() {
+            atmosphereOscillators.forEach(({ osc, lfo, gain }) => {
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+                setTimeout(() => {
+                    try { osc.stop(); } catch(e) {}
+                    try { lfo.stop(); } catch(e) {}
+                }, 1000);
+            });
+            atmosphereOscillators = [];
+
+            const aura = document.getElementById('soundscapeAura');
+            aura.classList.remove('active');
+        }
+
+        // Enhanced atom sonification with longer sustain
+        function playAtom(element, frequency, atomIndex = 0) {
+            initAudio();
+
+            const molData = moleculeDB[currentMolecule];
+            const elemData = elementData[element];
+            const harmonyLevel = document.getElementById('harmony').value / 100;
+            const resonanceLevel = document.getElementById('resonance').value / 100;
+            const dynamicsLevel = document.getElementById('dynamics').value / 100;
+            const spatialWidth = document.getElementById('spatial').value / 100;
+            const expressionDepth = document.getElementById('expression').value / 100;
+
+            // Frequency calculation based on mode
+            let adjustedFreq = frequency;
+            
+            if (currentMode === 'melodic') {
+                // Map to musical scale
+                const scale = musicalScales[elemData.scale] || musicalScales['minor'];
+                const baseNote = 261.63; // C4
+                const scaleIndex = atomIndex % scale.length;
+                const octave = Math.floor(atomIndex / scale.length);
+                adjustedFreq = baseNote * Math.pow(2, (scale[scaleIndex] + octave * 12) / 12);
+            } else {
+                // Quantum mechanical adjustment
+                switch(document.getElementById('mapping').value) {
+                    case '0': adjustedFreq = frequency; break;
+                    case '1': adjustedFreq = frequency * (molData.mw / 100); break;
+                    case '2': adjustedFreq = frequency * (molData.homoLumo / 5) * (elemData.electronegativity / 3); break;
+                    case '3': adjustedFreq = frequency * Math.pow(2, Math.floor(molData.homoLumo) % 12 / 12); break;
+                }
+            }
+
+            // Create main oscillator
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            const panner = audioCtx.createStereoPanner();
+
+            // Mode-specific synthesis
+            switch(currentMode) {
+                case 'structural':
+                    osc.type = elemData.wave;
+                    break;
+                case 'melodic':
+                    osc.type = 'sine';
+                    // Add gentle harmonics for musical quality
+                    if (harmonyLevel > 0.3) {
+                        const harmonic = audioCtx.createOscillator();
+                        const harmonicGain = audioCtx.createGain();
+                        harmonic.frequency.setValueAtTime(adjustedFreq * 2, audioCtx.currentTime);
+                        harmonic.type = 'triangle';
+                        harmonicGain.gain.setValueAtTime(0.2 * harmonyLevel, audioCtx.currentTime);
+                        harmonicGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+                        harmonic.connect(harmonicGain);
+                        harmonicGain.connect(filter);
+                        harmonic.start(audioCtx.currentTime);
+                        harmonic.stop(audioCtx.currentTime + 1.5);
+                    }
+                    break;
+                case 'electronic':
+                    osc.type = 'square';
+                    // Create electronic harmonics
+                    elemData.harmonics.forEach((harmonic, i) => {
+                        if (i > 0 && harmonyLevel > 0.4) {
+                            const harmonicOsc = audioCtx.createOscillator();
+                            const harmonicGain = audioCtx.createGain();
+                            harmonicOsc.frequency.setValueAtTime(adjustedFreq * harmonic, audioCtx.currentTime);
+                            harmonicOsc.type = 'sine';
+                            harmonicGain.gain.setValueAtTime(0.15 * harmonyLevel / harmonic, audioCtx.currentTime);
+                            harmonicGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+                            harmonicOsc.connect(harmonicGain);
+                            harmonicGain.connect(filter);
+                            harmonicOsc.start(audioCtx.currentTime);
+                            harmonicOsc.stop(audioCtx.currentTime + 1.2);
+                        }
+                    });
+                    break;
+                case 'soundscape':
+                    osc.type = 'triangle';
+                    // Extended sustain for soundscape
+                    const sustainGain = audioCtx.createGain();
+                    sustainGain.gain.setValueAtTime(0.1 * expressionDepth, audioCtx.currentTime);
+                    osc.connect(sustainGain);
+                    sustainGain.connect(atmosphereGain);
+                    sustainedOscillators.push({ osc, gain: sustainGain });
+                    break;
+                case 'spectral':
+                    osc.type = 'sawtooth';
+                    // Spectroscopic filter sweeps
+                    filter.frequency.setValueAtTime(adjustedFreq * 0.5, audioCtx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(adjustedFreq * 4, audioCtx.currentTime + 0.8);
+                    break;
+            }
+
+            osc.frequency.setValueAtTime(adjustedFreq, audioCtx.currentTime);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(adjustedFreq * (2 + resonanceLevel * 3), audioCtx.currentTime);
+            filter.Q.setValueAtTime(elemData.electronegativity * resonanceLevel * 8, audioCtx.currentTime);
+
+            // Spatial positioning
+            const atomPos = molData.structure.atoms[atomIndex] || {x: 150, y: 100};
+            const normalizedX = (atomPos.x - 150) / 150;
+            panner.pan.setValueAtTime(normalizedX * spatialWidth, audioCtx.currentTime);
+
+            // Enhanced ADSR envelope - longer sustain
+            const attackTime = element === 'H' ? 0.02 : 0.08;
+            const decayTime = elemData.atomicRadius / 80;
+            const sustainLevel = 0.15 + (elemData.electronegativity / 4) * 0.25;
+            const releaseTime = currentMode === 'melodic' ? 1.5 : (currentMode === 'soundscape' ? 3.0 : 1.0);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5 * expressionDepth, audioCtx.currentTime + attackTime);
+            gain.gain.exponentialRampToValueAtTime(sustainLevel * expressionDepth, audioCtx.currentTime + attackTime + decayTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + releaseTime);
+
+            // Connect audio graph
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(panner);
+            panner.connect(masterGain);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + releaseTime);
+
+            updateVisualizer();
+        }
+
+        // Play bond sound
+        function playBond(bondType, bondIndex) {
+            initAudio();
+
+            const bond = bondTypes[bondType] || bondTypes['single'];
+            const expressionDepth = document.getElementById('expression').value / 100;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = bond.wave;
+            osc.frequency.setValueAtTime(bond.freq, audioCtx.currentTime);
+
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(bond.freq * 2, audioCtx.currentTime);
+            filter.Q.setValueAtTime(10, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2 * expressionDepth, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + bond.duration);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + bond.duration);
+        }
+
+        // Render molecule with interactive bonds
+        function renderMolecule(molKey) {
+            const mol = moleculeDB[molKey];
+            const svg = document.getElementById('moleculeDisplay');
+            svg.innerHTML = '';
+
+            // Draw bonds first (behind atoms)
+            mol.structure.bonds.forEach((bond, index) => {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', bond.x1);
+                line.setAttribute('y1', bond.y1);
+                line.setAttribute('x2', bond.x2);
+                line.setAttribute('y2', bond.y2);
+                line.setAttribute('class', 'bond');
+                line.setAttribute('data-bond-type', bond.type);
+                line.setAttribute('data-bond-index', index);
+                
+                line.addEventListener('click', function() {
+                    const bondType = this.getAttribute('data-bond-type');
+                    const bondIndex = parseInt(this.getAttribute('data-bond-index'));
+                    
+                    this.classList.add('playing');
+                    setTimeout(() => this.classList.remove('playing'), 800);
+                    
+                    playBond(bondType, bondIndex);
+                });
+                
+                svg.appendChild(line);
+            });
+
+            // Draw atoms
+            mol.structure.atoms.forEach((atom, index) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', atom.x);
+                circle.setAttribute('cy', atom.y);
+                circle.setAttribute('r', atom.size || 8);
+                circle.setAttribute('fill', elementData[atom.element].color);
+                circle.setAttribute('class', 'atom');
+                circle.setAttribute('data-element', atom.element);
+                circle.setAttribute('data-freq', atom.freq);
+                circle.setAttribute('data-index', index);
+                
+                circle.addEventListener('click', function() {
+                    const element = this.getAttribute('data-element');
+                    const frequency = parseFloat(this.getAttribute('data-freq'));
+                    const atomIndex = parseInt(this.getAttribute('data-index'));
+                    
+                    this.classList.add('playing');
+                    setTimeout(() => this.classList.remove('playing'), 1200);
+                    
+                    playAtom(element, frequency, atomIndex);
+                });
+                
+                svg.appendChild(circle);
+            });
+        }
+
+        // Update molecule information
+        function updateMoleculeInfo(molKey) {
+            const mol = moleculeDB[molKey];
+            document.getElementById('mol-name').textContent = mol.name;
+            document.getElementById('mol-props').textContent = `MW: ${mol.mw} g/mol`;
+            document.getElementById('mol-key').textContent = `HOMO-LUMO: ${mol.homoLumo} eV`;
+            
+            const quantumProps = document.getElementById('quantumProps');
+            quantumProps.innerHTML = `
+                <div>Dipole: ${mol.dipole} D</div>
+                <div>χ: ${mol.electronegativity}</div>
+            `;
+
+            document.getElementById('tempo').value = mol.tempo;
+            updateSliderValue(document.getElementById('tempo'), document.getElementById('tempo-val'));
+        }
+
+        // Enhanced sequence playback with improved timing
+        function playSequence() {
+            if (!isPlaying) return;
+
+            const mol = moleculeDB[currentMolecule];
+            const atoms = mol.structure.atoms;
+            const currentTempo = parseInt(document.getElementById('tempo').value);
+            
+            // More musical timing for melodic mode
+            const noteLength = currentMode === 'melodic' ? 
+                (60000 / currentTempo) : // Quarter notes for melodic
+                (60000 / (currentTempo * 1.5)); // Faster for other modes
+
+            atoms.forEach((atom, i) => {
+                setTimeout(() => {
+                    if (isPlaying) {
+                        const atomElements = document.querySelectorAll(`[data-index="${i}"]`);
+                        if (atomElements.length > 0) {
+                            const atomEl = atomElements[0];
+                            atomEl.classList.add('playing');
+                            setTimeout(() => atomEl.classList.remove('playing'), 1200);
+                            
+                            playAtom(atom.element, atom.freq, i);
+                        }
+                    }
+                }, i * noteLength);
+            });
+
+            if (isLooping) {
+                sequenceTimeout = setTimeout(playSequence, atoms.length * noteLength + 500);
+            }
+        }
+
+        // Enhanced visualizer
+        function updateVisualizer() {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach((bar, i) => {
+                const height = Math.random() * 85 + 5;
+                bar.style.height = height + '%';
+                bar.style.background = `linear-gradient(to top, #00d4aa ${Math.random() * 40 + 20}%, rgba(0,212,170,0.4) 100%)`;
+            });
+        }
+
+        // Update slider values
+        function updateSliderValue(slider, valueSpan, suffix = '%') {
+            const value = slider.value;
+            if (slider.id === 'tempo') {
+                valueSpan.textContent = value;
+                tempo = parseInt(value);
+            } else if (slider.id === 'mapping') {
+                const modes = ['direct', 'scaled', 'quantum', 'harmonic'];
+                valueSpan.textContent = modes[parseInt(value)];
+            } else {
+                valueSpan.textContent = value + suffix;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            renderMolecule('caffeine');
+            updateMoleculeInfo('caffeine');
+
+            // Transport controls
+            document.getElementById('play-btn').addEventListener('click', function() {
+                initAudio();
+                isPlaying = !isPlaying;
+                
+                if (isPlaying) {
+                    this.textContent = '⏸';
+                    this.classList.add('active');
+                    if (currentMode === 'soundscape') {
+                        createAtmosphere();
+                    }
+                    playSequence();
+                } else {
+                    this.textContent = '▶';
+                    this.classList.remove('active');
+                    clearTimeout(sequenceTimeout);
+                    stopAtmosphere();
+                }
+            });
+
+            document.getElementById('stop-btn').addEventListener('click', function() {
+                isPlaying = false;
+                isLooping = false;
+                clearTimeout(sequenceTimeout);
+                stopAtmosphere();
+                // Stop sustained oscillators
+                sustainedOscillators.forEach(({ osc, gain }) => {
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    setTimeout(() => { try { osc.stop(); } catch(e) {} }, 500);
+                });
+                sustainedOscillators = [];
+                
+                const playBtn = document.getElementById('play-btn');
+                playBtn.textContent = '▶';
+                playBtn.classList.remove('active');
+                document.getElementById('loop-btn').classList.remove('active');
+            });
+
+            document.getElementById('loop-btn').addEventListener('click', function() {
+                isLooping = !isLooping;
+                this.classList.toggle('active');
+            });
+
+            document.getElementById('rec-btn').addEventListener('click', function() {
+                this.classList.toggle('active');
+                console.log('Recording:', this.classList.contains('active'));
+            });
+
+            // Mode switches
+            document.querySelectorAll('.mode').forEach(mode => {
+                mode.addEventListener('click', function() {
+                    document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMode = this.dataset.mode;
+                    
+                    const modeNames = {
+                        'structural': 'Structural Learning',
+                        'melodic': 'Melodic Sequence',
+                        'electronic': 'Electronic Properties',
+                        'soundscape': 'Molecular Soundscape',
+                        'spectral': 'Spectroscopic Analysis'
+                    };
+                    document.getElementById('currentMode').textContent = modeNames[currentMode];
+                    
+                    // Start/stop atmosphere based on mode
+                    if (currentMode === 'soundscape' && isPlaying) {
+                        createAtmosphere();
+                    } else {
+                        stopAtmosphere();
+                    }
+                });
+            });
+
+            // Molecule presets
+            document.querySelectorAll('.preset').forEach(preset => {
+                preset.addEventListener('click', function() {
+                    document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMolecule = this.dataset.mol;
+                    renderMolecule(currentMolecule);
+                    updateMoleculeInfo(currentMolecule);
+                    
+                    // Restart atmosphere if in soundscape mode
+                    if (currentMode === 'soundscape' && isPlaying) {
+                        stopAtmosphere();
+                        setTimeout(createAtmosphere, 100);
+                    }
+                });
+            });
+
+            // Sliders
+            const sliders = [
+                { slider: 'mapping', value: 'mapping-val' },
+                { slider: 'harmony', value: 'harmony-val' },
+                { slider: 'resonance', value: 'resonance-val' },
+                { slider: 'dynamics', value: 'dynamics-val' },
+                { slider: 'tempo', value: 'tempo-val' },
+                { slider: 'expression', value: 'expression-val' },
+                { slider: 'spatial', value: 'spatial-val' },
+                { slider: 'atmosphere', value: 'atmosphere-val' }
+            ];
+
+            sliders.forEach(({slider, value}) => {
+                const sliderEl = document.getElementById(slider);
+                const valueEl = document.getElementById(value);
+                
+                sliderEl.addEventListener('input', function() {
+                    updateSliderValue(this, valueEl);
+                    
+                    // Real-time atmosphere adjustment
+                    if (slider === 'atmosphere' && currentMode === 'soundscape') {
+                        stopAtmosphere();
+                        if (isPlaying) setTimeout(createAtmosphere, 50);
+                    }
+                });
+                
+                updateSliderValue(sliderEl, valueEl);
+            });
+
+            // Master volume
+            document.getElementById('master-vol').addEventListener('input', function() {
+                if (masterGain) {
+                    masterGain.gain.setValueAtTime(this.value / 100, audioCtx.currentTime);
+                }
+            });
+
+            setInterval(updateVisualizer, 100);
+        });
+
+        // Touch optimization
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        document.addEventListener('touchmove', function() {}, {passive: true});
+    </script>
+</body>
+</html>

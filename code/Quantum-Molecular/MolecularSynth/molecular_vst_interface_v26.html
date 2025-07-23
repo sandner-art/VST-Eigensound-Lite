@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MolecularSynth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+
+        .header {
+            height: 40px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            flex-shrink: 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00d4aa;
+            letter-spacing: 1px;
+        }
+
+        .modes {
+            display: flex;
+            gap: 6px;
+        }
+
+        .mode {
+            padding: 4px 8px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #333;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 9px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .mode.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        .workspace {
+            flex: 1;
+            background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            position: relative;
+        }
+
+        .molecule-area {
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            max-height: 500px;
+            background: radial-gradient(ellipse at center, rgba(0,212,170,0.03) 0%, transparent 80%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .molecule-svg {
+            width: 95%;
+            height: 95%;
+            max-width: 550px;
+            max-height: 450px;
+        }
+
+        .atom {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 0 3px rgba(0,212,170,0.4));
+        }
+
+        .atom:hover {
+            filter: drop-shadow(0 0 8px rgba(0,212,170,0.8)) brightness(1.2);
+        }
+
+        .atom.playing {
+            animation: var(--animation-type, atomPing) var(--animation-duration, 1.2s) ease-out;
+        }
+
+        .atom.playing::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: glowTrail 2s ease-out;
+        }
+
+        @keyframes atomPing {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.15); filter: drop-shadow(0 0 12px rgba(0,212,170,1)); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes atomBounce {
+            0%, 100% { transform: scale(1) translateY(0); }
+            25% { transform: scale(1.2) translateY(-3px); }
+            50% { transform: scale(1.1) translateY(-1px); }
+            75% { transform: scale(1.15) translateY(-2px); }
+        }
+
+        @keyframes atomVibrate {
+            0%, 100% { transform: scale(1) translateX(0); }
+            10% { transform: scale(1.05) translateX(-1px); }
+            20% { transform: scale(1.1) translateX(1px); }
+            30% { transform: scale(1.05) translateX(-1px); }
+            40% { transform: scale(1.1) translateX(1px); }
+            50% { transform: scale(1.05) translateX(-1px); }
+            60% { transform: scale(1.1) translateX(1px); }
+            70% { transform: scale(1.05) translateX(-1px); }
+            80% { transform: scale(1.1) translateX(1px); }
+            90% { transform: scale(1.05) translateX(-1px); }
+        }
+
+        @keyframes atomPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(0,212,170,0.4)); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 15px rgba(0,212,170,1)); }
+        }
+
+        @keyframes glowTrail {
+            0% { 
+                box-shadow: 0 0 20px 5px rgba(0,212,170,0.8);
+                opacity: 1;
+            }
+            100% { 
+                box-shadow: 0 0 50px 20px rgba(0,212,170,0);
+                opacity: 0;
+            }
+        }
+
+        .bond {
+            stroke: #444;
+            stroke-width: 1.5;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .bond:hover {
+            stroke: #00d4aa;
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 4px rgba(0,212,170,0.5));
+        }
+
+        .bond.playing {
+            animation: bondGlow 0.8s ease-out;
+        }
+
+        @keyframes bondGlow {
+            0% { stroke: #444; stroke-width: 1.5; }
+            30% { stroke: #00d4aa; stroke-width: 3; filter: drop-shadow(0 0 8px rgba(0,212,170,0.8)); }
+            100% { stroke: #444; stroke-width: 1.5; }
+        }
+
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            line-height: 1.3;
+            border: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .controls {
+            width: 250px;
+            background: linear-gradient(135deg, #111 0%, #0f0f0f 100%);
+            padding: 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            border-left: 1px solid #333;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 9px;
+            color: #00d4aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .control {
+            margin-bottom: 10px;
+        }
+
+        .control-label {
+            font-size: 9px;
+            color: #999;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0,212,170,0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 8px rgba(0,212,170,0.3);
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .preset {
+            padding: 6px;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            font-size: 8px;
+            text-align: center;
+            border-radius: 3px;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            border: 1px solid #333;
+        }
+
+        .preset:hover {
+            background: rgba(0,212,170,0.1);
+            border-color: #00d4aa;
+            color: #00d4aa;
+        }
+
+        .preset.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .bottom {
+            height: 60px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+            flex-shrink: 0;
+            border-top: 1px solid #333;
+        }
+
+        .transport {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.15s;
+            border: 1px solid #333;
+        }
+
+        .btn:hover {
+            background: rgba(0,212,170,0.1);
+            border-color: #00d4aa;
+            color: #00d4aa;
+        }
+
+        .btn.active {
+            background: #00d4aa;
+            color: #000;
+            border-color: #00d4aa;
+        }
+
+        .visualizer {
+            flex: 1;
+            height: 24px;
+            background: #222;
+            border-radius: 3px;
+            display: flex;
+            align-items: end;
+            padding: 2px;
+            gap: 1px;
+            margin: 0 10px;
+            border: 1px solid #333;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #00d4aa 0%, rgba(0,212,170,0.6) 100%);
+            border-radius: 1px;
+            min-height: 1px;
+            transition: height 0.1s ease;
+        }
+
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .volume-slider {
+            width: 60px;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            background: #00d4aa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Mobile Landscape */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .main {
+                flex-direction: row;
+            }
+            
+            .controls {
+                width: 220px;
+                border-left: 1px solid #222;
+            }
+            
+            .header {
+                height: 35px;
+            }
+            
+            .bottom {
+                height: 50px;
+            }
+        }
+
+        /* Mobile Portrait */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .main {
+                flex-direction: column;
+            }
+            
+            .controls {
+                width: 100%;
+                height: 200px;
+                border-top: 1px solid #222;
+                border-left: none;
+            }
+            
+            .section {
+                margin-bottom: 10px;
+            }
+            
+            .presets {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .modes {
+                gap: 4px;
+            }
+            
+            .mode {
+                padding: 3px 6px;
+                font-size: 8px;
+            }
+            
+            .logo {
+                font-size: 12px;
+            }
+        }
+
+        .quantum-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 9px;
+            color: #666;
+            background: rgba(0,0,0,0.8);
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,212,170,0.2);
+        }
+
+        .mode-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 8px;
+            color: #00d4aa;
+            background: rgba(0,212,170,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0,212,170,0.3);
+        }
+
+        .soundscape-ambient {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            border: 1px solid rgba(0,212,170,0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .soundscape-ambient.active {
+            opacity: 0.3;
+            animation: soundscapePulse 4s ease-in-out infinite;
+        }
+
+        @keyframes soundscapePulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="logo">MolecularSynth</div>
+            <div class="modes">
+                <button class="mode active" data-mode="structural">Structural</button>
+                <button class="mode" data-mode="melodic">Melodic</button>
+                <button class="mode" data-mode="electronic">Electronic</button>
+                <button class="mode" data-mode="soundscape">Soundscape</button>
+                <button class="mode" data-mode="spectral">Spectral</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="workspace">
+                <div class="molecule-area">
+                    <svg class="molecule-svg" viewBox="0 0 400 300" id="moleculeDisplay">
+                        <!-- Molecule structure will be dynamically generated -->
+                    </svg>
+
+                    <div class="soundscape-ambient" id="soundscapeAura"></div>
+
+                    <div class="info">
+                        <div id="mol-name">Caffeine (C₈H₁₀N₄O₂)</div>
+                        <div id="mol-props">MW: 194.19 g/mol</div>
+                        <div id="mol-key">HOMO-LUMO: 4.2 eV</div>
+                    </div>
+
+                    <div class="quantum-indicator" id="quantumProps">
+                        <div>Dipole: 3.64 D</div>
+                        <div>χ: 2.0-2.5</div>
+                    </div>
+
+                    <div class="mode-indicator" id="currentMode">
+                        Structural Learning
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="section">
+                    <div class="section-title">Visualization</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Animation Style</span>
+                            <span id="animation-val">ping</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="3" value="0" id="animation" step="1">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Glow Intensity</span>
+                            <span id="glow-val">60%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="60" id="glow">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Sound Character</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Element Contrast</span>
+                            <span id="contrast-val">80%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="80" id="contrast">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Timbre Clarity</span>
+                            <span id="clarity-val">65%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="65" id="clarity">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Sonification Model</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Parameter Mapping</span>
+                            <span id="mapping-val">quantum</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="3" value="2" id="mapping" step="1">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Harmonic Complexity</span>
+                            <span id="harmony-val">65%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="65" id="harmony">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Electronic Resonance</span>
+                            <span id="resonance-val">40%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="40" id="resonance">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Molecular Dynamics</span>
+                            <span id="dynamics-val">75%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="75" id="dynamics">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Performance</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Tempo (BPM)</span>
+                            <span id="tempo-val">120</span>
+                        </div>
+                        <input type="range" class="slider" min="60" max="200" value="120" id="tempo">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Expression Depth</span>
+                            <span id="expression-val">50%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="50" id="expression">
+                    </div>
+
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Spatial Width</span>
+                            <span id="spatial-val">30%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="30" id="spatial">
+                    </div>
+
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Atmosphere</span>
+                            <span id="atmosphere-val">20%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="20" id="atmosphere">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Molecules</div>
+                    <div class="presets">
+                        <div class="preset active" data-mol="caffeine">Caffeine</div>
+                        <div class="preset" data-mol="dopamine">Dopamine</div>
+                        <div class="preset" data-mol="water">Water</div>
+                        <div class="preset" data-mol="ethanol">Ethanol</div>
+                        <div class="preset" data-mol="glucose">Glucose</div>
+                        <div class="preset" data-mol="benzene">Benzene</div>
+                        <div class="preset" data-mol="aspirin">Aspirin</div>
+                        <div class="preset" data-mol="dna">DNA Base</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom">
+            <div class="transport">
+                <button class="btn" id="play-btn">▶</button>
+                <button class="btn" id="stop-btn">⏹</button>
+                <button class="btn" id="rec-btn">⏺</button>
+                <button class="btn" id="loop-btn">🔄</button>
+            </div>
+            
+            <div class="visualizer">
+                <div class="bar" style="height: 30%"></div>
+                <div class="bar" style="height: 60%"></div>
+                <div class="bar" style="height: 40%"></div>
+                <div class="bar" style="height: 80%"></div>
+                <div class="bar" style="height: 20%"></div>
+                <div class="bar" style="height: 70%"></div>
+                <div class="bar" style="height: 50%"></div>
+                <div class="bar" style="height: 90%"></div>
+                <div class="bar" style="height: 35%"></div>
+                <div class="bar" style="height: 65%"></div>
+                <div class="bar" style="height: 25%"></div>
+                <div class="bar" style="height: 85%"></div>
+            </div>
+
+            <div class="volume">
+                <span>🔊</span>
+                <input type="range" class="volume-slider" min="0" max="100" value="70" id="master-vol">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animation and visualization settings
+        let currentAnimationType = 'ping';
+        let glowIntensity = 0.6;
+
+
+        let audioCtx;
+        let masterGain;
+        let atmosphereGain;
+        let isPlaying = false;
+        let isLooping = false;
+        let tempo = 120;
+        let sequenceTimeout;
+        let currentMolecule = 'caffeine';
+        let currentMode = 'structural';
+        let atmosphereOscillators = [];
+        let sustainedOscillators = [];
+
+        // Musical scales for melodic mode
+        const musicalScales = {
+            'major': [0, 2, 4, 5, 7, 9, 11],
+            'minor': [0, 2, 3, 5, 7, 8, 10],
+            'pentatonic': [0, 2, 4, 7, 9],
+            'blues': [0, 3, 5, 6, 7, 10],
+            'dorian': [0, 2, 3, 5, 7, 9, 10]
+        };
+
+        // Enhanced element data with distinctive sound characteristics
+        const elementData = {
+            'C': { 
+                wave: 'sawtooth', 
+                color: '#666', 
+                electronegativity: 2.55,
+                atomicRadius: 70,
+                baseFreq: 130.81, // C3 - Deep, fundamental
+                harmonics: [1, 2, 3, 5, 8], // Rich harmonics
+                scale: 'minor',
+                character: 'warm', // Warm, woody timbre
+                filterFreq: 1000,
+                qFactor: 3
+            },
+            'N': { 
+                wave: 'square', 
+                color: '#4a90e2', 
+                electronegativity: 3.04,
+                atomicRadius: 65,
+                baseFreq: 220.00, // A3 - Bright, energetic
+                harmonics: [1, 3, 5, 7, 9], // Odd harmonics only
+                scale: 'dorian',
+                character: 'bright', // Sharp, electric timbre
+                filterFreq: 2000,
+                qFactor: 8
+            },
+            'O': { 
+                wave: 'triangle', 
+                color: '#e74c3c', 
+                electronegativity: 3.44,
+                atomicRadius: 60,
+                baseFreq: 329.63, // E4 - High, crystalline
+                harmonics: [1, 2, 4, 6, 8], // Even harmonics
+                scale: 'major',
+                character: 'crystalline', // Pure, glassy timbre
+                filterFreq: 3000,
+                qFactor: 12
+            },
+            'H': { 
+                wave: 'sine', 
+                color: '#fff', 
+                electronegativity: 2.20,
+                atomicRadius: 25,
+                baseFreq: 523.25, // C5 - High, pure
+                harmonics: [1], // Pure tone
+                scale: 'pentatonic',
+                character: 'pure', // Clean, simple timbre
+                filterFreq: 5000,
+                qFactor: 2
+            },
+            'S': {
+                wave: 'sawtooth',
+                color: '#ffeb3b',
+                electronegativity: 2.58,
+                atomicRadius: 100,
+                baseFreq: 98.00, // G2 - Deep, sulfurous
+                harmonics: [1, 2, 3, 4, 6],
+                scale: 'blues',
+                character: 'sulfurous',
+                filterFreq: 800,
+                qFactor: 4
+            },
+            'P': {
+                wave: 'triangle',
+                color: '#ff9800',
+                electronegativity: 2.19,
+                atomicRadius: 110,
+                baseFreq: 146.83, // D3 - Mid-range, phosphorous
+                harmonics: [1, 3, 5],
+                scale: 'minor',
+                character: 'phosphorous',
+                filterFreq: 1500,
+                qFactor: 6
+            }
+        };
+
+        // Bond types for sonification
+        const bondTypes = {
+            'single': { wave: 'sine', freq: 110, duration: 0.4, color: '#666' },
+            'double': { wave: 'sawtooth', freq: 220, duration: 0.6, color: '#999' },
+            'triple': { wave: 'square', freq: 330, duration: 0.8, color: '#ccc' },
+            'aromatic': { wave: 'triangle', freq: 165, duration: 1.0, color: '#00d4aa' }
+        };
+
+        // Comprehensive molecule database with complete atom-indexed structures
+        // In the <script> tag, replace the entire `moleculeDB` object with this one.
+
+        // Comprehensive molecule database with complete atom-indexed structures
+        const moleculeDB = {
+            caffeine: {
+                name: 'Caffeine (C₈H₁₀N₄O₂)',
+                formula: 'C8H10N4O2',
+                mw: 194.19,
+                homoLumo: 4.2,
+                dipole: 3.64,
+                electronegativity: 2.3,
+                key: 'A Minor',
+                tempo: 120,
+                atmosphere: { type: 'stimulant', freq: 40, depth: 0.3 },
+                structure: {
+                    atoms: [
+                        {x: 184, y: 198, element: 'N'}, // 0: N1
+                        {x: 151, y: 177, element: 'C'}, // 1: C2
+                        {x: 151, y: 137, element: 'N'}, // 2: N3
+                        {x: 184, y: 116, element: 'C'}, // 3: C4
+                        {x: 218, y: 137, element: 'C'}, // 4: C5
+                        {x: 218, y: 177, element: 'C'}, // 5: C6
+                        {x: 194, y: 83, element: 'N'},  // 6: N7
+                        {x: 235, y: 83, element: 'C'},  // 7: C8
+                        {x: 245, y: 116, element: 'N'}, // 8: N9
+                        {x: 120, y: 198, element: 'O'}, // 9: O on C2
+                        {x: 249, y: 198, element: 'O'}, // 10: O on C6
+                        {x: 184, y: 239, element: 'C'}, // 11: Methyl on N1
+                        {x: 120, y: 116, element: 'C'}, // 12: Methyl on N3
+                        {x: 172, y: 52, element: 'C'},  // 13: Methyl on N7
+                        {x: 257, y: 62, element: 'H'},  // 14: H on C8
+                        {x: 153, y: 260, element: 'H'}, // 15: H on C11
+                        {x: 194, y: 260, element: 'H'}, // 16: H on C11
+                        {x: 214, y: 249, element: 'H'}, // 17: H on C11
+                        {x: 89, y: 116, element: 'H'},  // 18: H on C12
+                        {x: 130, y: 85, element: 'H'},  // 19: H on C12
+                        {x: 151, y: 95, element: 'H'},  // 20: H on C12
+                        {x: 194, y: 31, element: 'H'},  // 21: H on C13
+                        {x: 162, y: 31, element: 'H'},  // 22: H on C13
+                        {x: 141, y: 52, element: 'H'}   // 23: H on C13
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'double'}, {from: 1, to: 2, type: 'single'},
+                        {from: 2, to: 3, type: 'double'}, {from: 3, to: 4, type: 'single'},
+                        {from: 4, to: 5, type: 'double'}, {from: 5, to: 0, type: 'single'},
+                        {from: 3, to: 8, type: 'single'}, {from: 8, to: 7, type: 'single'},
+                        {from: 7, to: 6, type: 'double'}, {from: 6, to: 4, type: 'single'},
+                        {from: 1, to: 9, type: 'single'}, {from: 5, to: 10, type: 'single'},
+                        {from: 0, to: 11, type: 'single'},{from: 2, to: 12, type: 'single'},
+                        {from: 6, to: 13, type: 'single'},{from: 7, to: 14, type: 'single'},
+                        {from: 11, to: 15, type: 'single'}, {from: 11, to: 16, type: 'single'}, {from: 11, to: 17, type: 'single'},
+                        {from: 12, to: 18, type: 'single'}, {from: 12, to: 19, type: 'single'}, {from: 12, to: 20, type: 'single'},
+                        {from: 13, to: 21, type: 'single'}, {from: 13, to: 22, type: 'single'}, {from: 13, to: 23, type: 'single'},
+                    ]
+                }
+            },
+            dopamine: {
+                name: 'Dopamine (C₈H₁₁NO₂)',
+                formula: 'C8H11NO2',
+                mw: 153.18,
+                homoLumo: 3.8,
+                dipole: 2.1,
+                electronegativity: 2.4,
+                key: 'C Major',
+                tempo: 140,
+                atmosphere: { type: 'euphoric', freq: 7, depth: 0.4 },
+                structure: {
+                    atoms: [
+                        {x: 177, y: 145, element: 'C'}, // 0: C1
+                        {x: 217, y: 145, element: 'C'}, // 1: C2
+                        {x: 238, y: 180, element: 'C'}, // 2: C3
+                        {x: 217, y: 215, element: 'C'}, // 3: C4
+                        {x: 177, y: 215, element: 'C'}, // 4: C5
+                        {x: 156, y: 180, element: 'C'}, // 5: C6
+                        {x: 238, y: 110, element: 'O'}, // 6: OH on C2
+                        {x: 279, y: 180, element: 'O'}, // 7: OH on C3
+                        {x: 116, y: 180, element: 'C'}, // 8: Side chain C1
+                        {x: 94, y: 145, element: 'C'},  // 9: Side chain C2
+                        {x: 54, y: 167, element: 'N'},  // 10: NH2
+                        {x: 146, y: 236, element: 'H'}, // 11: H on C5
+                        {x: 238, y: 236, element: 'H'}, // 12: H on C4
+                        {x: 177, y: 122, element: 'H'}, // 13: H on C1
+                        {x: 228, y: 79, element: 'H'},  // 14: H on O6
+                        {x: 299, y: 160, element: 'H'}, // 15: H on O7
+                        {x: 106, y: 211, element: 'H'}, // 16: H on C8
+                        {x: 137, y: 191, element: 'H'}, // 17: H on C8
+                        {x: 73, y: 134, element: 'H'},  // 18: H on C9
+                        {x: 115, y: 114, element: 'H'}, // 19: H on C9
+                        {x: 33, y: 156, element: 'H'},  // 20: H on N10
+                        {x: 44, y: 198, element: 'H'}   // 21: H on N10
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'aromatic'},
+                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'aromatic'},
+                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'aromatic'},
+                        {from: 5, to: 8, type: 'single'}, {from: 1, to: 6, type: 'single'},
+                        {from: 2, to: 7, type: 'single'}, {from: 8, to: 9, type: 'single'},
+                        {from: 9, to: 10, type: 'single'},{from: 4, to: 11, type: 'single'},
+                        {from: 3, to: 12, type: 'single'},{from: 0, to: 13, type: 'single'},
+                        {from: 6, to: 14, type: 'single'},{from: 7, to: 15, type: 'single'},
+                        {from: 8, to: 16, type: 'single'},{from: 8, to: 17, type: 'single'},
+                        {from: 9, to: 18, type: 'single'},{from: 9, to: 19, type: 'single'},
+                        {from: 10, to: 20, type: 'single'},{from: 10, to: 21, type: 'single'}
+                    ]
+                }
+            },
+            water: {
+                name: 'Water (H₂O)',
+                formula: 'H2O',
+                mw: 18.02,
+                homoLumo: 12.6,
+                dipole: 1.85,
+                electronegativity: 3.1,
+                key: 'F Major',
+                tempo: 90,
+                atmosphere: { type: 'fluid', freq: 80, depth: 0.2 },
+                structure: {
+                    atoms: [
+                        {x: 200, y: 150, element: 'O'}, // 0: O
+                        {x: 160, y: 120, element: 'H'}, // 1: H
+                        {x: 240, y: 120, element: 'H'}  // 2: H
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'single'},
+                        {from: 0, to: 2, type: 'single'}
+                    ]
+                }
+            },
+            ethanol: {
+                name: 'Ethanol (C₂H₅OH)',
+                formula: 'C2H6O',
+                mw: 46.07,
+                homoLumo: 8.9,
+                dipole: 1.69,
+                electronegativity: 2.3,
+                key: 'G Minor',
+                tempo: 110,
+                atmosphere: { type: 'relaxed', freq: 60, depth: 0.25 },
+                structure: {
+                    atoms: [
+                        {x: 150, y: 150, element: 'C'}, // 0: C1 (CH3)
+                        {x: 220, y: 150, element: 'C'}, // 1: C2 (CH2)
+                        {x: 280, y: 130, element: 'O'}, // 2: O
+                        {x: 320, y: 110, element: 'H'}, // 3: H on O
+                        {x: 130, y: 120, element: 'H'}, // 4: H on C1
+                        {x: 130, y: 180, element: 'H'}, // 5: H on C1
+                        {x: 120, y: 150, element: 'H'}, // 6: H on C1
+                        {x: 230, y: 120, element: 'H'}, // 7: H on C2
+                        {x: 230, y: 180, element: 'H'}  // 8: H on C2
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'single'}, {from: 1, to: 2, type: 'single'},
+                        {from: 2, to: 3, type: 'single'}, {from: 0, to: 4, type: 'single'},
+                        {from: 0, to: 5, type: 'single'}, {from: 0, to: 6, type: 'single'},
+                        {from: 1, to: 7, type: 'single'}, {from: 1, to: 8, type: 'single'}
+                    ]
+                }
+            },
+            glucose: {
+                name: 'Glucose (C₆H₁₂O₆)',
+                formula: 'C6H12O6',
+                mw: 180.16,
+                homoLumo: 5.1,
+                dipole: 2.8,
+                electronegativity: 2.5,
+                key: 'D Major',
+                tempo: 100,
+                atmosphere: { type: 'crystalline', freq: 120, depth: 0.2 },
+                structure: {
+                    atoms: [
+                        {x: 200, y: 100, element: 'C'}, // 0: C1
+                        {x: 150, y: 130, element: 'C'}, // 1: C2
+                        {x: 150, y: 180, element: 'C'}, // 2: C3
+                        {x: 200, y: 210, element: 'C'}, // 3: C4
+                        {x: 250, y: 180, element: 'C'}, // 4: C5
+                        {x: 250, y: 130, element: 'O'}, // 5: Ring O
+                        {x: 200, y: 70, element: 'O'},  // 6: OH on C1
+                        {x: 120, y: 100, element: 'O'}, // 7: OH on C2
+                        {x: 120, y: 210, element: 'O'}, // 8: OH on C3
+                        {x: 200, y: 240, element: 'O'}, // 9: OH on C4
+                        {x: 300, y: 210, element: 'C'}, // 10: CH2OH on C5
+                        {x: 330, y: 180, element: 'O'}, // 11: OH on C10
+                        {x: 230, y: 60, element: 'H'},  // 12: H on O6
+                        {x: 90, y: 90, element: 'H'},   // 13: H on O7
+                        {x: 90, y: 220, element: 'H'},  // 14: H on O8
+                        {x: 170, y: 250, element: 'H'}, // 15: H on O9
+                        {x: 360, y: 200, element: 'H'}, // 16: H on O11
+                        {x: 220, y: 120, element: 'H'}, // 17: H on C1
+                        {x: 120, y: 150, element: 'H'}, // 18: H on C2
+                        {x: 180, y: 160, element: 'H'}, // 19: H on C3
+                        {x: 230, y: 190, element: 'H'}, // 20: H on C4
+                        {x: 270, y: 200, element: 'H'}, // 21: H on C5
+                        {x: 280, y: 240, element: 'H'}, // 22: H on C10
+                        {x: 320, y: 240, element: 'H'}  // 23: H on C10
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'single'}, {from: 1, to: 2, type: 'single'},
+                        {from: 2, to: 3, type: 'single'}, {from: 3, to: 4, type: 'single'},
+                        {from: 4, to: 5, type: 'single'}, {from: 5, to: 0, type: 'single'},
+                        {from: 0, to: 6, type: 'single'}, {from: 1, to: 7, type: 'single'},
+                        {from: 2, to: 8, type: 'single'}, {from: 3, to: 9, type: 'single'},
+                        {from: 4, to: 10, type: 'single'}, {from: 10, to: 11, type: 'single'},
+                        {from: 6, to: 12, type: 'single'}, {from: 7, to: 13, type: 'single'},
+                        {from: 8, to: 14, type: 'single'}, {from: 9, to: 15, type: 'single'},
+                        {from: 11, to: 16, type: 'single'}, {from: 0, to: 17, type: 'single'},
+                        {from: 1, to: 18, type: 'single'}, {from: 2, to: 19, type: 'single'},
+                        {from: 3, to: 20, type: 'single'}, {from: 4, to: 21, type: 'single'},
+                        {from: 10, to: 22, type: 'single'}, {from: 10, to: 23, type: 'single'}
+                    ]
+                }
+            },
+            benzene: {
+                name: 'Benzene (C₆H₆)',
+                formula: 'C6H6',
+                mw: 78.11,
+                homoLumo: 6.8,
+                dipole: 0.0,
+                electronegativity: 2.5,
+                key: 'E Minor',
+                tempo: 132,
+                atmosphere: { type: 'aromatic', freq: 50, depth: 0.35 },
+                structure: {
+                    atoms: [
+                        {x: 200, y: 100, element: 'C'}, // 0
+                        {x: 250, y: 130, element: 'C'}, // 1
+                        {x: 250, y: 190, element: 'C'}, // 2
+                        {x: 200, y: 220, element: 'C'}, // 3
+                        {x: 150, y: 190, element: 'C'}, // 4
+                        {x: 150, y: 130, element: 'C'}, // 5
+                        {x: 200, y: 70, element: 'H'},  // 6 (on C0)
+                        {x: 280, y: 110, element: 'H'}, // 7 (on C1)
+                        {x: 280, y: 210, element: 'H'}, // 8 (on C2)
+                        {x: 200, y: 250, element: 'H'}, // 9 (on C3)
+                        {x: 120, y: 210, element: 'H'}, // 10 (on C4)
+                        {x: 120, y: 110, element: 'H'}  // 11 (on C5)
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'aromatic'},
+                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'aromatic'},
+                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'aromatic'},
+                        {from: 0, to: 6, type: 'single'}, {from: 1, to: 7, type: 'single'},
+                        {from: 2, to: 8, type: 'single'}, {from: 3, to: 9, type: 'single'},
+                        {from: 4, to: 10, type: 'single'}, {from: 5, to: 11, type: 'single'}
+                    ]
+                }
+            },
+            aspirin: {
+                name: 'Aspirin (C₉H₈O₄)',
+                formula: 'C9H8O4',
+                mw: 180.16,
+                homoLumo: 5.8,
+                dipole: 2.7,
+                electronegativity: 2.6,
+                key: 'F Minor',
+                tempo: 115,
+                atmosphere: { type: 'therapeutic', freq: 45, depth: 0.3 },
+                structure: {
+                    atoms: [
+                        {x: 217, y: 168, element: 'C'}, // 0: C1
+                        {x: 195, y: 208, element: 'C'}, // 1: C2
+                        {x: 155, y: 208, element: 'C'}, // 2: C3
+                        {x: 133, y: 168, element: 'C'}, // 3: C4
+                        {x: 155, y: 128, element: 'C'}, // 4: C5
+                        {x: 195, y: 128, element: 'C'}, // 5: C6
+                        {x: 258, y: 168, element: 'C'}, // 6: Carboxylic acid C
+                        {x: 279, y: 198, element: 'O'}, // 7: Carboxylic acid =O
+                        {x: 279, y: 137, element: 'O'}, // 8: Carboxylic acid -OH
+                        {x: 217, y: 97, element: 'O'},  // 9: Ester O
+                        {x: 249, y: 76, element: 'C'},  // 10: Ester C=O
+                        {x: 249, y: 35, element: 'C'},  // 11: Ester CH3
+                        {x: 133, y: 239, element: 'H'}, // 12: H on C2
+                        {x: 217, y: 239, element: 'H'}, // 13: H on C1
+                        {x: 133, y: 97, element: 'H'},  // 14: H on C5
+                        {x: 217, y: 97, element: 'H'},  // 15: H on C6
+                        {x: 310, y: 137, element: 'H'}, // 16: H on O8
+                        {x: 280, y: 97, element: 'O'},  // 17: Ester =O
+                        {x: 218, y: 25, element: 'H'},  // 18: H on C11
+                        {x: 260, y: 4, element: 'H'},   // 19: H on C11
+                        {x: 280, y: 35, element: 'H'},  // 20: H on C11
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'aromatic'},
+                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'aromatic'},
+                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'aromatic'},
+                        {from: 0, to: 6, type: 'single'}, {from: 5, to: 9, type: 'single'},
+                        {from: 6, to: 7, type: 'double'}, {from: 6, to: 8, type: 'single'},
+                        {from: 9, to: 10, type: 'single'},{from: 10, to: 11, type: 'single'},
+                        {from: 10, to: 17, type: 'double'},{from: 1, to: 12, type: 'single'},
+                        {from: 2, to: 13, type: 'single'},{from: 3, to: 14, type: 'single'},
+                        {from: 4, to: 15, type: 'single'},{from: 8, to: 16, type: 'single'},
+                        {from: 11, to: 18, type: 'single'},{from: 11, to: 19, type: 'single'},
+                        {from: 11, to: 20, type: 'single'}
+                    ]
+                }
+            },
+            dna: {
+                name: 'Adenine (C₅H₅N₅)',
+                formula: 'C5H5N5',
+                mw: 135.13,
+                homoLumo: 4.9,
+                dipole: 2.3,
+                electronegativity: 2.8,
+                key: 'C# Minor',
+                tempo: 128,
+                atmosphere: { type: 'genetic', freq: 35, depth: 0.4 },
+                structure: {
+                    atoms: [
+                        {x: 217, y: 127, element: 'N'}, // 0: N1
+                        {x: 184, y: 148, element: 'C'}, // 1: C2
+                        {x: 151, y: 127, element: 'N'}, // 2: N3
+                        {x: 151, y: 86, element: 'C'},  // 3: C4
+                        {x: 184, y: 65, element: 'C'},  // 4: C5
+                        {x: 218, y: 86, element: 'C'},  // 5: C6
+                        {x: 194, y: 32, element: 'N'},  // 6: N7
+                        {x: 153, y: 44, element: 'C'},  // 7: C8
+                        {x: 131, y: 65, element: 'N'},  // 8: N9
+                        {x: 250, y: 65, element: 'N'},  // 9: NH2 on C6
+                        {x: 184, y: 180, element: 'H'}, // 10: H on C2
+                        {x: 131, y: 23, element: 'H'},  // 11: H on C8
+                        {x: 272, y: 44, element: 'H'},  // 12: H on N9
+                        {x: 281, y: 86, element: 'H'},  // 13: H on N9
+                        {x: 110, y: 65, element: 'H'}   // 14: H on N8
+                    ],
+                    bonds: [
+                        {from: 0, to: 1, type: 'single'}, {from: 1, to: 2, type: 'double'},
+                        {from: 2, to: 3, type: 'single'}, {from: 3, to: 4, type: 'double'},
+                        {from: 4, to: 5, type: 'single'}, {from: 5, to: 0, type: 'double'},
+                        {from: 3, to: 8, type: 'single'}, {from: 8, to: 7, type: 'single'},
+                        {from: 7, to: 6, type: 'double'}, {from: 6, to: 4, type: 'single'},
+                        {from: 5, to: 9, type: 'single'}, {from: 1, to: 10, type: 'single'},
+                        {from: 7, to: 11, type: 'single'},{from: 9, to: 12, type: 'single'},
+                        {from: 9, to: 13, type: 'single'},{from: 8, to: 14, type: 'single'}
+                    ]
+                }
+            }    
+        };
+
+        // Set animation type for atoms
+        function setAnimationType(type) {
+            const animationTypes = ['ping', 'bounce', 'vibrate', 'pulse'];
+            currentAnimationType = animationTypes[type] || 'ping';
+            
+            // Update CSS custom properties for all atoms
+            document.documentElement.style.setProperty(
+                '--animation-type', 
+                `atom${currentAnimationType.charAt(0).toUpperCase() + currentAnimationType.slice(1)}`
+            );
+            
+            const durations = { ping: '1.2s', bounce: '0.8s', vibrate: '0.6s', pulse: '2s' };
+            document.documentElement.style.setProperty('--animation-duration', durations[currentAnimationType]);
+        }
+
+        // Update glow intensity using CSS custom properties
+        function updateGlowEffect(intensity) {
+            glowIntensity = intensity / 100;
+            const root = document.documentElement;
+            root.style.setProperty('--glow-blur', `${1 + 20 * glowIntensity}px`);
+            root.style.setProperty('--glow-spread', `${1 + 5 * glowIntensity}px`);
+            root.style.setProperty('--glow-color', `rgba(0, 212, 170, ${0.3 + 0.5 * glowIntensity})`);
+        }
+
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                atmosphereGain = audioCtx.createGain();
+                
+                masterGain.connect(audioCtx.destination);
+                atmosphereGain.connect(masterGain);
+                
+                masterGain.gain.value = 0.7;
+                atmosphereGain.gain.value = 0.2;
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Create molecular atmosphere
+        function createAtmosphere() {
+            stopAtmosphere();
+            
+            const mol = moleculeDB[currentMolecule];
+            const atmosphereLevel = document.getElementById('atmosphere').value / 100;
+            
+            if (atmosphereLevel < 0.1 || currentMode !== 'soundscape') return;
+
+            const { type, freq, depth } = mol.atmosphere;
+            
+            for (let i = 0; i < 3; i++) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                const panner = audioCtx.createStereoPanner();
+
+                osc.type = i === 0 ? 'sine' : (i === 1 ? 'sawtooth' : 'triangle');
+                osc.frequency.setValueAtTime(freq * (1 + i * 0.5), audioCtx.currentTime);
+
+                const lfo = audioCtx.createOscillator();
+                const lfoGain = audioCtx.createGain();
+                lfo.frequency.setValueAtTime(0.1 + i * 0.05, audioCtx.currentTime);
+                lfoGain.gain.setValueAtTime(freq * 0.1, audioCtx.currentTime);
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(freq * (8 - i * 2), audioCtx.currentTime);
+                filter.Q.setValueAtTime(5, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(
+                    depth * atmosphereLevel * (0.3 - i * 0.1), 
+                    audioCtx.currentTime + 2
+                );
+
+                panner.pan.setValueAtTime((i - 1) * 0.3, audioCtx.currentTime);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(panner);
+                panner.connect(atmosphereGain);
+
+                osc.start(audioCtx.currentTime);
+                lfo.start(audioCtx.currentTime);
+
+                atmosphereOscillators.push({ osc, lfo, gain });
+            }
+
+            const aura = document.getElementById('soundscapeAura');
+            aura.classList.add('active');
+        }
+
+        function stopAtmosphere() {
+            atmosphereOscillators.forEach(({ osc, lfo, gain }) => {
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+                setTimeout(() => {
+                    try { osc.stop(); } catch(e) {}
+                    try { lfo.stop(); } catch(e) {}
+                }, 1000);
+            });
+            atmosphereOscillators = [];
+
+            const aura = document.getElementById('soundscapeAura');
+            aura.classList.remove('active');
+        }
+
+        // Enhanced atom sonification with distinctive element characteristics
+        function playAtom(element, frequency, atomIndex = 0) {
+            initAudio();
+
+            const molData = moleculeDB[currentMolecule];
+            const elemData = elementData[element];
+            const harmonyLevel = document.getElementById('harmony').value / 100;
+            const resonanceLevel = document.getElementById('resonance').value / 100;
+            const dynamicsLevel = document.getElementById('dynamics').value / 100;
+            const spatialWidth = document.getElementById('spatial').value / 100;
+            const expressionDepth = document.getElementById('expression').value / 100;
+            const elementContrast = document.getElementById('contrast').value / 100;
+            const timbreClarity = document.getElementById('clarity').value / 100;
+
+            // Enhanced frequency calculation based on parameter mapping
+            let adjustedFreq = elemData.baseFreq;
+            const mappingMode = parseInt(document.getElementById('mapping').value);
+            
+            if (currentMode === 'melodic') {
+                const scale = musicalScales[elemData.scale] || musicalScales['minor'];
+                const baseNote = elemData.baseFreq;
+                const scaleIndex = atomIndex % scale.length;
+                const octave = Math.floor(atomIndex / scale.length);
+                adjustedFreq = baseNote * Math.pow(2, (scale[scaleIndex] + octave * 12) / 12);
+            } else {
+                // Apply parameter mapping modes
+                switch(mappingMode) {
+                    case 0: // direct
+                        adjustedFreq = elemData.baseFreq;
+                        break;
+                    case 1: // scaled by molecular weight
+                        adjustedFreq = elemData.baseFreq * (molData.mw / 100);
+                        break;
+                    case 2: // quantum mechanical (HOMO-LUMO and electronegativity)
+                        adjustedFreq = elemData.baseFreq * (molData.homoLumo / 5) * (elemData.electronegativity / 3);
+                        break;
+                    case 3: // harmonic series based on HOMO-LUMO
+                        adjustedFreq = elemData.baseFreq * Math.pow(2, Math.floor(molData.homoLumo) % 12 / 12);
+                        break;
+                }
+                
+                // Apply element contrast to make elements more distinguishable
+                const contrastMultiplier = 1 + (elementContrast * 0.5);
+                switch(element) {
+                    case 'C': adjustedFreq *= contrastMultiplier; break;
+                    case 'N': adjustedFreq *= contrastMultiplier * 1.2; break;
+                    case 'O': adjustedFreq *= contrastMultiplier * 1.5; break;
+                    case 'H': adjustedFreq *= contrastMultiplier * 2.0; break;
+                    case 'S': adjustedFreq *= contrastMultiplier * 0.8; break;
+                    case 'P': adjustedFreq *= contrastMultiplier * 0.9; break;
+                }
+            }
+
+            // Create main oscillator with element-specific characteristics
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            const panner = audioCtx.createStereoPanner();
+
+            // Element-specific waveform with clarity control
+            osc.type = elemData.wave;
+            osc.frequency.setValueAtTime(adjustedFreq, audioCtx.currentTime);
+
+            // Distinctive filtering per element
+            filter.type = elemData.character === 'crystalline' ? 'highpass' : 'lowpass';
+            filter.frequency.setValueAtTime(
+                elemData.filterFreq * (1 + timbreClarity * 0.5), 
+                audioCtx.currentTime
+            );
+            filter.Q.setValueAtTime(
+                elemData.qFactor * (1 + timbreClarity * 0.8), 
+                audioCtx.currentTime
+            );
+
+            // Mode-specific enhancements
+            switch(currentMode) {
+                case 'structural':
+                    // Emphasize element differences
+                    if (element === 'C') {
+                        // Carbon: warm, woody resonance
+                        const carbonResonance = audioCtx.createOscillator();
+                        const carbonGain = audioCtx.createGain();
+                        carbonResonance.frequency.setValueAtTime(adjustedFreq * 0.5, audioCtx.currentTime);
+                        carbonResonance.type = 'sawtooth';
+                        carbonGain.gain.setValueAtTime(0.1 * elementContrast, audioCtx.currentTime);
+                        carbonResonance.connect(carbonGain);
+                        carbonGain.connect(filter);
+                        carbonResonance.start(audioCtx.currentTime);
+                        carbonResonance.stop(audioCtx.currentTime + 1.5);
+                    } else if (element === 'N') {
+                        // Nitrogen: sharp, electric quality
+                        const nitroMod = audioCtx.createOscillator();
+                        const nitroGain = audioCtx.createGain();
+                        nitroMod.frequency.setValueAtTime(15, audioCtx.currentTime);
+                        nitroGain.gain.setValueAtTime(adjustedFreq * 0.1 * elementContrast, audioCtx.currentTime);
+                        nitroMod.connect(nitroGain);
+                        nitroGain.connect(osc.frequency);
+                        nitroMod.start(audioCtx.currentTime);
+                        nitroMod.stop(audioCtx.currentTime + 1.5);
+                    } else if (element === 'O') {
+                        // Oxygen: crystalline, pure overtones
+                        [2, 3, 4].forEach((harmonic, i) => {
+                            const overtone = audioCtx.createOscillator();
+                            const overtoneGain = audioCtx.createGain();
+                            overtone.frequency.setValueAtTime(adjustedFreq * harmonic, audioCtx.currentTime);
+                            overtone.type = 'sine';
+                            overtoneGain.gain.setValueAtTime(0.05 * elementContrast / harmonic, audioCtx.currentTime);
+                            overtone.connect(overtoneGain);
+                            overtoneGain.connect(filter);
+                            overtone.start(audioCtx.currentTime);
+                            overtone.stop(audioCtx.currentTime + 1.2);
+                        });
+                    }
+                    break;
+                    
+                case 'melodic':
+                    // Musical harmonics
+                    if (harmonyLevel > 0.3) {
+                        const harmonic = audioCtx.createOscillator();
+                        const harmonicGain = audioCtx.createGain();
+                        harmonic.frequency.setValueAtTime(adjustedFreq * 2, audioCtx.currentTime);
+                        harmonic.type = 'triangle';
+                        harmonicGain.gain.setValueAtTime(0.2 * harmonyLevel, audioCtx.currentTime);
+                        harmonicGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+                        harmonic.connect(harmonicGain);
+                        harmonicGain.connect(filter);
+                        harmonic.start(audioCtx.currentTime);
+                        harmonic.stop(audioCtx.currentTime + 1.5);
+                    }
+                    break;
+                    
+                case 'electronic':
+                    // Electronic harmonics based on element
+                    elemData.harmonics.forEach((harmonic, i) => {
+                        if (i > 0 && harmonyLevel > 0.4) {
+                            const harmonicOsc = audioCtx.createOscillator();
+                            const harmonicGain = audioCtx.createGain();
+                            harmonicOsc.frequency.setValueAtTime(adjustedFreq * harmonic, audioCtx.currentTime);
+                            harmonicOsc.type = 'sine';
+                            harmonicGain.gain.setValueAtTime(0.15 * harmonyLevel / harmonic, audioCtx.currentTime);
+                            harmonicGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+                            harmonicOsc.connect(harmonicGain);
+                            harmonicGain.connect(filter);
+                            harmonicOsc.start(audioCtx.currentTime);
+                            harmonicOsc.stop(audioCtx.currentTime + 1.2);
+                        }
+                    });
+                    break;
+                    
+                case 'soundscape':
+                    // Extended sustain for soundscape
+                    const sustainGain = audioCtx.createGain();
+                    sustainGain.gain.setValueAtTime(0.1 * expressionDepth, audioCtx.currentTime);
+                    osc.connect(sustainGain);
+                    sustainGain.connect(atmosphereGain);
+                    sustainedOscillators.push({ osc, gain: sustainGain });
+                    break;
+                    
+                case 'spectral':
+                    // Spectroscopic filter sweeps
+                    filter.frequency.setValueAtTime(adjustedFreq * 0.5, audioCtx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(adjustedFreq * 4, audioCtx.currentTime + 0.8);
+                    break;
+            }
+
+            // Spatial positioning
+            const atomPos = molData.structure.atoms[atomIndex] || {x: 200, y: 150};
+            const normalizedX = (atomPos.x - 200) / 200; // Centered on expanded viewBox
+            panner.pan.setValueAtTime(normalizedX * spatialWidth, audioCtx.currentTime);
+
+            // Enhanced ADSR envelope
+            const attackTime = element === 'H' ? 0.02 : 0.08;
+            const decayTime = elemData.atomicRadius / 80;
+            const sustainLevel = 0.15 + (elemData.electronegativity / 4) * 0.25;
+            const releaseTime = currentMode === 'melodic' ? 1.5 : (currentMode === 'soundscape' ? 3.0 : 1.2);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5 * expressionDepth, audioCtx.currentTime + attackTime);
+            gain.gain.exponentialRampToValueAtTime(sustainLevel * expressionDepth, audioCtx.currentTime + attackTime + decayTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + releaseTime);
+
+            // Connect audio graph
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(panner);
+            panner.connect(masterGain);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + releaseTime);
+
+            updateVisualizer();
+        }
+
+        // Play bond sound
+        function playBond(bondType, bondIndex) {
+            initAudio();
+
+            const bond = bondTypes[bondType] || bondTypes['single'];
+            const expressionDepth = document.getElementById('expression').value / 100;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = bond.wave;
+            osc.frequency.setValueAtTime(bond.freq, audioCtx.currentTime);
+
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(bond.freq * 2, audioCtx.currentTime);
+            filter.Q.setValueAtTime(10, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2 * expressionDepth, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + bond.duration);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + bond.duration);
+        }
+
+        // Automatically scale molecule to fit viewport (updated for atom indices)
+        function scaleMoleculeToFit(structure) {
+            if (!structure.atoms.length) return structure;
+
+            // Find bounding box
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+
+            structure.atoms.forEach(atom => {
+                minX = Math.min(minX, atom.x);
+                maxX = Math.max(maxX, atom.x);
+                minY = Math.min(minY, atom.y);
+                maxY = Math.max(maxY, atom.y);
+            });
+
+            const width = maxX - minX;
+            const height = maxY - minY;
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // Target dimensions (with padding)
+            const targetWidth = 320;
+            const targetHeight = 240;
+            const targetCenterX = 200;
+            const targetCenterY = 150;
+
+            // Scale factor
+            const scaleX = width > 0 ? targetWidth / width : 1;
+            const scaleY = height > 0 ? targetHeight / height : 1;
+            const scale = Math.min(scaleX, scaleY, 1.2); // Max scale of 1.2
+
+            // Create scaled structure
+            const scaledStructure = {
+                atoms: structure.atoms.map(atom => ({
+                    ...atom,
+                    x: targetCenterX + (atom.x - centerX) * scale,
+                    y: targetCenterY + (atom.y - centerY) * scale
+                })),
+                bonds: structure.bonds // Bonds use indices, so no coordinate changes needed
+            };
+
+            return scaledStructure;
+        }
+
+        // Render molecule with atom indices for bonds
+        // In the <script> tag, replace the existing renderMolecule function with this one.
+
+        // Render molecule with atom indices for bonds
+        function renderMolecule(molKey) {
+            const mol = moleculeDB[molKey];
+            const svg = document.getElementById('moleculeDisplay');
+            svg.innerHTML = '';
+
+            // Scale molecule to fit gracefully
+            const scaledStructure = scaleMoleculeToFit(mol.structure);
+            const { atoms, bonds } = scaledStructure;
+
+            // Draw bonds using atom indices
+            bonds.forEach((bond, index) => {
+                const atom1 = atoms[bond.from];
+                const atom2 = atoms[bond.to];
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', atom1.x);
+                line.setAttribute('y1', atom1.y);
+                line.setAttribute('x2', atom2.x);
+                line.setAttribute('y2', atom2.y);
+                line.setAttribute('class', 'bond');
+                line.setAttribute('data-bond-type', bond.type);
+                line.setAttribute('data-bond-index', index);
+                line.setAttribute('stroke', bondTypes[bond.type]?.color || '#666');
+                
+                line.addEventListener('click', function() {
+                    const bondType = this.getAttribute('data-bond-type');
+                    const bondIndex = parseInt(this.getAttribute('data-bond-index'));
+                    this.classList.add('playing');
+                    setTimeout(() => this.classList.remove('playing'), 800);
+                    playBond(bondType, bondIndex);
+                });
+                
+                svg.appendChild(line);
+            });
+
+            // Draw atoms
+            atoms.forEach((atom, index) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', atom.x);
+                circle.setAttribute('cy', atom.y);
+
+                const elemInfo = elementData[atom.element] || {};
+                const radius = elemInfo.atomicRadius / 10 || (atom.element === 'H' ? 4 : 8);
+                const baseFreq = elemInfo.baseFreq || 440; // Fallback frequency
+
+                circle.setAttribute('r', radius);
+                circle.setAttribute('fill', elemInfo.color || '#666');
+                circle.setAttribute('class', 'atom');
+                circle.setAttribute('data-element', atom.element);
+                circle.setAttribute('data-freq', baseFreq); // Get freq from elementData
+                circle.setAttribute('data-index', index);
+                
+                circle.addEventListener('click', function() {
+                    const element = this.getAttribute('data-element');
+                    const frequency = parseFloat(this.getAttribute('data-freq'));
+                    const atomIndex = parseInt(this.getAttribute('data-index'));
+                    
+                    this.classList.add('playing');
+                    
+                    const animationDurations = { ping: 1200, bounce: 800, vibrate: 600, pulse: 2000 };
+                    setTimeout(() => this.classList.remove('playing'), animationDurations[currentAnimationType] || 1200);
+                    
+                    playAtom(element, frequency, atomIndex);
+                });
+                
+                svg.appendChild(circle);
+            });
+        }
+
+        // Update molecule information
+        function updateMoleculeInfo(molKey) {
+            const mol = moleculeDB[molKey];
+            document.getElementById('mol-name').textContent = mol.name;
+            document.getElementById('mol-props').textContent = `MW: ${mol.mw} g/mol`;
+            document.getElementById('mol-key').textContent = `HOMO-LUMO: ${mol.homoLumo} eV`;
+            
+            const quantumProps = document.getElementById('quantumProps');
+            quantumProps.innerHTML = `
+                <div>Dipole: ${mol.dipole} D</div>
+                <div>χ: ${mol.electronegativity}</div>
+            `;
+
+            document.getElementById('tempo').value = mol.tempo;
+            updateSliderValue(document.getElementById('tempo'), document.getElementById('tempo-val'));
+        }
+
+        // Enhanced sequence playback
+        function playSequence() {
+            if (!isPlaying) return;
+
+            const mol = moleculeDB[currentMolecule];
+            const atoms = mol.structure.atoms;
+            const currentTempo = parseInt(document.getElementById('tempo').value);
+            
+            const noteLength = currentMode === 'melodic' ? 
+                (60000 / currentTempo) : 
+                (60000 / (currentTempo * 1.5));
+
+            atoms.forEach((atom, i) => {
+                setTimeout(() => {
+                    if (isPlaying) {
+                        const atomElements = document.querySelectorAll(`[data-index="${i}"]`);
+                        if (atomElements.length > 0) {
+                            const atomEl = atomElements[0];
+                            atomEl.classList.add('playing');
+                            
+                            // Use current animation duration
+                            const animationDurations = { ping: 1200, bounce: 800, vibrate: 600, pulse: 2000 };
+                            setTimeout(() => atomEl.classList.remove('playing'), animationDurations[currentAnimationType] || 1200);
+                            
+                            playAtom(atom.element, atom.freq, i);
+                        }
+                    }
+                }, i * noteLength);
+            });
+
+            if (isLooping) {
+                sequenceTimeout = setTimeout(playSequence, atoms.length * noteLength + 500);
+            }
+        }
+
+        // Enhanced visualizer
+        function updateVisualizer() {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach((bar, i) => {
+                const height = Math.random() * 85 + 5;
+                bar.style.height = height + '%';
+                bar.style.background = `linear-gradient(to top, #00d4aa ${Math.random() * 40 + 20}%, rgba(0,212,170,0.4) 100%)`;
+            });
+        }
+
+        // Update slider values
+        function updateSliderValue(slider, valueSpan, suffix = '%') {
+            const value = slider.value;
+            if (slider.id === 'tempo') {
+                valueSpan.textContent = value;
+                tempo = parseInt(value);
+            } else if (slider.id === 'mapping') {
+                const modes = ['direct', 'scaled', 'quantum', 'harmonic'];
+                valueSpan.textContent = modes[parseInt(value)];
+            } else if (slider.id === 'animation') {
+                const animations = ['ping', 'bounce', 'vibrate', 'pulse'];
+                valueSpan.textContent = animations[parseInt(value)];
+                setAnimationType(parseInt(value));
+            } else if (slider.id === 'glow') {
+                valueSpan.textContent = value + suffix;
+                updateGlowEffect(parseInt(value));
+            } else {
+                valueSpan.textContent = value + suffix;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize visualization settings
+            setAnimationType(0); // Default to 'ping'
+            updateGlowEffect(60); // Default glow intensity
+            
+            renderMolecule('caffeine');
+            updateMoleculeInfo('caffeine');
+
+            // Transport controls
+            document.getElementById('play-btn').addEventListener('click', function() {
+                initAudio();
+                isPlaying = !isPlaying;
+                
+                if (isPlaying) {
+                    this.textContent = '⏸';
+                    this.classList.add('active');
+                    if (currentMode === 'soundscape') {
+                        createAtmosphere();
+                    }
+                    playSequence();
+                } else {
+                    this.textContent = '▶';
+                    this.classList.remove('active');
+                    clearTimeout(sequenceTimeout);
+                    stopAtmosphere();
+                }
+            });
+
+            document.getElementById('stop-btn').addEventListener('click', function() {
+                isPlaying = false;
+                isLooping = false;
+                clearTimeout(sequenceTimeout);
+                stopAtmosphere();
+                sustainedOscillators.forEach(({ osc, gain }) => {
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    setTimeout(() => { try { osc.stop(); } catch(e) {} }, 500);
+                });
+                sustainedOscillators = [];
+                
+                const playBtn = document.getElementById('play-btn');
+                playBtn.textContent = '▶';
+                playBtn.classList.remove('active');
+                document.getElementById('loop-btn').classList.remove('active');
+            });
+
+            document.getElementById('loop-btn').addEventListener('click', function() {
+                isLooping = !isLooping;
+                this.classList.toggle('active');
+            });
+
+            document.getElementById('rec-btn').addEventListener('click', function() {
+                this.classList.toggle('active');
+                console.log('Recording:', this.classList.contains('active'));
+            });
+
+            // Mode switches
+            document.querySelectorAll('.mode').forEach(mode => {
+                mode.addEventListener('click', function() {
+                    document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMode = this.dataset.mode;
+                    
+                    const modeNames = {
+                        'structural': 'Structural Learning',
+                        'melodic': 'Melodic Sequence',
+                        'electronic': 'Electronic Properties',
+                        'soundscape': 'Molecular Soundscape',
+                        'spectral': 'Spectroscopic Analysis'
+                    };
+                    document.getElementById('currentMode').textContent = modeNames[currentMode];
+                    
+                    if (currentMode === 'soundscape' && isPlaying) {
+                        createAtmosphere();
+                    } else {
+                        stopAtmosphere();
+                    }
+                });
+            });
+
+            // Molecule presets
+            document.querySelectorAll('.preset').forEach(preset => {
+                preset.addEventListener('click', function() {
+                    document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMolecule = this.dataset.mol;
+                    renderMolecule(currentMolecule);
+                    updateMoleculeInfo(currentMolecule);
+                    
+                    if (currentMode === 'soundscape' && isPlaying) {
+                        stopAtmosphere();
+                        setTimeout(createAtmosphere, 100);
+                    }
+                });
+            });
+
+            // Sliders
+            const sliders = [
+                { slider: 'animation', value: 'animation-val' },
+                { slider: 'glow', value: 'glow-val' },
+                { slider: 'contrast', value: 'contrast-val' },
+                { slider: 'clarity', value: 'clarity-val' },
+                { slider: 'mapping', value: 'mapping-val' },
+                { slider: 'harmony', value: 'harmony-val' },
+                { slider: 'resonance', value: 'resonance-val' },
+                { slider: 'dynamics', value: 'dynamics-val' },
+                { slider: 'tempo', value: 'tempo-val' },
+                { slider: 'expression', value: 'expression-val' },
+                { slider: 'spatial', value: 'spatial-val' },
+                { slider: 'atmosphere', value: 'atmosphere-val' }
+            ];
+
+            sliders.forEach(({slider, value}) => {
+                const sliderEl = document.getElementById(slider);
+                const valueEl = document.getElementById(value);
+                
+                sliderEl.addEventListener('input', function() {
+                    updateSliderValue(this, valueEl);
+                    
+                    if (slider === 'atmosphere' && currentMode === 'soundscape') {
+                        stopAtmosphere();
+                        if (isPlaying) setTimeout(createAtmosphere, 50);
+                    }
+                });
+                
+                updateSliderValue(sliderEl, valueEl);
+            });
+
+            // Master volume
+            document.getElementById('master-vol').addEventListener('input', function() {
+                if (masterGain) {
+                    masterGain.gain.setValueAtTime(this.value / 100, audioCtx.currentTime);
+                }
+            });
+
+            setInterval(updateVisualizer, 100);
+        });
+
+        // Touch optimization
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        document.addEventListener('touchmove', function() {}, {passive: true});
+    </script>
+</body>
+</html>
