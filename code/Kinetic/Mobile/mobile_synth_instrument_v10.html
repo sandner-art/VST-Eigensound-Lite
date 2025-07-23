@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Touch Synthesizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            height: 100vh;
+            width: 100vw;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle at center, #001122 0%, #000 100%);
+            cursor: none;
+            will-change: contents;
+        }
+
+        #controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            opacity: 0.8;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            min-width: 40px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .control-btn:hover, .control-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        #volumeControl {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.8;
+        }
+
+        #volumeSlider {
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            text-align: center;
+            font-size: 10px;
+            opacity: 0.6;
+            z-index: 100;
+        }
+
+        .beat-indicator {
+            position: absolute;
+            pointer-events: none;
+            border: 2px solid #ff6b6b;
+            border-radius: 50%;
+            animation: beatPulse 0.3s ease-out;
+            width: 40px;
+            height: 40px;
+        }
+
+        @keyframes beatPulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .mode-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            animation: modeChange 1.5s ease-out forwards;
+        }
+
+        @keyframes modeChange {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        #debugInfo {
+            position: absolute;
+            top: 60px;
+            left: 15px;
+            font-size: 10px;
+            opacity: 0.5;
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="controls">
+        <button class="control-btn" id="startBtn">▶</button>
+        <button class="control-btn" id="scaleBtn">P</button>
+        <button class="control-btn" id="waveBtn">~</button>
+        <button class="control-btn" id="samplesBtn">♪</button>
+        <button class="control-btn" id="resetBtn">↻</button>
+    </div>
+
+    <div id="volumeControl">
+        <span style="font-size: 14px;">🔊</span>
+        <input type="range" id="volumeSlider" min="0" max="100" value="70">
+    </div>
+
+    <input type="file" id="fileInput" accept="audio/*" multiple>
+    
+    <div id="debugInfo"></div>
+
+    <div id="info">
+        Touch & hold for synth • Quick tap for beats • Shake to change modes • Tilt for effects
+    </div>
+
+    <script>
+        class TouchSynth {
+            constructor() {
+                try {
+                    this.initializeProperties();
+                    this.setupCanvas();
+                    this.setupEventListeners();
+                    this.setupDefaultBeats();
+                    this.setupMotionDetection();
+                    this.startAnimationLoop();
+                    console.log('TouchSynth initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing TouchSynth:', error);
+                    this.showError('Initialization failed');
+                }
+            }
+
+            initializeProperties() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isStarted = false;
+                this.synths = new Map();
+                this.touches = new Map();
+                this.colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#fd79a8'];
+                
+                // Audio settings
+                this.currentScale = 'pentatonic';
+                this.currentWave = 'sine';
+                this.masterVolume = 0.7;
+                this.maxPolyphony = 6; // Reduced for mobile performance
+                this.activeSynths = 0;
+                this.sampleMode = false;
+                this.customSamples = [];
+                
+                // Performance settings
+                this.maxTrailLength = 20; // Reduced for performance
+                this.animationId = null;
+                this.lastFrameTime = 0;
+                this.targetFPS = 30; // Reduced for mobile
+                
+                // Beat detection
+                this.lastTapTime = 0;
+                this.tapThreshold = 200;
+                this.beatSounds = [];
+                
+                // Motion and modes
+                this.motionMode = 'synth';
+                this.motionModes = ['synth', 'percussion', 'effects', 'ambient'];
+                this.motionModeNames = ['SYNTH', 'DRUMS', 'FX', 'AMBIENT'];
+                this.motionModeColors = ['#4ecdc4', '#ff6b6b', '#f9ca24', '#6c5ce7'];
+                this.lastShakeTime = 0;
+                this.shakeCooldown = 1000;
+                this.shakeThreshold = 12;
+                this.motionSupported = false;
+                
+                // Audio safety
+                this.masterGain = null;
+                this.compressor = null;
+                this.stuckNoteTimeout = 3000; // Reduced timeout
+                this.noteTimeouts = new Map();
+                
+                // Auto-rhythm
+                this.autoRhythmInterval = null;
+                this.rhythmStep = 0;
+                
+                // Musical scales
+                this.scales = {
+                    pentatonic: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25],
+                    major: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25],
+                    minor: [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25],
+                    chromatic: [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00]
+                };
+                
+                this.waveTypes = ['sine', 'triangle', 'sawtooth', 'square'];
+                this.scaleNames = ['P', 'M', 'm', 'C'];
+                this.waveIcons = ['~', '△', '⩘', '⬛'];
+            }
+
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: #ff4444; color: white; padding: 20px; border-radius: 10px;
+                    z-index: 2000; font-size: 16px; text-align: center;
+                `;
+                errorDiv.textContent = `Error: ${message}`;
+                document.body.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 3000);
+            }
+
+            setupCanvas() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            resizeCanvas() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2); // Limit DPR for performance
+                this.canvas.width = window.innerWidth * dpr;
+                this.canvas.height = window.innerHeight * dpr;
+                this.canvas.style.width = window.innerWidth + 'px';
+                this.canvas.style.height = window.innerHeight + 'px';
+                this.ctx.scale(dpr, dpr);
+            }
+
+            async setupAudioChain() {
+                try {
+                    if (this.masterGain) return true;
+                    
+                    await Tone.start();
+                    
+                    // Create simplified audio chain for better performance
+                    this.masterGain = new Tone.Gain(this.masterVolume);
+                    this.compressor = new Tone.Compressor(-12, 3);
+                    
+                    this.masterGain.connect(this.compressor);
+                    this.compressor.toDestination();
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Audio setup failed:', error);
+                    this.showError('Audio initialization failed');
+                    return false;
+                }
+            }
+
+            setupDefaultBeats() {
+                try {
+                    // Simplified beat sounds for better performance
+                    this.beatSounds = [
+                        { type: 'kick', freq: 60 },
+                        { type: 'snare', freq: 200 },
+                        { type: 'hihat', freq: 8000 }
+                    ];
+                } catch (error) {
+                    console.error('Beat setup failed:', error);
+                }
+            }
+
+            setupMotionDetection() {
+                try {
+                    if (typeof DeviceMotionEvent !== 'undefined') {
+                        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                            // iOS 13+ permission request
+                            DeviceMotionEvent.requestPermission()
+                                .then(permissionState => {
+                                    if (permissionState === 'granted') {
+                                        this.enableMotionDetection();
+                                    }
+                                })
+                                .catch(console.error);
+                        } else {
+                            // Non-iOS or older iOS
+                            this.enableMotionDetection();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Motion detection setup failed:', error);
+                }
+            }
+
+            enableMotionDetection() {
+                try {
+                    let lastAcceleration = { x: 0, y: 0, z: 0 };
+                    
+                    window.addEventListener('devicemotion', (event) => {
+                        if (!this.isStarted) return;
+                        
+                        const acc = event.accelerationIncludingGravity;
+                        if (!acc) return;
+                        
+                        const currentAcceleration = {
+                            x: acc.x || 0,
+                            y: acc.y || 0,
+                            z: acc.z || 0
+                        };
+                        
+                        // Calculate shake intensity
+                        const deltaX = Math.abs(currentAcceleration.x - lastAcceleration.x);
+                        const deltaY = Math.abs(currentAcceleration.y - lastAcceleration.y);
+                        const deltaZ = Math.abs(currentAcceleration.z - lastAcceleration.z);
+                        
+                        const shakeIntensity = deltaX + deltaY + deltaZ;
+                        
+                        // Detect shake
+                        const now = Date.now();
+                        if (shakeIntensity > this.shakeThreshold && 
+                            now - this.lastShakeTime > this.shakeCooldown) {
+                            this.handleShake();
+                            this.lastShakeTime = now;
+                        }
+                        
+                        lastAcceleration = currentAcceleration;
+                    });
+                    
+                    this.motionSupported = true;
+                } catch (error) {
+                    console.error('Motion detection failed:', error);
+                }
+            }
+
+            setupEventListeners() {
+                // Touch events with better error handling
+                this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+                this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+                this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
+                this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { passive: false });
+
+                // Mouse events for desktop testing
+                this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+
+                // Control buttons
+                document.getElementById('startBtn').addEventListener('click', this.toggleStart.bind(this));
+                document.getElementById('scaleBtn').addEventListener('click', this.cycleScale.bind(this));
+                document.getElementById('waveBtn').addEventListener('click', this.cycleWave.bind(this));
+                document.getElementById('samplesBtn').addEventListener('click', this.toggleSampleMode.bind(this));
+                document.getElementById('resetBtn').addEventListener('click', this.reset.bind(this));
+                
+                // Volume control
+                document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                    this.masterVolume = parseInt(e.target.value) / 100;
+                    if (this.masterGain) {
+                        this.masterGain.gain.rampTo(this.masterVolume, 0.1);
+                    }
+                });
+                
+                // File input
+                document.getElementById('fileInput').addEventListener('change', this.loadSamples.bind(this));
+                
+                // Visibility change to prevent audio issues
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.stopAllNotes();
+                    }
+                });
+            }
+
+            async toggleStart() {
+                try {
+                    if (!this.isStarted) {
+                        const audioReady = await this.setupAudioChain();
+                        if (!audioReady) return;
+                        
+                        this.isStarted = true;
+                        document.getElementById('startBtn').textContent = '⏸';
+                        document.getElementById('startBtn').classList.add('active');
+                    } else {
+                        this.stopAllNotes();
+                        this.isStarted = false;
+                        document.getElementById('startBtn').textContent = '▶';
+                        document.getElementById('startBtn').classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('Toggle start failed:', error);
+                    this.showError('Audio start failed');
+                }
+            }
+
+            cycleScale() {
+                const scales = Object.keys(this.scales);
+                const currentIndex = scales.indexOf(this.currentScale);
+                const nextIndex = (currentIndex + 1) % scales.length;
+                this.currentScale = scales[nextIndex];
+                document.getElementById('scaleBtn').textContent = this.scaleNames[nextIndex];
+            }
+
+            cycleWave() {
+                const currentIndex = this.waveTypes.indexOf(this.currentWave);
+                const nextIndex = (currentIndex + 1) % this.waveTypes.length;
+                this.currentWave = this.waveTypes[nextIndex];
+                document.getElementById('waveBtn').textContent = this.waveIcons[nextIndex];
+            }
+
+            toggleSampleMode() {
+                if (this.customSamples.length === 0) {
+                    document.getElementById('fileInput').click();
+                } else {
+                    this.sampleMode = !this.sampleMode;
+                    document.getElementById('samplesBtn').classList.toggle('active', this.sampleMode);
+                }
+            }
+
+            async loadSamples(event) {
+                const files = Array.from(event.target.files);
+                if (files.length === 0) return;
+                
+                try {
+                    for (const file of files.slice(0, 4)) { // Limit to 4 samples for performance
+                        const buffer = await this.fileToBuffer(file);
+                        if (buffer) {
+                            this.customSamples.push({
+                                name: file.name,
+                                buffer: buffer
+                            });
+                        }
+                    }
+                    
+                    if (this.customSamples.length > 0) {
+                        this.sampleMode = true;
+                        document.getElementById('samplesBtn').classList.add('active');
+                        document.getElementById('samplesBtn').textContent = '♫';
+                    }
+                } catch (error) {
+                    console.error('Sample loading failed:', error);
+                    this.showError('Sample loading failed');
+                }
+            }
+
+            fileToBuffer(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const arrayBuffer = e.target.result;
+                            const audioBuffer = await Tone.Buffer.fromArray(arrayBuffer);
+                            resolve(audioBuffer);
+                        } catch (error) {
+                            console.error('Buffer creation failed:', error);
+                            resolve(null);
+                        }
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            handleShake() {
+                try {
+                    const currentIndex = this.motionModes.indexOf(this.motionMode);
+                    const nextIndex = (currentIndex + 1) % this.motionModes.length;
+                    this.motionMode = this.motionModes[nextIndex];
+                    
+                    this.showModeChange();
+                    this.applyModeEffects();
+                } catch (error) {
+                    console.error('Shake handling failed:', error);
+                }
+            }
+
+            showModeChange() {
+                try {
+                    const modeIndex = this.motionModes.indexOf(this.motionMode);
+                    const modeName = this.motionModeNames[modeIndex];
+                    const modeColor = this.motionModeColors[modeIndex];
+                    
+                    const indicator = document.createElement('div');
+                    indicator.className = 'mode-indicator';
+                    indicator.style.background = modeColor + 'aa';
+                    indicator.style.color = 'white';
+                    indicator.textContent = modeName;
+                    document.body.appendChild(indicator);
+                    
+                    setTimeout(() => {
+                        if (indicator.parentNode) {
+                            indicator.remove();
+                        }
+                    }, 1500);
+                } catch (error) {
+                    console.error('Mode change display failed:', error);
+                }
+            }
+
+            applyModeEffects() {
+                try {
+                    // Clear any existing auto effects
+                    if (this.autoRhythmInterval) {
+                        clearInterval(this.autoRhythmInterval);
+                        this.autoRhythmInterval = null;
+                    }
+                    
+                    // Apply mode-specific effects
+                    switch(this.motionMode) {
+                        case 'percussion':
+                            this.startAutoRhythm();
+                            break;
+                        case 'effects':
+                            this.triggerEffectBurst();
+                            break;
+                        case 'ambient':
+                            this.triggerAmbientTone();
+                            break;
+                    }
+                } catch (error) {
+                    console.error('Mode effects failed:', error);
+                }
+            }
+
+            startAutoRhythm() {
+                if (this.autoRhythmInterval) return;
+                
+                const pattern = [1, 0, 1, 0, 1, 0, 1, 1];
+                this.rhythmStep = 0;
+                
+                this.autoRhythmInterval = setInterval(() => {
+                    if (pattern[this.rhythmStep % pattern.length] && this.isStarted) {
+                        this.playBeat(this.rhythmStep % 3);
+                        this.showRhythmBeat();
+                    }
+                    this.rhythmStep++;
+                }, 300);
+            }
+
+            triggerEffectBurst() {
+                // Simple effect burst using existing audio
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        if (this.isStarted) {
+                            this.playBeat(i);
+                        }
+                    }, i * 100);
+                }
+            }
+
+            triggerAmbientTone() {
+                if (!this.isStarted) return;
+                
+                try {
+                    const synth = new Tone.Synth({
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 2, decay: 1, sustain: 0.8, release: 3 }
+                    });
+                    
+                    synth.connect(this.masterGain);
+                    synth.triggerAttackRelease(130.81, 4); // C3
+                    
+                    setTimeout(() => {
+                        synth.dispose();
+                    }, 5000);
+                } catch (error) {
+                    console.error('Ambient tone failed:', error);
+                }
+            }
+
+            playBeat(beatIndex) {
+                if (!this.isStarted || !this.masterGain) return;
+                
+                try {
+                    if (this.sampleMode && this.customSamples.length > 0) {
+                        const sample = this.customSamples[beatIndex % this.customSamples.length];
+                        if (sample && sample.buffer) {
+                            const player = new Tone.Player(sample.buffer);
+                            player.connect(this.masterGain);
+                            player.start();
+                            setTimeout(() => player.dispose(), 2000);
+                        }
+                    } else {
+                        // Use simple oscillator for beats
+                        const beat = this.beatSounds[beatIndex % this.beatSounds.length];
+                        const osc = new Tone.Oscillator(beat.freq, 'sine');
+                        const env = new Tone.AmplitudeEnvelope(0.01, 0.1, 0, 0.1);
+                        
+                        osc.connect(env);
+                        env.connect(this.masterGain);
+                        
+                        osc.start();
+                        env.triggerAttackRelease(0.1);
+                        
+                        setTimeout(() => {
+                            osc.stop();
+                            osc.dispose();
+                            env.dispose();
+                        }, 200);
+                    }
+                } catch (error) {
+                    console.error('Beat playback failed:', error);
+                }
+            }
+
+            showRhythmBeat() {
+                try {
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * window.innerHeight;
+                    this.showBeatIndicator(x, y);
+                } catch (error) {
+                    console.error('Rhythm beat display failed:', error);
+                }
+            }
+
+            showBeatIndicator(x, y) {
+                try {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'beat-indicator';
+                    indicator.style.left = (x - 20) + 'px';
+                    indicator.style.top = (y - 20) + 'px';
+                    document.body.appendChild(indicator);
+                    
+                    setTimeout(() => {
+                        if (indicator.parentNode) {
+                            indicator.remove();
+                        }
+                    }, 300);
+                } catch (error) {
+                    console.error('Beat indicator failed:', error);
+                }
+            }
+
+            reset() {
+                try {
+                    this.stopAllNotes();
+                    this.touches.clear();
+                    this.motionMode = 'synth';
+                    
+                    if (this.autoRhythmInterval) {
+                        clearInterval(this.autoRhythmInterval);
+                        this.autoRhythmInterval = null;
+                    }
+                    
+                    // Clear canvas
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+                } catch (error) {
+                    console.error('Reset failed:', error);
+                }
+            }
+
+            stopAllNotes() {
+                try {
+                    // Stop all active synths
+                    this.synths.forEach((synthData, id) => {
+                        if (synthData && synthData.synth) {
+                            synthData.synth.triggerRelease();
+                            setTimeout(() => {
+                                if (synthData.synth) {
+                                    synthData.synth.dispose();
+                                }
+                            }, 1000);
+                        }
+                    });
+                    
+                    this.synths.clear();
+                    this.activeSynths = 0;
+                    
+                    // Clear timeouts
+                    this.noteTimeouts.forEach(timeout => clearTimeout(timeout));
+                    this.noteTimeouts.clear();
+                } catch (error) {
+                    console.error('Stop all notes failed:', error);
+                }
+            }
+
+            // Touch event handlers
+            handleTouchStart(e) {
+                e.preventDefault();
+                if (!this.isStarted) return;
+
+                try {
+                    for (let touch of e.changedTouches) {
+                        const now = Date.now();
+                        const timeSinceLastTap = now - this.lastTapTime;
+                        
+                        if (timeSinceLastTap < this.tapThreshold) {
+                            this.triggerBeat(touch.clientX, touch.clientY);
+                        } else {
+                            this.startTouch(touch.identifier, touch.clientX, touch.clientY);
+                        }
+                        
+                        this.lastTapTime = now;
+                    }
+                } catch (error) {
+                    console.error('Touch start failed:', error);
+                }
+            }
+
+            handleTouchMove(e) {
+                e.preventDefault();
+                if (!this.isStarted) return;
+
+                try {
+                    for (let touch of e.changedTouches) {
+                        this.moveTouch(touch.identifier, touch.clientX, touch.clientY);
+                    }
+                } catch (error) {
+                    console.error('Touch move failed:', error);
+                }
+            }
+
+            handleTouchEnd(e) {
+                e.preventDefault();
+                
+                try {
+                    for (let touch of e.changedTouches) {
+                        this.endTouch(touch.identifier);
+                    }
+                } catch (error) {
+                    console.error('Touch end failed:', error);
+                }
+            }
+
+            handleMouseDown(e) {
+                if (!this.isStarted) return;
+                this.startTouch('mouse', e.clientX, e.clientY);
+            }
+
+            handleMouseMove(e) {
+                if (!this.isStarted || !this.touches.has('mouse')) return;
+                this.moveTouch('mouse', e.clientX, e.clientY);
+            }
+
+            handleMouseUp(e) {
+                this.endTouch('mouse');
+            }
+
+            triggerBeat(x, y) {
+                try {
+                    const beatIndex = Math.floor((x / window.innerWidth) * 3);
+                    this.playBeat(beatIndex);
+                    this.showBeatIndicator(x, y);
+                } catch (error) {
+                    console.error('Trigger beat failed:', error);
+                }
+            }
+
+            startTouch(id, x, y) {
+                try {
+                    if (this.activeSynths >= this.maxPolyphony) return;
+                    
+                    const frequency = this.getFrequencyFromPosition(x, y);
+                    const color = this.colors[this.activeSynths % this.colors.length];
+                    
+                    const synth = new Tone.Synth({
+                        oscillator: { type: this.currentWave },
+                        envelope: { attack: 0.1, decay: 0.3, sustain: 0.7, release: 1.0 }
+                    });
+                    
+                    synth.connect(this.masterGain);
+                    synth.triggerAttack(frequency);
+                    
+                    this.synths.set(id, { synth, startTime: Date.now() });
+                    this.activeSynths++;
+                    
+                    this.touches.set(id, {
+                        x, y, color, frequency, startTime: Date.now(), trail: []
+                    });
+                    
+                    // Set stuck note protection
+                    const timeout = setTimeout(() => this.endTouch(id), this.stuckNoteTimeout);
+                    this.noteTimeouts.set(id, timeout);
+                    
+                } catch (error) {
+                    console.error('Start touch failed:', error);
+                }
+            }
+
+            moveTouch(id, x, y) {
+                try {
+                    const touch = this.touches.get(id);
+                    const synthData = this.synths.get(id);
+                    
+                    if (!touch || !synthData) return;
+                    
+                    const frequency = this.getFrequencyFromPosition(x, y);
+                    
+                    if (synthData.synth) {
+                        synthData.synth.frequency.rampTo(frequency, 0.05);
+                    }
+                    
+                    // Update trail with performance limit
+                    touch.trail.push({ x, y, time: Date.now() });
+                    if (touch.trail.length > this.maxTrailLength) {
+                        touch.trail.shift();
+                    }
+                    
+                    touch.x = x;
+                    touch.y = y;
+                    touch.frequency = frequency;
+                } catch (error) {
+                    console.error('Move touch failed:', error);
+                }
+            }
+
+            endTouch(id) {
+                try {
+                    const synthData = this.synths.get(id);
+                    if (synthData && synthData.synth) {
+                        synthData.synth.triggerRelease();
+                        setTimeout(() => {
+                            if (synthData.synth) {
+                                synthData.synth.dispose();
+                            }
+                        }, 1000);
+                        
+                        this.activeSynths = Math.max(0, this.activeSynths - 1);
+                    }
+                    
+                    this.synths.delete(id);
+                    this.touches.delete(id);
+                    
+                    if (this.noteTimeouts.has(id)) {
+                        clearTimeout(this.noteTimeouts.get(id));
+                        this.noteTimeouts.delete(id);
+                    }
+                } catch (error) {
+                    console.error('End touch failed:', error);
+                }
+            }
+
+            getFrequencyFromPosition(x, y) {
+                try {
+                    const scale = this.scales[this.currentScale];
+                    const noteIndex = Math.floor((x / window.innerWidth) * scale.length);
+                    const baseFreq = scale[Math.min(noteIndex, scale.length - 1)];
+                    const octaveMultiplier = Math.pow(2, Math.floor((1 - y / window.innerHeight) * 2));
+                    return Math.min(1000, baseFreq * octaveMultiplier);
+                } catch (error) {
+                    console.error('Frequency calculation failed:', error);
+                    return 440; // Fallback frequency
+                }
+            }
+
+            // Animation loop with performance optimization
+            startAnimationLoop() {
+                const animate = (currentTime) => {
+                    try {
+                        if (currentTime - this.lastFrameTime >= 1000 / this.targetFPS) {
+                            this.draw();
+                            this.lastFrameTime = currentTime;
+                        }
+                        this.animationId = requestAnimationFrame(animate);
+                    } catch (error) {
+                        console.error('Animation failed:', error);
+                    }
+                };
+                animate(0);
+            }
+
+            draw() {
+                try {
+                    // Clear with fade effect
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+                    
+                    // Draw touches and trails
+                    this.touches.forEach((touch) => {
+                        this.drawTrail(touch);
+                        this.drawTouch(touch);
+                    });
+                    
+                    // Draw mode indicator
+                    this.drawModeIndicator();
+                } catch (error) {
+                    console.error('Draw failed:', error);
+                }
+            }
+
+            drawTrail(touch) {
+                if (touch.trail.length < 2) return;
+                
+                try {
+                    this.ctx.strokeStyle = touch.color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.globalAlpha = 0.6;
+                    
+                    this.ctx.beginPath();
+                    for (let i = 0; i < touch.trail.length - 1; i++) {
+                        const point = touch.trail[i];
+                        const nextPoint = touch.trail[i + 1];
+                        
+                        if (i === 0) {
+                            this.ctx.moveTo(point.x, point.y);
+                        } else {
+                            this.ctx.lineTo(nextPoint.x, nextPoint.y);
+                        }
+                    }
+                    this.ctx.stroke();
+                    this.ctx.globalAlpha = 1;
+                } catch (error) {
+                    console.error('Trail drawing failed:', error);
+                }
+            }
+
+            drawTouch(touch) {
+                try {
+                    const pulse = Math.sin(Date.now() * 0.005) * 0.2 + 0.8;
+                    
+                    // Outer glow
+                    const gradient = this.ctx.createRadialGradient(
+                        touch.x, touch.y, 0, touch.x, touch.y, 30
+                    );
+                    gradient.addColorStop(0, touch.color + '88');
+                    gradient.addColorStop(1, touch.color + '00');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(touch.x, touch.y, 30 * pulse, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Center dot
+                    this.ctx.fillStyle = touch.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(touch.x, touch.y, 6 * pulse, 0, Math.PI * 2);
+                    this.ctx.fill();
+                } catch (error) {
+                    console.error('Touch drawing failed:', error);
+                }
+            }
+
+            drawModeIndicator() {
+                try {
+                    const modeIndex = this.motionModes.indexOf(this.motionMode);
+                    const modeName = this.motionModeNames[modeIndex];
+                    const modeColor = this.motionModeColors[modeIndex];
+                    
+                    this.ctx.fillStyle = modeColor + '44';
+                    this.ctx.fillRect(window.innerWidth - 80, window.innerHeight - 30, 70, 20);
+                    
+                    this.ctx.fillStyle = modeColor;
+                    this.ctx.font = '12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(modeName, window.innerWidth - 45, window.innerHeight - 16);
+                    this.ctx.textAlign = 'left';
+                } catch (error) {
+                    console.error('Mode indicator drawing failed:', error);
+                }
+            }
+        }
+
+        // Initialize app with error handling
+        window.addEventListener('load', () => {
+            try {
+                new TouchSynth();
+            } catch (error) {
+                console.error('App initialization failed:', error);
+                document.body.innerHTML = '<div style="color: red; text-align: center; padding: 50px;">App failed to load. Please refresh the page.</div>';
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            try {
+                if (window.touchSynth) {
+                    window.touchSynth.stopAllNotes();
+                }
+            } catch (error) {
+                console.error('Cleanup failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>
