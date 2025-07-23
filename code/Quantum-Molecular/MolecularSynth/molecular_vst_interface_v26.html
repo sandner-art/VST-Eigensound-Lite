@@ -873,8 +873,8 @@
                         {from: 0, to: 1, type: 'double'}, {from: 1, to: 2, type: 'single'},
                         {from: 2, to: 3, type: 'double'}, {from: 3, to: 4, type: 'single'},
                         {from: 4, to: 5, type: 'double'}, {from: 5, to: 0, type: 'single'},
-                        {from: 3, to: 8, type: 'single'}, {from: 8, to: 7, type: 'single'},
-                        {from: 7, to: 6, type: 'double'}, {from: 6, to: 4, type: 'single'},
+                        {from: 4, to: 8, type: 'single'}, {from: 8, to: 7, type: 'single'},
+                        {from: 7, to: 6, type: 'double'}, {from: 6, to: 3, type: 'single'},
                         {from: 1, to: 9, type: 'single'}, {from: 5, to: 10, type: 'single'},
                         {from: 0, to: 11, type: 'single'},{from: 2, to: 12, type: 'single'},
                         {from: 6, to: 13, type: 'single'},{from: 7, to: 14, type: 'single'},
@@ -1546,42 +1546,86 @@
         // In the <script> tag, replace the existing renderMolecule function with this one.
 
         // Render molecule with atom indices for bonds
+        // In the <script> tag, replace the existing renderMolecule function with this one.
+
         function renderMolecule(molKey) {
             const mol = moleculeDB[molKey];
             const svg = document.getElementById('moleculeDisplay');
             svg.innerHTML = '';
 
-            // Scale molecule to fit gracefully
             const scaledStructure = scaleMoleculeToFit(mol.structure);
             const { atoms, bonds } = scaledStructure;
 
-            // Draw bonds using atom indices
+            // --- Bond Drawing Logic ---
             bonds.forEach((bond, index) => {
                 const atom1 = atoms[bond.from];
                 const atom2 = atoms[bond.to];
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', atom1.x);
-                line.setAttribute('y1', atom1.y);
-                line.setAttribute('x2', atom2.x);
-                line.setAttribute('y2', atom2.y);
-                line.setAttribute('class', 'bond');
-                line.setAttribute('data-bond-type', bond.type);
-                line.setAttribute('data-bond-index', index);
-                line.setAttribute('stroke', bondTypes[bond.type]?.color || '#666');
-                
-                line.addEventListener('click', function() {
-                    const bondType = this.getAttribute('data-bond-type');
-                    const bondIndex = parseInt(this.getAttribute('data-bond-index'));
-                    this.classList.add('playing');
-                    setTimeout(() => this.classList.remove('playing'), 800);
-                    playBond(bondType, bondIndex);
-                });
-                
-                svg.appendChild(line);
+
+                // Helper function to create a line element to avoid code duplication
+                const createBondLine = (x1, y1, x2, y2, strokeWidth = 1.5) => {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('class', 'bond');
+                    line.setAttribute('data-bond-type', bond.type);
+                    line.setAttribute('data-bond-index', index);
+                    line.setAttribute('stroke', bondTypes[bond.type]?.color || '#666');
+                    line.setAttribute('stroke-width', strokeWidth);
+                    
+                    line.addEventListener('click', function() {
+                        const bondType = this.getAttribute('data-bond-type');
+                        const bondIndex = parseInt(this.getAttribute('data-bond-index'));
+                        this.classList.add('playing');
+                        setTimeout(() => this.classList.remove('playing'), 800);
+                        playBond(bondType, bondIndex);
+                    });
+
+                    return line;
+                };
+
+                if (bond.type === 'double') {
+                    // --- Logic for drawing two parallel lines for a double bond ---
+
+                    // 1. Calculate the direction vector of the bond
+                    const dx = atom2.x - atom1.x;
+                    const dy = atom2.y - atom1.y;
+
+                    // 2. Calculate the length of the bond
+                    const len = Math.sqrt(dx * dx + dy * dy);
+
+                    // 3. Calculate the perpendicular (normal) vector
+                    // We normalize the vector and then find its perpendicular
+                    const normalX = -dy / len;
+                    const normalY = dx / len;
+
+                    // 4. Define the offset (how far apart the parallel lines are)
+                    const offset = 1.5;
+
+                    // 5. Create two new lines, offset from the center
+                    const line1 = createBondLine(
+                        atom1.x + offset * normalX, atom1.y + offset * normalY,
+                        atom2.x + offset * normalX, atom2.y + offset * normalY,
+                        1.2 // Use slightly thinner lines for double bonds
+                    );
+                    const line2 = createBondLine(
+                        atom1.x - offset * normalX, atom1.y - offset * normalY,
+                        atom2.x - offset * normalX, atom2.y - offset * normalY,
+                        1.2 // Use slightly thinner lines for double bonds
+                    );
+
+                    svg.appendChild(line1);
+                    svg.appendChild(line2);
+
+                } else {
+                    // For single, aromatic, or other bond types, draw a single line
+                    const line = createBondLine(atom1.x, atom1.y, atom2.x, atom2.y);
+                    svg.appendChild(line);
+                }
             });
 
-            // Draw atoms
+            // --- Atom Drawing Logic (Unchanged) ---
             atoms.forEach((atom, index) => {
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', atom.x);
@@ -1589,32 +1633,28 @@
 
                 const elemInfo = elementData[atom.element] || {};
                 const radius = elemInfo.atomicRadius / 10 || (atom.element === 'H' ? 4 : 8);
-                const baseFreq = elemInfo.baseFreq || 440; // Fallback frequency
+                const baseFreq = elemInfo.baseFreq || 440; 
 
                 circle.setAttribute('r', radius);
                 circle.setAttribute('fill', elemInfo.color || '#666');
                 circle.setAttribute('class', 'atom');
                 circle.setAttribute('data-element', atom.element);
-                circle.setAttribute('data-freq', baseFreq); // Get freq from elementData
+                circle.setAttribute('data-freq', baseFreq); 
                 circle.setAttribute('data-index', index);
                 
                 circle.addEventListener('click', function() {
                     const element = this.getAttribute('data-element');
                     const frequency = parseFloat(this.getAttribute('data-freq'));
                     const atomIndex = parseInt(this.getAttribute('data-index'));
-                    
                     this.classList.add('playing');
-                    
                     const animationDurations = { ping: 1200, bounce: 800, vibrate: 600, pulse: 2000 };
                     setTimeout(() => this.classList.remove('playing'), animationDurations[currentAnimationType] || 1200);
-                    
                     playAtom(element, frequency, atomIndex);
                 });
                 
                 svg.appendChild(circle);
             });
         }
-
         // Update molecule information
         function updateMoleculeInfo(molKey) {
             const mol = moleculeDB[molKey];
