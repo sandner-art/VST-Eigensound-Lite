@@ -77,202 +77,27 @@ a:hover {
 /* --- Homepage Grid Styles --- */
 .page-grid {
     display: grid;
-    margin-bottom: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
     margin-top: 30px;
-    align-items: stretch;
 }
 
-/* --- NEW: Project Group Card (Table-Style) --- */
-/* This is the main container for a group of related apps/versions. */
-
-.project-group-card {
-    /* Uses the same styling as your content sections for consistency */
-    background: rgba(0, 0, 0, 0);
-    border-radius: 15px;
-    padding: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    /* This makes it span the full width of the grid */
-    grid-column: 1 / -1; 
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    
-    /* --- ADDED FOR SPACING --- */
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-
-.project-group-card h3 {
-    margin: 0;
-    padding-bottom: 15px;
-    font-size: 1.5em;
-    color: #ffffff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* This is the list that holds each app row */
-.project-group-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 5px; /* Small gap between rows */
-}
-
-/* This is a single row in the list (one app version) */
-.project-group-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    border-radius: 8px;
-    transition: background-color 0.3s ease;
-}
-
-.project-group-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* The text description for the app version */
-.item-description {
-    flex-grow: 1; /* Allows the description to take up available space */
-    padding-right: 20px;
-    opacity: 0.9;
-}
-
-/* Container for the action links (Launch, Docs, etc.) */
-.item-links {
-    display: flex;
-    gap: 15px;
-    flex-shrink: 0; /* Prevents links from wrapping on small screens */
-}
-
-/* Styling for the individual links */
-.item-links a {
-    font-size: 0.9em;
-    font-weight: 500;
-    padding: 5px 12px;
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-    transition: all 0.2s ease;
-}
-
-.item-links a:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #ffffff;
-}
-
-/* Special style for the primary action link */
-.item-links a.launch {
-    color: #1a1a2e;
-    background-color: #58a6ff;
-    border-color: #58a6ff;
-}
-
-.item-links a.launch:hover {
-    background-color: #ffffff;
-    border-color: #ffffff;
-}
-
-/* --- ALTERNATE APP CARD (for single apps with multiple links) --- */
-.app-card {
-    /* This card inherits styles from the base .card class */
-    text-align: left;
-    justify-content: space-between; /* Pushes link footer down */
-}
-
-.app-card-content {
-    padding: 25px;
-    flex-grow: 1;
-}
-
-.app-card-links {
-    padding: 15px 25px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2); /* Slightly darker footer */
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.app-card-links a {
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.app-card-links a.primary-link {
-    background-color: #58a6ff;
-    color: #1a1a2e; /* Dark text for contrast */
-}
-
-.app-card-links a.primary-link:hover {
-    background-color: #ffffff;
-    color: #1a1a2e;
-}
-
-.app-card-links a.secondary-link {
-    color: #e0e0e0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.app-card-links a.secondary-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #ffffff;
-}
-
-/* --- NEW: Integrated Link Buttons for Page Cards --- */
-.page-card-links {
-    display: flex;
-    justify-content: right; /* Center the buttons */
-    gap: 10px; /* Space between buttons */
-    margin-top: 15px; /* Space above the buttons */
-    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
-}
-
-.page-card-links a {
-    font-size: 0.9em;
-    font-weight: 500;
-    padding: 6px 15px;
-    border-radius: 20px; /* Pill shape */
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-    color: #e0e0e0;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.page-card-links a:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #ffffff;
-    transform: translateY(-2px);
-}
-
-.page-card {
+/* --- BASE CARD STYLE (NEW) --- */
+/* Common styles for all cards to keep them consistent */
+.card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
-    
-    padding: 25px;
     text-decoration: none;
     color: #e0e0e0;
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.page-card::before {
+.card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -283,28 +108,103 @@ a:hover {
     transition: left 0.5s ease;
 }
 
-.page-card:hover::before {
+.card:hover::before {
     left: 100%;
 }
 
-.page-card:hover {
+.card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
-    color: #e0e0e0; /* Ensure text color doesn't change on hover */
+}
+
+/* --- Original Page Card (with SVG interactivity) --- */
+.page-card {
+    padding: 25px;
+    text-align: center;
 }
 
 .page-title {
     font-size: 1.3em;
     font-weight: bold;
     margin-bottom: 10px;
+    transition: color 0.3s ease;
 }
 
 .page-description {
     opacity: 0.9;
-        flex-grow: 1; /* This is the magic line */
+    flex-grow: 1; /* Pushes SVG down */
     margin-bottom: 1rem;
+}
+
+/* --- SVG INTERACTIVITY (NEW) --- */
+/* Make SVGs visible and interactive on dark theme */
+.page-card svg {
+    stroke: rgba(255, 255, 255, 0.6); /* Default light grey stroke */
+    width: 100px;
+    height: 100px;
+    margin-top: auto;
+    transition: stroke 0.3s ease, fill 0.3s ease;
+}
+.page-card svg g[fill="black"], .page-card svg circle[fill="black"] {
+    fill: rgba(255, 255, 255, 0.8); /* Default light fill */
+    transition: fill 0.3s ease;
+}
+/* Hover effects for title and SVG */
+.page-card:hover .page-title {
+    color: #58a6ff;
+}
+.page-card:hover svg {
+    stroke: #58a6ff;
+}
+.page-card:hover svg g[fill], .page-card:hover svg circle[fill] {
+    fill: #58a6ff;
+}
+
+
+/* --- ALTERNATE APP CARD (NEW) --- */
+/* A more detailed card for apps with multiple links */
+.app-card {
+    text-align: left;
+    justify-content: space-between; /* Pushes link footer down */
+}
+.app-card-content {
+    padding: 25px;
+}
+.app-card-links {
+    padding: 15px 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2); /* Slightly darker footer */
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.app-card-links a {
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.app-card-links a.primary-link {
+    background-color: #58a6ff;
+    color: #1a1a2e; /* Dark text for contrast */
+}
+.app-card-links a.primary-link:hover {
+    background-color: #ffffff;
+    color: #1a1a2e;
+}
+.app-card-links a.secondary-link {
+    color: #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.app-card-links a.secondary-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #ffffff;
 }
 
 /* --- Homepage Info Box & Links --- */
@@ -319,6 +219,7 @@ a:hover {
 .github-link {
     display: inline-block;
     margin-top: 20px;
+    margin-right: 15px;
     padding: 12px 24px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 25px;
@@ -332,6 +233,29 @@ a:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
     color: white;
+}
+
+/* --- Footer (NEW) --- */
+footer {
+    width: 100%;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+footer .logo {
+    max-width: 80px;
+    margin-bottom: 0;
+    opacity: 0.7;
+}
+
+footer .subtitle {
+    margin-bottom: 0;
+    font-size: 0.9em;
 }
 
 /* --- Styles for Content Pages (About, Papers, Videos) --- */
