@@ -1,0 +1,3 @@
+# Quantum orbital sonification app 
+
+Novel approaches for sonifying and visualizing quantum mechanical phenomena in hydrogen and helium atoms (other atoms in development) through an interactive mobile-responsive application. By mapping quantum properties to audio parameters and providing real-time visual feedback, users can experience the probabilistic nature of atomic orbitals and explore sound design options, creating an intuitive understanding of quantum mechanics while generating unique musical compositions.

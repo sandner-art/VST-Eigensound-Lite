@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MolecularSynth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+
+        .header {
+            height: 40px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0ff;
+            letter-spacing: 1px;
+        }
+
+        .modes {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode {
+            padding: 4px 8px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #333;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .mode.active {
+            background: #0ff;
+            color: #000;
+            border-color: #0ff;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        .workspace {
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        .molecule-area {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 400px;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .molecule-svg {
+            width: 90%;
+            height: 90%;
+            max-width: 400px;
+            max-height: 300px;
+        }
+
+        .atom {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 0 4px rgba(0,255,255,0.3));
+        }
+
+        .atom:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px rgba(0,255,255,0.6));
+        }
+
+        .atom.playing {
+            animation: pulse 0.6s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+
+        .bond {
+            stroke: #444;
+            stroke-width: 1.5;
+            transition: stroke 0.15s ease;
+        }
+
+        .bond:hover {
+            stroke: #0ff;
+            stroke-width: 2;
+        }
+
+        .info {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        .controls {
+            width: 240px;
+            background: #111;
+            padding: 10px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #222;
+        }
+
+        .control {
+            margin-bottom: 10px;
+        }
+
+        .control-label {
+            font-size: 9px;
+            color: #999;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #0ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #0ff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .preset {
+            padding: 6px;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            font-size: 8px;
+            text-align: center;
+            border-radius: 3px;
+            transition: all 0.15s;
+            text-transform: uppercase;
+        }
+
+        .preset:hover, .preset.active {
+            background: #0ff;
+            color: #000;
+        }
+
+        .bottom {
+            height: 60px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .transport {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #222;
+            color: #999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.15s;
+            border: none;
+        }
+
+        .btn:hover, .btn.active {
+            background: #0ff;
+            color: #000;
+        }
+
+        .visualizer {
+            flex: 1;
+            height: 24px;
+            background: #222;
+            border-radius: 3px;
+            display: flex;
+            align-items: end;
+            padding: 2px;
+            gap: 1px;
+            margin: 0 10px;
+        }
+
+        .bar {
+            flex: 1;
+            background: #0ff;
+            border-radius: 1px;
+            min-height: 1px;
+            transition: height 0.1s ease;
+        }
+
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .volume-slider {
+            width: 60px;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #0ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            background: #0ff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Mobile Landscape */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .main {
+                flex-direction: row;
+            }
+            
+            .controls {
+                width: 200px;
+                border-left: 1px solid #222;
+            }
+            
+            .header {
+                height: 35px;
+            }
+            
+            .bottom {
+                height: 50px;
+            }
+        }
+
+        /* Mobile Portrait */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .main {
+                flex-direction: column;
+            }
+            
+            .controls {
+                width: 100%;
+                height: 180px;
+                border-top: 1px solid #222;
+                border-left: none;
+            }
+            
+            .section {
+                margin-bottom: 10px;
+            }
+            
+            .presets {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .modes {
+                gap: 4px;
+            }
+            
+            .mode {
+                padding: 3px 6px;
+                font-size: 9px;
+            }
+            
+            .logo {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="logo">MolecularSynth</div>
+            <div class="modes">
+                <button class="mode active" data-mode="play">Play</button>
+                <button class="mode" data-mode="fusion">Fusion</button>
+                <button class="mode" data-mode="react">React</button>
+                <button class="mode" data-mode="learn">Learn</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="workspace">
+                <div class="molecule-area">
+                    <svg class="molecule-svg" viewBox="0 0 300 200">
+                        <!-- Caffeine molecule bonds -->
+                        <line x1="80" y1="100" x2="120" y2="80" class="bond"/>
+                        <line x1="120" y1="80" x2="160" y2="100" class="bond"/>
+                        <line x1="160" y1="100" x2="160" y2="140" class="bond"/>
+                        <line x1="160" y1="140" x2="120" y2="160" class="bond"/>
+                        <line x1="120" y1="160" x2="80" y2="140" class="bond"/>
+                        <line x1="80" y1="140" x2="80" y2="100" class="bond"/>
+                        <line x1="160" y1="100" x2="200" y2="80" class="bond"/>
+                        <line x1="200" y1="80" x2="240" y2="100" class="bond"/>
+                        <line x1="240" y1="100" x2="240" y2="140" class="bond"/>
+                        <line x1="240" y1="140" x2="200" y2="160" class="bond"/>
+                        <line x1="200" y1="160" x2="160" y2="140" class="bond"/>
+                        
+                        <!-- Caffeine atoms -->
+                        <circle cx="80" cy="100" r="8" fill="#666" class="atom" data-element="C" data-freq="261.63"/>
+                        <circle cx="120" cy="80" r="8" fill="#4a90e2" class="atom" data-element="N" data-freq="329.63"/>
+                        <circle cx="160" cy="100" r="8" fill="#666" class="atom" data-element="C" data-freq="392.00"/>
+                        <circle cx="160" cy="140" r="8" fill="#4a90e2" class="atom" data-element="N" data-freq="466.16"/>
+                        <circle cx="120" cy="160" r="8" fill="#666" class="atom" data-element="C" data-freq="523.25"/>
+                        <circle cx="80" cy="140" r="8" fill="#666" class="atom" data-element="C" data-freq="587.33"/>
+                        <circle cx="200" cy="80" r="8" fill="#666" class="atom" data-element="C" data-freq="659.25"/>
+                        <circle cx="240" cy="100" r="8" fill="#e74c3c" class="atom" data-element="O" data-freq="698.46"/>
+                        <circle cx="240" cy="140" r="8" fill="#4a90e2" class="atom" data-element="N" data-freq="783.99"/>
+                        <circle cx="200" cy="160" r="8" fill="#666" class="atom" data-element="C" data-freq="880.00"/>
+                        
+                        <!-- Hydrogen atoms -->
+                        <circle cx="60" cy="90" r="4" fill="#fff" class="atom" data-element="H" data-freq="1046.50"/>
+                        <circle cx="60" cy="150" r="4" fill="#fff" class="atom" data-element="H" data-freq="1174.66"/>
+                        <circle cx="260" cy="120" r="4" fill="#fff" class="atom" data-element="H" data-freq="1318.51"/>
+                    </svg>
+
+                    <div class="info">
+                        <div id="mol-name">Caffeine (C₈H₁₀N₄O₂)</div>
+                        <div id="mol-props">MW: 194.19 g/mol</div>
+                        <div id="mol-key">Key: A Minor • 120 BPM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="section">
+                    <div class="section-title">Sonification</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Harmony</span>
+                            <span id="harmony-val">65%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="65" id="harmony">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Resonance</span>
+                            <span id="resonance-val">40%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="40" id="resonance">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Vibration</span>
+                            <span id="vibration-val">75%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="75" id="vibration">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Performance</div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Tempo</span>
+                            <span id="tempo-val">120</span>
+                        </div>
+                        <input type="range" class="slider" min="60" max="180" value="120" id="tempo">
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-label">
+                            <span>Expression</span>
+                            <span id="expression-val">50%</span>
+                        </div>
+                        <input type="range" class="slider" min="0" max="100" value="50" id="expression">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Molecules</div>
+                    <div class="presets">
+                        <div class="preset active" data-mol="caffeine">Caffeine</div>
+                        <div class="preset" data-mol="dopamine">Dopamine</div>
+                        <div class="preset" data-mol="water">Water</div>
+                        <div class="preset" data-mol="ethanol">Ethanol</div>
+                        <div class="preset" data-mol="glucose">Glucose</div>
+                        <div class="preset" data-mol="serotonin">Serotonin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom">
+            <div class="transport">
+                <button class="btn" id="play-btn">▶</button>
+                <button class="btn" id="stop-btn">⏹</button>
+                <button class="btn" id="rec-btn">⏺</button>
+            </div>
+            
+            <div class="visualizer">
+                <div class="bar" style="height: 30%"></div>
+                <div class="bar" style="height: 60%"></div>
+                <div class="bar" style="height: 40%"></div>
+                <div class="bar" style="height: 80%"></div>
+                <div class="bar" style="height: 20%"></div>
+                <div class="bar" style="height: 70%"></div>
+                <div class="bar" style="height: 50%"></div>
+                <div class="bar" style="height: 90%"></div>
+                <div class="bar" style="height: 35%"></div>
+                <div class="bar" style="height: 65%"></div>
+            </div>
+
+            <div class="volume">
+                <span>🔊</span>
+                <input type="range" class="volume-slider" min="0" max="100" value="70" id="master-vol">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Engine
+        let audioCtx;
+        let masterGain;
+        let isPlaying = false;
+        let tempo = 120;
+        let sequenceTimeout;
+
+        // Element sound mapping
+        const elementData = {
+            'C': { wave: 'sawtooth', color: '#666' },
+            'N': { wave: 'square', color: '#4a90e2' },
+            'O': { wave: 'triangle', color: '#e74c3c' },
+            'H': { wave: 'sine', color: '#fff' }
+        };
+
+        // Initialize audio
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.connect(audioCtx.destination);
+                masterGain.gain.value = 0.7;
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Play atom sound
+        function playAtom(element, frequency) {
+            initAudio();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            const elemData = elementData[element];
+            osc.type = elemData.wave;
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(frequency * 2, audioCtx.currentTime);
+            filter.Q.setValueAtTime(element === 'N' ? 10 : 3, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.6);
+
+            updateVisualizer();
+        }
+
+        // Play molecular sequence
+        function playSequence() {
+            if (!isPlaying) return;
+
+            const atoms = document.querySelectorAll('.atom');
+            const interval = 60000 / (tempo * 4); // 16th notes
+
+            atoms.forEach((atom, i) => {
+                setTimeout(() => {
+                    if (isPlaying) {
+                        const element = atom.dataset.element;
+                        const frequency = parseFloat(atom.dataset.freq);
+                        
+                        atom.classList.add('playing');
+                        setTimeout(() => atom.classList.remove('playing'), 600);
+                        
+                        playAtom(element, frequency);
+                    }
+                }, i * interval);
+            });
+
+            sequenceTimeout = setTimeout(playSequence, atoms.length * interval);
+        }
+
+        // Update visualizer
+        function updateVisualizer() {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach(bar => {
+                const height = Math.random() * 80 + 10;
+                bar.style.height = height + '%';
+            });
+        }
+
+        // Update slider values
+        function updateSliderValue(slider, valueSpan) {
+            const value = slider.value;
+            valueSpan.textContent = slider.id === 'tempo' ? value : value + '%';
+            
+            if (slider.id === 'tempo') {
+                tempo = parseInt(value);
+            }
+        }
+
+        // Molecule data
+        const molecules = {
+            caffeine: { name: 'Caffeine (C₈H₁₀N₄O₂)', props: 'MW: 194.19 g/mol', key: 'Key: A Minor • 120 BPM' },
+            dopamine: { name: 'Dopamine (C₈H₁₁NO₂)', props: 'MW: 153.18 g/mol', key: 'Key: C Major • 140 BPM' },
+            water: { name: 'Water (H₂O)', props: 'MW: 18.02 g/mol', key: 'Key: F Major • 90 BPM' },
+            ethanol: { name: 'Ethanol (C₂H₆O)', props: 'MW: 46.07 g/mol', key: 'Key: G Minor • 110 BPM' },
+            glucose: { name: 'Glucose (C₆H₁₂O₆)', props: 'MW: 180.16 g/mol', key: 'Key: D Major • 100 BPM' },
+            serotonin: { name: 'Serotonin (C₁₀H₁₂N₂O)', props: 'MW: 176.22 g/mol', key: 'Key: E Major • 130 BPM' }
+        };
+
+        // Load molecule
+        function loadMolecule(mol) {
+            const data = molecules[mol];
+            if (data) {
+                document.getElementById('mol-name').textContent = data.name;
+                document.getElementById('mol-props').textContent = data.props;
+                document.getElementById('mol-key').textContent = data.key;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atom clicks
+            document.querySelectorAll('.atom').forEach(atom => {
+                atom.addEventListener('click', function() {
+                    const element = this.dataset.element;
+                    const frequency = parseFloat(this.dataset.freq);
+                    
+                    this.classList.add('playing');
+                    setTimeout(() => this.classList.remove('playing'), 600);
+                    
+                    playAtom(element, frequency);
+                });
+            });
+
+            // Transport controls
+            document.getElementById('play-btn').addEventListener('click', function() {
+                initAudio();
+                isPlaying = !isPlaying;
+                
+                if (isPlaying) {
+                    this.textContent = '⏸';
+                    this.classList.add('active');
+                    playSequence();
+                } else {
+                    this.textContent = '▶';
+                    this.classList.remove('active');
+                    clearTimeout(sequenceTimeout);
+                }
+            });
+
+            document.getElementById('stop-btn').addEventListener('click', function() {
+                isPlaying = false;
+                clearTimeout(sequenceTimeout);
+                const playBtn = document.getElementById('play-btn');
+                playBtn.textContent = '▶';
+                playBtn.classList.remove('active');
+            });
+
+            document.getElementById('rec-btn').addEventListener('click', function() {
+                this.classList.toggle('active');
+                console.log('Recording:', this.classList.contains('active'));
+            });
+
+            // Mode switches
+            document.querySelectorAll('.mode').forEach(mode => {
+                mode.addEventListener('click', function() {
+                    document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+                    this.classList.add('active');
+                    console.log('Mode:', this.dataset.mode);
+                });
+            });
+
+            // Molecule presets
+            document.querySelectorAll('.preset').forEach(preset => {
+                preset.addEventListener('click', function() {
+                    document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    loadMolecule(this.dataset.mol);
+                });
+            });
+
+            // Sliders
+            const sliders = [
+                { slider: 'harmony', value: 'harmony-val' },
+                { slider: 'resonance', value: 'resonance-val' },
+                { slider: 'vibration', value: 'vibration-val' },
+                { slider: 'tempo', value: 'tempo-val' },
+                { slider: 'expression', value: 'expression-val' }
+            ];
+
+            sliders.forEach(({slider, value}) => {
+                const sliderEl = document.getElementById(slider);
+                const valueEl = document.getElementById(value);
+                
+                sliderEl.addEventListener('input', function() {
+                    updateSliderValue(this, valueEl);
+                });
+            });
+
+            // Master volume
+            document.getElementById('master-vol').addEventListener('input', function() {
+                if (masterGain) {
+                    masterGain.gain.setValueAtTime(this.value / 100, audioCtx.currentTime);
+                }
+            });
+
+            // Start visualizer animation
+            setInterval(updateVisualizer, 150);
+        });
+
+        // Touch optimization
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        document.addEventListener('touchmove', function() {}, {passive: true});
+    </script>
+</body>
+</html>
