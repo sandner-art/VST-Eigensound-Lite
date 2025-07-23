@@ -920,9 +920,9 @@
                         {x: 44, y: 198, element: 'H'}   // 21: H on N10
                     ],
                     bonds: [
-                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'aromatic'},
-                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'aromatic'},
-                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'aromatic'},
+                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'double'},
+                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'double'},
+                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'double'},
                         {from: 5, to: 8, type: 'single'}, {from: 1, to: 6, type: 'single'},
                         {from: 2, to: 7, type: 'single'}, {from: 8, to: 9, type: 'single'},
                         {from: 9, to: 10, type: 'single'},{from: 4, to: 11, type: 'single'},
@@ -1086,39 +1086,54 @@
                 atmosphere: { type: 'therapeutic', freq: 45, depth: 0.3 },
                 structure: {
                     atoms: [
-                        {x: 217, y: 168, element: 'C'}, // 0: C1
-                        {x: 195, y: 208, element: 'C'}, // 1: C2
-                        {x: 155, y: 208, element: 'C'}, // 2: C3
-                        {x: 133, y: 168, element: 'C'}, // 3: C4
-                        {x: 155, y: 128, element: 'C'}, // 4: C5
-                        {x: 195, y: 128, element: 'C'}, // 5: C6
-                        {x: 258, y: 168, element: 'C'}, // 6: Carboxylic acid C
-                        {x: 279, y: 198, element: 'O'}, // 7: Carboxylic acid =O
-                        {x: 279, y: 137, element: 'O'}, // 8: Carboxylic acid -OH
-                        {x: 217, y: 97, element: 'O'},  // 9: Ester O
-                        {x: 249, y: 76, element: 'C'},  // 10: Ester C=O
-                        {x: 249, y: 35, element: 'C'},  // 11: Ester CH3
-                        {x: 133, y: 239, element: 'H'}, // 12: H on C2
-                        {x: 217, y: 239, element: 'H'}, // 13: H on C1
-                        {x: 133, y: 97, element: 'H'},  // 14: H on C5
-                        {x: 217, y: 97, element: 'H'},  // 15: H on C6
-                        {x: 310, y: 137, element: 'H'}, // 16: H on O8
-                        {x: 280, y: 97, element: 'O'},  // 17: Ester =O
-                        {x: 218, y: 25, element: 'H'},  // 18: H on C11
-                        {x: 260, y: 4, element: 'H'},   // 19: H on C11
-                        {x: 280, y: 35, element: 'H'},  // 20: H on C11
+                        // Benzene Ring
+                        {x: 177, y: 167, element: 'C'}, // 0: C1, attached to COOH
+                        {x: 217, y: 167, element: 'C'}, // 1: C2, attached to O-acetyl
+                        {x: 238, y: 132, element: 'C'}, // 2: C3
+                        {x: 217, y: 97, element: 'C'},  // 3: C4
+                        {x: 177, y: 97, element: 'C'},  // 4: C5
+                        {x: 156, y: 132, element: 'C'}, // 5: C6
+                        // Carboxylic Acid Group
+                        {x: 146, y: 180, element: 'C'}, // 6: Carboxylic acid C
+                        {x: 115, y: 169, element: 'O'}, // 7: Carboxylic acid =O
+                        {x: 156, y: 221, element: 'O'}, // 8: Carboxylic acid -OH
+                        // O-Acetyl Group (Ester)
+                        {x: 249, y: 198, element: 'O'}, // 9: Ester O
+                        {x: 280, y: 177, element: 'C'}, // 10: Ester C=O
+                        {x: 321, y: 198, element: 'C'}, // 11: Ester CH3
+                        {x: 280, y: 145, element: 'O'}, // 12: Ester =O
+                        // Hydrogens
+                        {x: 279, y: 110, element: 'H'}, // 13: H on C3
+                        {x: 238, y: 76, element: 'H'},  // 14: H on C4
+                        {x: 156, y: 76, element: 'H'},  // 15: H on C5
+                        {x: 125, y: 110, element: 'H'}, // 16: H on C6
+                        {x: 134, y: 242, element: 'H'}, // 17: H on O8
+                        {x: 310, y: 230, element: 'H'}, // 18: H on C11
+                        {x: 343, y: 177, element: 'H'}, // 19: H on C11
+                        {x: 343, y: 219, element: 'H'}  // 20: H on C11
                     ],
                     bonds: [
-                        {from: 0, to: 1, type: 'aromatic'}, {from: 1, to: 2, type: 'aromatic'},
-                        {from: 2, to: 3, type: 'aromatic'}, {from: 3, to: 4, type: 'aromatic'},
-                        {from: 4, to: 5, type: 'aromatic'}, {from: 5, to: 0, type: 'aromatic'},
-                        {from: 0, to: 6, type: 'single'}, {from: 5, to: 9, type: 'single'},
-                        {from: 6, to: 7, type: 'double'}, {from: 6, to: 8, type: 'single'},
-                        {from: 9, to: 10, type: 'single'},{from: 10, to: 11, type: 'single'},
-                        {from: 10, to: 17, type: 'double'},{from: 1, to: 12, type: 'single'},
-                        {from: 2, to: 13, type: 'single'},{from: 3, to: 14, type: 'single'},
-                        {from: 4, to: 15, type: 'single'},{from: 8, to: 16, type: 'single'},
-                        {from: 11, to: 18, type: 'single'},{from: 11, to: 19, type: 'single'},
+                        // Benzene Ring
+                        {from: 0, to: 1, type: 'double'}, {from: 1, to: 2, type: 'aromatic'},
+                        {from: 2, to: 3, type: 'double'}, {from: 3, to: 4, type: 'aromatic'},
+                        {from: 4, to: 5, type: 'double'}, {from: 5, to: 0, type: 'aromatic'},
+                        // Ring to substituents
+                        {from: 0, to: 6, type: 'single'},  // C1 to Carboxylic Acid C
+                        {from: 1, to: 9, type: 'single'},  // C2 to Ester O
+                        // Carboxylic Acid Group
+                        {from: 6, to: 7, type: 'double'},  // C=O
+                        {from: 6, to: 8, type: 'single'},  // C-OH
+                        // O-Acetyl Group
+                        {from: 9, to: 10, type: 'single'}, // O-C
+                        {from: 10, to: 11, type: 'single'},// C-CH3
+                        {from: 10, to: 12, type: 'double'},// C=O
+                        // C-H bonds
+                        {from: 2, to: 13, type: 'single'}, {from: 3, to: 14, type: 'single'},
+                        {from: 4, to: 15, type: 'single'}, {from: 5, to: 16, type: 'single'},
+                        // O-H bond
+                        {from: 8, to: 17, type: 'single'},
+                        // Methyl H bonds
+                        {from: 11, to: 18, type: 'single'}, {from: 11, to: 19, type: 'single'},
                         {from: 11, to: 20, type: 'single'}
                     ]
                 }
