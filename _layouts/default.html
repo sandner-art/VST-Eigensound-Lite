@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title | default: site.title }} | eigensound|lab</title>
+    <!-- Link to your main stylesheet -->
+    <link rel="stylesheet" href="{{ '/style.css' | relative_url }}">
+    <!-- You can add other meta tags, favicons, or external fonts here -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* This ensures the font is applied globally if 'Inter' is desired */
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo and Subtitle Section -->
+        <header>
+            <a href="{{ '/' | relative_url }}">
+                <!-- Updated logo path based on your index.html -->
+                <img src="{{ '/eigen-logo.png' | relative_url }}" alt="Eigensound Logo" class="logo">
+            </a>
+            <p class="subtitle">Quantum-Relativistic Sound Synthesis with Eigenmode Resonance and Other Mishaps</p>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav>
+            <ul class="main-nav">
+                <!-- Updated navigation links based on your index.html -->
+                <li><a href="{{ '/' | relative_url }}" {% if page.url == '/' or page.url == '/index.html' %}class="active"{% endif %}>Home</a></li>
+                <li><a href="{{ '/about.html' | relative_url }}" {% if page.url contains '/about' %}class="active"{% endif %}>About</a></li>
+                <li><a href="{{ '/papers.html' | relative_url }}" {% if page.url contains '/papers' %}class="active"{% endif %}>Papers</a></li>
+                <li><a href="{{ '/videos.html' | relative_url }}" {% if page.url contains '/videos' %}class="active"{% endif %}>Videos</a></li>
+                <!-- Add more navigation links as needed -->
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <!-- The '{{ content }}' variable will be replaced by the HTML generated from your Markdown files -->
+        <!-- For Markdown pages like 'about.md' or 'README.md' with 'layout: default' in their front matter,
+             their content will be rendered here. -->
+        {{ content }}
+
+        <!-- You can add a footer here if desired -->
+        <footer>
+            <p class="subtitle">Open-source scientific sonification research. Copyright © {{ 'now' | date: "%Y" }} Daniel Sandner.</p>
+            <!-- Assuming 'eigen-logo-short.png' is a site-wide footer logo -->
+            <img src="{{ '/eigen-logo-short.png' | relative_url }}" alt="Eigensound Short Logo" class="logo" style="margin-top: 20px;">
+        </footer>
+    </div>
+</body>
+</html>
