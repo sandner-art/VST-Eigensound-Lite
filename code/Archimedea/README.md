@@ -1,3 +1,7 @@
+---
+layout: default 
+---
+
 # EigenSound Archimedea: An Interactive Archimedean Spiral Visualizer for Musical Analysis and Synthesis
 
 **Version 0.1.17a** | **©2025 Daniel Sandner** | [eigensound.com](https://eigensound.com) | [sandner.art](https://sandner.art)
