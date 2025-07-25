@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Musical Spiral Visualizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f4c75);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 5px 0;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: clamp(16px, 3vw, 20px);
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .settings-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative;
+            padding: 10px;
+        }
+        
+        #spiralCanvas {
+            background: radial-gradient(circle, rgba(0,0,0,0.3), rgba(0,0,0,0.8));
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            touch-action: none;
+            width: 100%;
+            max-width: min(100vw - 20px, 100vh - 200px);
+            aspect-ratio: 1;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px 10px 0 0;
+            padding: 10px;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            max-height: 40vh;
+            overflow-y: auto;
+            transform: translateY(calc(100% - 50px));
+            transition: transform 0.3s ease;
+        }
+        
+        .controls.expanded {
+            transform: translateY(0);
+        }
+        
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .controls-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .expand-icon {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+        
+        .controls.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            height: 20px;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 8px 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .btn:hover, .btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .btn.active {
+            background: #ff6b6b;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+        
+        .frequency-display {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-align: center;
+            margin: 5px 0;
+        }
+        
+        .analysis-panel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+        
+        .touch-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .touch-info {
+                right: 50px;
+            }
+        }
+        
+        /* Responsive design */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .main-content {
+                padding: 5px;
+            }
+            
+            #spiralCanvas {
+                max-width: min(60vw, 100vh - 100px);
+            }
+            
+            .controls {
+                position: fixed;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 35vw;
+                max-width: 300px;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                transform: translateX(calc(100% - 40px));
+                overflow-y: auto;
+            }
+            
+            .controls.expanded {
+                transform: translateX(0);
+            }
+            
+            .controls-header {
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                height: 100px;
+                width: 30px;
+                position: absolute;
+                left: -30px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 10px 0 0 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .control-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .header h1 {
+                font-size: 14px;
+            }
+            
+            .controls {
+                padding: 8px;
+                transform: translateY(calc(100% - 40px));
+            }
+            
+            .button-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 3px;
+            }
+            
+            .btn {
+                padding: 6px 2px;
+                font-size: 9px;
+            }
+        }
+        
+        .scale-highlight {
+            opacity: 0.8;
+            filter: brightness(1.5);
+        }
+        
+        .harmonic-circle {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 1;
+        }
+        
+        .interference-pattern {
+            fill: none;
+            stroke: rgba(255, 107, 107, 0.6);
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Musical Spiral Visualizer</h1>
+        </div>
+        
+        <div class="main-content">
+            <canvas id="spiralCanvas"></canvas>
+            <div class="touch-info" id="touchInfo">Touch: 0 | Playing: 0</div>
+        </div>
+        
+        <div class="controls" id="controls">
+            <div class="controls-header" id="controlsHeader">
+                <div class="controls-title">Controls</div>
+                <div class="expand-icon">▲</div>
+            </div>
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Base Frequency</label>
+                    <input type="range" id="baseFreq" min="220" max="880" value="440" step="1">
+                    <div class="frequency-display" id="freqDisplay">440 Hz</div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Scale</label>
+                    <select id="scaleSelect">
+                        <option value="chromatic">Chromatic</option>
+                        <option value="major">Major</option>
+                        <option value="minor">Natural Minor</option>
+                        <option value="pentatonic">Pentatonic</option>
+                        <option value="blues">Blues</option>
+                        <option value="dorian">Dorian</option>
+                        <option value="phrygian">Phrygian</option>
+                        <option value="lydian">Lydian</option>
+                        <option value="mixolydian">Mixolydian</option>
+                        <option value="harmonic">Harmonic Minor</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Spiral Density</label>
+                    <input type="range" id="spiralDensity" min="1" max="6" value="3" step="1">
+                </div>
+                
+                <div class="control-group">
+                    <label>Wave Amplitude</label>
+                    <input type="range" id="waveAmplitude" min="0" max="30" value="15" step="1">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Harmonics</label>
+                    <input type="range" id="harmonics" min="0" max="100" value="30" step="1">
+                </div>
+                
+                <div class="control-group">
+                    <label>Rhythm BPM</label>
+                    <input type="range" id="rhythmBPM" min="60" max="180" value="120" step="1">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Visualization</label>
+                    <select id="visualMode">
+                        <option value="basic">Basic Spiral</option>
+                        <option value="harmonics">Epicyclic Harmonics</option>
+                        <option value="interference">Wave Interference</option>
+                        <option value="rhythm">Rhythm Mapping</option>
+                        <option value="analysis">Live Analysis</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Audio Input</label>
+                    <button id="micToggle" class="btn">🎤 Mic</button>
+                </div>
+            </div>
+            
+            <div class="button-grid">
+                <button class="btn" data-note="C">C</button>
+                <button class="btn" data-note="D">D</button>
+                <button class="btn" data-note="E">E</button>
+                <button class="btn" data-note="F">F</button>
+                <button class="btn" data-note="G">G</button>
+                <button class="btn" data-note="A">A</button>
+                <button class="btn" data-note="B">B</button>
+                <button class="btn" data-chord="major">Major</button>
+                <button class="btn" data-chord="minor">Minor</button>
+                <button class="btn" data-chord="dim">Dim</button>
+            </div>
+            
+            <input type="file" id="audioFile" accept="audio/*" style="margin-top: 10px;">
+            
+            <div class="analysis-panel" id="analysisPanel">
+                <div>Detected Notes: <span id="detectedNotes">-</span></div>
+                <div>Fundamental: <span id="fundamental">-</span></div>
+                <div>Active Touches: <span id="activeTouches">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Analysis Setup
+        let audioContext;
+        let analyser;
+        let microphone;
+        let dataArray;
+        let bufferLength;
+        let isListening = false;
+        let oscillators = new Map();
+        let gainNodes = new Map();
+
+        // Canvas Setup with Responsive Sizing
+        const canvas = document.getElementById('spiralCanvas');
+        const ctx = canvas.getContext('2d');
+        let centerX, centerY, maxRadius;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const isLandscape = window.innerHeight < window.innerWidth && window.innerHeight < 600;
+            
+            let maxSize;
+            if (isLandscape) {
+                // Landscape mode - leave space for side controls
+                maxSize = Math.min(
+                    container.clientWidth * 0.9,
+                    window.innerHeight - 60
+                );
+            } else {
+                // Portrait mode - full width, leave space for bottom controls
+                maxSize = Math.min(
+                    window.innerWidth - 20,
+                    window.innerHeight - 200
+                );
+            }
+            
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            maxRadius = Math.min(centerX, centerY) - 20;
+        }
+
+        // Controls expansion functionality
+        const controlsElement = document.getElementById('controls');
+        const controlsHeader = document.getElementById('controlsHeader');
+        
+        controlsHeader.addEventListener('click', () => {
+            controlsElement.classList.toggle('expanded');
+        });
+
+        // Auto-collapse controls after interaction on mobile
+        function autoCollapseControls() {
+            if (window.innerWidth < 768) {
+                setTimeout(() => {
+                    controlsElement.classList.remove('expanded');
+                }, 3000);
+            }
+        }
+
+        // Musical Scale Definitions
+        const scales = {
+            chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            major: [0, 2, 4, 5, 7, 9, 11],
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            pentatonic: [0, 2, 4, 7, 9],
+            blues: [0, 3, 5, 6, 7, 10],
+            dorian: [0, 2, 3, 5, 7, 9, 10],
+            phrygian: [0, 1, 3, 5, 7, 8, 10],
+            lydian: [0, 2, 4, 6, 7, 9, 11],
+            mixolydian: [0, 2, 4, 5, 7, 9, 10],
+            harmonic: [0, 2, 3, 5, 7, 8, 11]
+        };
+
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const justRatios = [1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8];
+
+        // Animation variables
+        let animationFrame;
+        let time = 0;
+        let activeNotes = new Map();
+        let activeTouches = new Map();
+        let rhythmPulse = 0;
+
+        // Control elements
+        const elements = {
+            baseFreq: document.getElementById('baseFreq'),
+            spiralDensity: document.getElementById('spiralDensity'),
+            waveAmplitude: document.getElementById('waveAmplitude'),
+            harmonics: document.getElementById('harmonics'),
+            rhythmBPM: document.getElementById('rhythmBPM'),
+            scaleSelect: document.getElementById('scaleSelect'),
+            visualMode: document.getElementById('visualMode'),
+            micToggle: document.getElementById('micToggle'),
+            audioFile: document.getElementById('audioFile'),
+            freqDisplay: document.getElementById('freqDisplay'),
+            touchInfo: document.getElementById('touchInfo'),
+            analysisPanel: document.getElementById('analysisPanel'),
+            detectedNotes: document.getElementById('detectedNotes'),
+            fundamental: document.getElementById('fundamental'),
+            activeTouches: document.getElementById('activeTouches')
+        };
+
+        // Audio Context Initialization
+        async function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Setup analyser for live audio analysis
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+            }
+            
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+        }
+
+        // Microphone Access
+        async function toggleMicrophone() {
+            if (!isListening) {
+                try {
+                    await initAudio();
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    isListening = true;
+                    elements.micToggle.textContent = '🎤 Stop';
+                    elements.micToggle.classList.add('active');
+                } catch (error) {
+                    console.error('Microphone access denied:', error);
+                    alert('Microphone access required for live analysis');
+                }
+            } else {
+                if (microphone) {
+                    microphone.disconnect();
+                    microphone = null;
+                }
+                isListening = false;
+                elements.micToggle.textContent = '🎤 Mic';
+                elements.micToggle.classList.remove('active');
+            }
+        }
+
+        // Audio File Loading
+        async function loadAudioFile(file) {
+            await initAudio();
+            const arrayBuffer = await file.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            
+            // Analyze audio file
+            const channelData = audioBuffer.getChannelData(0);
+            analyzeAudioData(channelData, audioBuffer.sampleRate);
+        }
+
+        // Audio Analysis Functions
+        function analyzeAudioData(data, sampleRate) {
+            // Simple pitch detection using autocorrelation
+            const minPeriod = Math.floor(sampleRate / 800); // 800 Hz max
+            const maxPeriod = Math.floor(sampleRate / 80);  // 80 Hz min
+            
+            let bestPeriod = 0;
+            let bestCorrelation = 0;
+            
+            for (let period = minPeriod; period < maxPeriod && period < data.length / 2; period++) {
+                let correlation = 0;
+                for (let i = 0; i < data.length - period; i++) {
+                    correlation += data[i] * data[i + period];
+                }
+                
+                if (correlation > bestCorrelation) {
+                    bestCorrelation = correlation;
+                    bestPeriod = period;
+                }
+            }
+            
+            if (bestPeriod > 0) {
+                const frequency = sampleRate / bestPeriod;
+                const note = frequencyToNote(frequency);
+                elements.fundamental.textContent = `${frequency.toFixed(1)} Hz (${note})`;
+            }
+        }
+
+        function frequencyToNote(frequency) {
+            const A4 = 440;
+            const semitone = Math.round(12 * Math.log2(frequency / A4));
+            const noteIndex = (9 + semitone) % 12;
+            const octave = Math.floor((9 + semitone) / 12) + 4;
+            return `${noteNames[noteIndex]}${octave}`;
+        }
+
+        // Live Audio Analysis
+        function performLiveAnalysis() {
+            if (!isListening || !analyser) return;
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Find peaks in frequency domain
+            const peaks = [];
+            const threshold = 50;
+            
+            for (let i = 1; i < bufferLength - 1; i++) {
+                if (dataArray[i] > threshold && 
+                    dataArray[i] > dataArray[i-1] && 
+                    dataArray[i] > dataArray[i+1]) {
+                    const frequency = (i * audioContext.sampleRate) / (2 * bufferLength);
+                    if (frequency > 80 && frequency < 2000) {
+                        peaks.push({frequency, magnitude: dataArray[i]});
+                    }
+                }
+            }
+            
+            // Sort by magnitude and take top peaks
+            peaks.sort((a, b) => b.magnitude - a.magnitude);
+            const topPeaks = peaks.slice(0, 5);
+            
+            if (topPeaks.length > 0) {
+                const detectedNotesList = topPeaks.map(peak => {
+                    const note = frequencyToNote(peak.frequency);
+                    return `${note} (${peak.frequency.toFixed(1)}Hz)`;
+                });
+                elements.detectedNotes.textContent = detectedNotesList.join(', ');
+                elements.fundamental.textContent = `${topPeaks[0].frequency.toFixed(1)} Hz`;
+                
+                // Visualize detected frequencies on spiral
+                topPeaks.forEach(peak => {
+                    const noteData = getNotePosition(peak.frequency);
+                    if (noteData) {
+                        const key = `detected-${peak.frequency.toFixed(0)}`;
+                        activeNotes.set(key, {
+                            ...noteData,
+                            intensity: peak.magnitude / 255,
+                            isDetected: true
+                        });
+                        setTimeout(() => activeNotes.delete(key), 100);
+                    }
+                });
+            } else {
+                elements.detectedNotes.textContent = '-';
+                elements.fundamental.textContent = '-';
+            }
+        }
+
+        function getNotePosition(frequency) {
+            const baseFreq = parseFloat(elements.baseFreq.value);
+            const octaveRatio = frequency / baseFreq;
+            const logRatio = Math.log2(octaveRatio);
+            const octave = Math.floor(logRatio);
+            const noteInOctave = (logRatio - octave) * 12;
+            
+            if (octave >= 0 && octave < parseInt(elements.spiralDensity.value)) {
+                return {
+                    noteIndex: Math.round(noteInOctave) % 12,
+                    octave: octave + 1,
+                    frequency
+                };
+            }
+            return null;
+        }
+
+        // Note frequency calculation
+        function getNoteFrequency(noteIndex, octave) {
+            const baseFreq = parseFloat(elements.baseFreq.value);
+            return baseFreq * Math.pow(2, octave + noteIndex/12);
+        }
+
+        // Polyphonic sound generation
+        function playNote(frequency, noteKey, duration = 3000) {
+            if (!audioContext) return;
+            
+            // Stop existing note if playing
+            stopNote(noteKey);
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filterNode = audioContext.createBiquadFilter();
+            
+            oscillator.connect(filterNode);
+            filterNode.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            
+            // Add harmonics based on control
+            const harmonicsLevel = parseFloat(elements.harmonics.value) / 100;
+            if (harmonicsLevel > 0.3) {
+                oscillator.type = 'sawtooth';
+            } else if (harmonicsLevel > 0.1) {
+                oscillator.type = 'square';
+            } else {
+                oscillator.type = 'sine';
+            }
+            
+            // Filter for warmth
+            filterNode.type = 'lowpass';
+            filterNode.frequency.setValueAtTime(frequency * 4, audioContext.currentTime);
+            filterNode.Q.setValueAtTime(1, audioContext.currentTime);
+            
+            // Envelope
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration/1000);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration/1000);
+            
+            oscillators.set(noteKey, oscillator);
+            gainNodes.set(noteKey, gainNode);
+            
+            // Cleanup
+            oscillator.onended = () => {
+                oscillators.delete(noteKey);
+                gainNodes.delete(noteKey);
+            };
+        }
+
+        function stopNote(noteKey) {
+            if (oscillators.has(noteKey)) {
+                const oscillator = oscillators.get(noteKey);
+                const gainNode = gainNodes.get(noteKey);
+                
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                oscillator.stop(audioContext.currentTime + 0.1);
+                
+                oscillators.delete(noteKey);
+                gainNodes.delete(noteKey);
+            }
+        }
+
+        // Drawing functions
+        function drawSpiral() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const visualMode = elements.visualMode.value;
+            const selectedScale = scales[elements.scaleSelect.value];
+            
+            // Update rhythm pulse
+            const bpm = parseInt(elements.rhythmBPM.value);
+            rhythmPulse = (time * bpm / 60 / 1000) % 1;
+            
+            // Draw background elements
+            drawBackground(selectedScale);
+            
+            // Draw main visualization based on mode
+            switch(visualMode) {
+                case 'harmonics':
+                    drawEpicyclicHarmonics();
+                    break;
+                case 'interference':
+                    drawInterferencePatterns();
+                    break;
+                case 'rhythm':
+                    drawRhythmMapping();
+                    break;
+                case 'analysis':
+                    drawAnalysisMode();
+                    break;
+                default:
+                    drawBasicSpiral();
+            }
+            
+            // Draw active notes and touches
+            drawActiveElements(selectedScale);
+        }
+
+        function drawBackground(selectedScale) {
+            // Concentric octave circles
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let octave = 1; octave <= parseInt(elements.spiralDensity.value); octave++) {
+                const radius = (maxRadius / parseInt(elements.spiralDensity.value)) * octave;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+            
+            // Scale note divisions
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let note = 0; note < 12; note++) {
+                const isInScale = selectedScale.includes(note);
+                if (isInScale) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.lineWidth = 2;
+                } else {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1;
+                }
+                
+                const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * maxRadius,
+                    centerY + Math.sin(angle) * maxRadius
+                );
+                ctx.stroke();
+            }
+        }
+
+        function drawBasicSpiral() {
+            const spiralDensity = parseInt(elements.spiralDensity.value);
+            const waveAmplitude = parseFloat(elements.waveAmplitude.value);
+            
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let t = 0; t <= spiralDensity * 2 * Math.PI; t += 0.01) {
+                const baseRadius = (t / (spiralDensity * 2 * Math.PI)) * maxRadius;
+                const waveOffset = Math.sin(t * 12 + time * 0.005) * waveAmplitude * (baseRadius / maxRadius);
+                const radius = baseRadius + waveOffset;
+                
+                const x = centerX + Math.cos(t - Math.PI/2) * radius;
+                const y = centerY + Math.sin(t - Math.PI/2) * radius;
+                
+                if (t === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawEpicyclicHarmonics() {
+            drawBasicSpiral();
+            
+            // Draw harmonic epicycles
+            const harmonicCount = Math.floor(parseFloat(elements.harmonics.value) / 20) + 1;
+            
+            for (let octave = 1; octave <= parseInt(elements.spiralDensity.value); octave++) {
+                for (let note = 0; note < 12; note++) {
+                    const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                    const baseRadius = (maxRadius / parseInt(elements.spiralDensity.value)) * octave;
+                    
+                    const centerPoint = {
+                        x: centerX + Math.cos(angle) * baseRadius,
+                        y: centerY + Math.sin(angle) * baseRadius
+                    };
+                    
+                    // Draw harmonic circles
+                    for (let h = 1; h <= harmonicCount; h++) {
+                        const harmonicRadius = (8 / h) * (baseRadius / maxRadius) * 20;
+                        const harmonicAngle = angle + (time * 0.01 * h);
+                        
+                        ctx.strokeStyle = `hsla(${h * 60}, 70%, 60%, ${0.3 / h})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(
+                            centerPoint.x + Math.cos(harmonicAngle) * harmonicRadius * 0.5,
+                            centerPoint.y + Math.sin(harmonicAngle) * harmonicRadius * 0.5,
+                            harmonicRadius,
+                            0, 2 * Math.PI
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawInterferencePatterns() {
+            if (activeNotes.size < 2) {
+                drawBasicSpiral();
+                return;
+            }
+            
+            // Create interference patterns between active notes
+            const noteArray = Array.from(activeNotes.values());
+            
+            for (let i = 0; i < noteArray.length; i++) {
+                for (let j = i + 1; j < noteArray.length; j++) {
+                    const note1 = noteArray[i];
+                    const note2 = noteArray[j];
+                    
+                    // Calculate beat frequency
+                    const beatFreq = Math.abs(note1.frequency - note2.frequency);
+                    const beatPhase = time * beatFreq * 0.01;
+                    
+                    // Draw interference pattern
+                    ctx.strokeStyle = `hsla(${(beatFreq * 10) % 360}, 70%, 50%, 0.6)`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    for (let t = 0; t <= 2 * Math.PI; t += 0.1) {
+                        const interferenceAmplitude = Math.cos(beatPhase) * 20;
+                        const radius = maxRadius * 0.7 + Math.sin(t * beatFreq * 0.1 + beatPhase) * interferenceAmplitude;
+                        
+                        const x = centerX + Math.cos(t) * radius;
+                        const y = centerY + Math.sin(t) * radius;
+                        
+                        if (t === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawRhythmMapping() {
+            drawBasicSpiral();
+            
+            // Draw rhythm divisions
+            const bpm = parseInt(elements.rhythmBPM.value);
+            const beatsPerRotation = 4; // 4/4 time
+            
+            for (let beat = 0; beat < beatsPerRotation; beat++) {
+                const beatAngle = (beat / beatsPerRotation) * 2 * Math.PI - Math.PI/2;
+                const pulseIntensity = Math.abs(Math.sin(rhythmPulse * Math.PI * 2 - beat * Math.PI/2));
+                
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + pulseIntensity * 0.7})`;
+                ctx.lineWidth = 3 + pulseIntensity * 5;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(beatAngle) * maxRadius,
+                    centerY + Math.sin(beatAngle) * maxRadius
+                );
+                ctx.stroke();
+                
+                // Draw beat markers
+                for (let octave = 1; octave <= parseInt(elements.spiralDensity.value); octave++) {
+                    const radius = (maxRadius / parseInt(elements.spiralDensity.value)) * octave;
+                    const x = centerX + Math.cos(beatAngle) * radius;
+                    const y = centerY + Math.sin(beatAngle) * radius;
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + pulseIntensity * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3 + pulseIntensity * 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawAnalysisMode() {
+            drawBasicSpiral();
+            
+            // Draw frequency analysis visualization
+            if (isListening && analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Draw frequency spectrum as radial bars
+                const barCount = 64;
+                for (let i = 0; i < barCount; i++) {
+                    const angle = (i / barCount) * 2 * Math.PI - Math.PI/2;
+                    const dataIndex = Math.floor((i / barCount) * bufferLength);
+                    const amplitude = dataArray[dataIndex] / 255;
+                    
+                    if (amplitude > 0.1) {
+                        const innerRadius = maxRadius * 0.3;
+                        const outerRadius = innerRadius + amplitude * maxRadius * 0.4;
+                        
+                        ctx.strokeStyle = `hsla(${i * 5}, 70%, 60%, ${amplitude})`;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(
+                            centerX + Math.cos(angle) * innerRadius,
+                            centerY + Math.sin(angle) * innerRadius
+                        );
+                        ctx.lineTo(
+                            centerX + Math.cos(angle) * outerRadius,
+                            centerY + Math.sin(angle) * outerRadius
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawActiveElements(selectedScale) {
+            // Draw note markers
+            for (let octave = 1; octave <= parseInt(elements.spiralDensity.value); octave++) {
+                for (let note = 0; note < 12; note++) {
+                    const isInScale = selectedScale.includes(note);
+                    if (!isInScale && elements.scaleSelect.value !== 'chromatic') continue;
+                    
+                    const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                    const baseRadius = (maxRadius / parseInt(elements.spiralDensity.value)) * octave;
+                    const waveOffset = Math.sin(angle * 12 + time * 0.005) * parseFloat(elements.waveAmplitude.value) * (baseRadius / maxRadius);
+                    const radius = baseRadius + waveOffset;
+                    
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    // Check if note is active
+                    const noteKey = `${note}-${octave}`;
+                    const isActive = activeNotes.has(noteKey) || Array.from(activeNotes.keys()).some(key => key.includes(`${note}-${octave}`));
+                    
+                    if (isActive) {
+                        const noteData = activeNotes.get(noteKey) || Array.from(activeNotes.values()).find(n => n.noteIndex === note && n.octave === octave);
+                        ctx.fillStyle = noteData?.isDetected ? '#4ecdc4' : '#ff6b6b';
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = noteData?.isDetected ? '#4ecdc4' : '#ff6b6b';
+                    } else {
+                        ctx.fillStyle = isInScale ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, isInScale ? 4 : 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Draw note labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = `${Math.max(8, maxRadius / 40)}px Arial`;
+            ctx.textAlign = 'center';
+            for (let note = 0; note < 12; note++) {
+                const isInScale = selectedScale.includes(note);
+                if (!isInScale && elements.scaleSelect.value !== 'chromatic') continue;
+                
+                const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                const x = centerX + Math.cos(angle) * (maxRadius + 20);
+                const y = centerY + Math.sin(angle) * (maxRadius + 20);
+                ctx.fillText(noteNames[note], x, y);
+            }
+        }
+
+        // Touch and Mouse Event Handling
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return {
+                x: clientX - rect.left - centerX,
+                y: clientY - rect.top - centerY
+            };
+        }
+
+        function handleNoteInteraction(pos, touchId = 'mouse') {
+            const radius = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+            const angle = Math.atan2(pos.y, pos.x) + Math.PI/2;
+            const normalizedAngle = (angle + 2*Math.PI) % (2*Math.PI);
+            
+            const octave = Math.ceil((radius / maxRadius) * parseInt(elements.spiralDensity.value));
+            const noteIndex = Math.floor((normalizedAngle / (2*Math.PI)) * 12);
+            
+            const selectedScale = scales[elements.scaleSelect.value];
+            const isInScale = selectedScale.includes(noteIndex);
+            
+            if (octave >= 1 && octave <= parseInt(elements.spiralDensity.value) && 
+                (isInScale || elements.scaleSelect.value === 'chromatic')) {
+                
+                const frequency = getNoteFrequency(noteIndex, octave - 1);
+                const noteKey = `${touchId}-${noteIndex}-${octave}`;
+                
+                playNote(frequency, noteKey);
+                
+                activeNotes.set(noteKey, {
+                    noteIndex,
+                    octave,
+                    frequency,
+                    touchId,
+                    intensity: 1
+                });
+                
+                return noteKey;
+            }
+            return null;
+        }
+
+        // Multi-touch support
+        canvas.addEventListener('touchstart', async (e) => {
+            e.preventDefault();
+            await initAudio();
+            autoCollapseControls();
+            
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const pos = getEventPos(touch);
+                const noteKey = handleNoteInteraction(pos, touch.identifier);
+                if (noteKey) {
+                    activeTouches.set(touch.identifier, noteKey);
+                }
+            }
+            
+            updateTouchInfo();
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const pos = getEventPos(touch);
+                
+                // Stop previous note for this touch
+                if (activeTouches.has(touch.identifier)) {
+                    const oldNoteKey = activeTouches.get(touch.identifier);
+                    stopNote(oldNoteKey);
+                    activeNotes.delete(oldNoteKey);
+                }
+                
+                // Start new note
+                const noteKey = handleNoteInteraction(pos, touch.identifier);
+                if (noteKey) {
+                    activeTouches.set(touch.identifier, noteKey);
+                }
+            }
+            
+            updateTouchInfo();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            // Find which touches ended
+            const remainingTouches = Array.from(e.touches).map(t => t.identifier);
+            
+            for (const [touchId, noteKey] of activeTouches.entries()) {
+                if (!remainingTouches.includes(touchId)) {
+                    stopNote(noteKey);
+                    activeNotes.delete(noteKey);
+                    activeTouches.delete(touchId);
+                }
+            }
+            
+            updateTouchInfo();
+        });
+
+        // Mouse support (for desktop)
+        let mouseDown = false;
+
+        canvas.addEventListener('mousedown', async (e) => {
+            await initAudio();
+            mouseDown = true;
+            autoCollapseControls();
+            const pos = getEventPos(e);
+            handleNoteInteraction(pos);
+            updateTouchInfo();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                const pos = getEventPos(e);
+                handleNoteInteraction(pos);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+            // Stop all mouse-triggered notes
+            for (const [key, note] of activeNotes.entries()) {
+                if (note.touchId === 'mouse') {
+                    stopNote(key);
+                    activeNotes.delete(key);
+                }
+            }
+            updateTouchInfo();
+        });
+
+        function updateTouchInfo() {
+            const touchCount = activeTouches.size + (mouseDown ? 1 : 0);
+            const playingCount = oscillators.size;
+            elements.touchInfo.textContent = `Touch: ${touchCount} | Playing: ${playingCount}`;
+            elements.activeTouches.textContent = touchCount;
+        }
+
+        // Control Event Handlers
+        elements.baseFreq.addEventListener('input', () => {
+            elements.freqDisplay.textContent = `${elements.baseFreq.value} Hz`;
+        });
+
+        elements.micToggle.addEventListener('click', () => {
+            toggleMicrophone();
+            autoCollapseControls();
+        });
+
+        elements.audioFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadAudioFile(file);
+            }
+        });
+
+        // Note button controls
+        document.querySelectorAll('.btn[data-note]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await initAudio();
+                const noteName = btn.dataset.note;
+                const noteIndex = noteNames.indexOf(noteName);
+                const frequency = getNoteFrequency(noteIndex, 1);
+                
+                playNote(frequency, `btn-${noteName}`);
+                
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 500);
+                autoCollapseControls();
+            });
+        });
+
+        // Chord buttons
+        document.querySelectorAll('.btn[data-chord]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await initAudio();
+                
+                const chordType = btn.dataset.chord;
+                let chordNotes = [];
+                
+                switch(chordType) {
+                    case 'major':
+                        chordNotes = [0, 4, 7]; // C, E, G
+                        break;
+                    case 'minor':
+                        chordNotes = [0, 3, 7]; // C, Eb, G
+                        break;
+                    case 'dim':
+                        chordNotes = [0, 3, 6]; // C, Eb, Gb
+                        break;
+                }
+                
+                chordNotes.forEach((noteIndex, i) => {
+                    const frequency = getNoteFrequency(noteIndex, 1);
+                    setTimeout(() => {
+                        playNote(frequency, `chord-${chordType}-${i}`, 3000);
+                    }, i * 50);
+                });
+                
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 1000);
+                autoCollapseControls();
+            });
+        });
+
+        // Control change handlers
+        Object.values(elements).forEach(element => {
+            if (element && element.addEventListener) {
+                element.addEventListener('input', () => {
+                    drawSpiral();
+                    autoCollapseControls();
+                });
+                element.addEventListener('change', () => {
+                    drawSpiral();
+                    autoCollapseControls();
+                });
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            time++;
+            
+            // Perform live analysis if listening
+            if (isListening) {
+                performLiveAnalysis();
+            }
+            
+            drawSpiral();
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawSpiral();
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                resizeCanvas();
+                drawSpiral();
+            }, 100);
+        });
+
+        // Initialize
+        resizeCanvas();
+        drawSpiral();
+        animate();
+        
+        // Show controls initially for 3 seconds so users know they exist
+        setTimeout(() => {
+            controlsElement.classList.add('expanded');
+            setTimeout(() => {
+                controlsElement.classList.remove('expanded');
+            }, 3000);
+        }, 1000);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+        });
+    </script>
+</body>
+</html>

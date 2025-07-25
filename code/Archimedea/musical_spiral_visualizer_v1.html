@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Spiral Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f4c75);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #spiralCanvas {
+            background: radial-gradient(circle, rgba(0,0,0,0.3), rgba(0,0,0,0.8));
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .note-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .note-btn {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+        
+        .note-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .note-btn.active {
+            background: #ff6b6b;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+        
+        .info-panel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .frequency-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #4ecdc4, #44a08d); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Musical Spiral Visualizer</h1>
+            
+            <canvas id="spiralCanvas" width="600" height="600"></canvas>
+            
+            <div class="info-panel">
+                <h3>How to Use:</h3>
+                <p>• Click anywhere on the spiral to play notes</p>
+                <p>• Inner circles = lower octaves, outer = higher</p>
+                <p>• Angular position = note within octave</p>
+                <p>• Wave amplitude maps to spiral radius variation</p>
+                <p>• Osculating circles show harmonic relationships</p>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Base Frequency (Hz)</label>
+                <input type="range" id="baseFreq" min="220" max="880" value="440" step="1">
+                <div class="frequency-display" id="freqDisplay">440 Hz</div>
+            </div>
+            
+            <div class="control-group">
+                <label>Spiral Density</label>
+                <input type="range" id="spiralDensity" min="1" max="8" value="4" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Wave Amplitude</label>
+                <input type="range" id="waveAmplitude" min="0" max="50" value="20" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Harmonics Strength</label>
+                <input type="range" id="harmonics" min="0" max="100" value="30" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Temperament</label>
+                <select id="temperament" style="width: 100%; padding: 5px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px;">
+                    <option value="equal">Equal Temperament</option>
+                    <option value="just">Just Intonation</option>
+                    <option value="pythagorean">Pythagorean</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Quick Notes</label>
+                <div class="note-buttons">
+                    <button class="note-btn" data-note="C">C</button>
+                    <button class="note-btn" data-note="D">D</button>
+                    <button class="note-btn" data-note="E">E</button>
+                    <button class="note-btn" data-note="F">F</button>
+                    <button class="note-btn" data-note="G">G</button>
+                    <button class="note-btn" data-note="A">A</button>
+                    <button class="note-btn" data-note="B">B</button>
+                    <button class="note-btn" data-note="C#">C#</button>
+                    <button class="note-btn" data-note="D#">D#</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <button id="playChord" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #ff6b6b, #ee5a24); border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold;">Play C Major Chord</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context Setup
+        let audioContext;
+        let oscillators = [];
+        let gainNodes = [];
+
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Canvas Setup
+        const canvas = document.getElementById('spiralCanvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const maxRadius = Math.min(centerX, centerY) - 50;
+
+        // Musical Constants
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const justRatios = [1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8];
+        
+        // Animation variables
+        let animationFrame;
+        let time = 0;
+        let activeNotes = new Set();
+
+        // Control elements
+        const baseFreqSlider = document.getElementById('baseFreq');
+        const spiralDensitySlider = document.getElementById('spiralDensity');
+        const waveAmplitudeSlider = document.getElementById('waveAmplitude');
+        const harmonicsSlider = document.getElementById('harmonics');
+        const temperamentSelect = document.getElementById('temperament');
+        const freqDisplay = document.getElementById('freqDisplay');
+
+        // Update frequency display
+        baseFreqSlider.addEventListener('input', () => {
+            freqDisplay.textContent = `${baseFreqSlider.value} Hz`;
+        });
+
+        // Note frequency calculation
+        function getNoteFrequency(noteIndex, octave, temperament = 'equal') {
+            const baseFreq = parseFloat(baseFreqSlider.value);
+            
+            switch(temperament) {
+                case 'just':
+                    return baseFreq * Math.pow(2, octave) * justRatios[noteIndex];
+                case 'pythagorean':
+                    // Simplified Pythagorean ratios
+                    const pythagoreanRatio = Math.pow(3/2, (noteIndex * 7) % 12 - 6) * Math.pow(2, Math.floor((noteIndex * 7) / 12));
+                    return baseFreq * Math.pow(2, octave) * pythagoreanRatio;
+                default: // equal temperament
+                    return baseFreq * Math.pow(2, octave + noteIndex/12);
+            }
+        }
+
+        // Sound generation
+        function playNote(frequency, duration = 2000) {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = 'sine';
+            
+            // Add harmonics
+            const harmonicsStrength = parseFloat(harmonicsSlider.value) / 100;
+            if (harmonicsStrength > 0) {
+                oscillator.type = 'sawtooth';
+            }
+            
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration/1000);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration/1000);
+            
+            return { oscillator, gainNode };
+        }
+
+        // Drawing functions
+        function drawSpiral() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw concentric octave circles
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let octave = 1; octave <= 4; octave++) {
+                const radius = (maxRadius / 4) * octave;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+            
+            // Draw note divisions
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let note = 0; note < 12; note++) {
+                const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * maxRadius,
+                    centerY + Math.sin(angle) * maxRadius
+                );
+                ctx.stroke();
+            }
+            
+            // Draw main spiral
+            const spiralDensity = parseInt(spiralDensitySlider.value);
+            const waveAmplitude = parseFloat(waveAmplitudeSlider.value);
+            
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let t = 0; t <= spiralDensity * 2 * Math.PI; t += 0.01) {
+                const baseRadius = (t / (spiralDensity * 2 * Math.PI)) * maxRadius;
+                const waveOffset = Math.sin(t * 12 + time * 0.005) * waveAmplitude * (baseRadius / maxRadius);
+                const radius = baseRadius + waveOffset;
+                
+                const x = centerX + Math.cos(t - Math.PI/2) * radius;
+                const y = centerY + Math.sin(t - Math.PI/2) * radius;
+                
+                if (t === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Draw note markers
+            for (let octave = 1; octave <= spiralDensity; octave++) {
+                for (let note = 0; note < 12; note++) {
+                    const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                    const baseRadius = (maxRadius / spiralDensity) * octave;
+                    const waveOffset = Math.sin(angle * 12 + time * 0.005) * waveAmplitude * (baseRadius / maxRadius);
+                    const radius = baseRadius + waveOffset;
+                    
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    // Highlight active notes
+                    const noteKey = `${note}-${octave}`;
+                    if (activeNotes.has(noteKey)) {
+                        ctx.fillStyle = '#ff6b6b';
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = '#ff6b6b';
+                    } else {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Osculating circles for consonant intervals
+                    if (note % 3 === 0 || note % 4 === 0) { // Perfect fifths and fourths
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Draw frequency labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            for (let note = 0; note < 12; note++) {
+                const angle = (note / 12) * 2 * Math.PI - Math.PI/2;
+                const x = centerX + Math.cos(angle) * (maxRadius + 30);
+                const y = centerY + Math.sin(angle) * (maxRadius + 30);
+                ctx.fillText(noteNames[note], x, y);
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            time++;
+            drawSpiral();
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        // Mouse interaction
+        canvas.addEventListener('click', (e) => {
+            if (!audioContext) initAudio();
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - centerX;
+            const y = e.clientY - rect.top - centerY;
+            
+            const radius = Math.sqrt(x*x + y*y);
+            const angle = Math.atan2(y, x) + Math.PI/2;
+            const normalizedAngle = (angle + 2*Math.PI) % (2*Math.PI);
+            
+            const octave = Math.ceil((radius / maxRadius) * parseInt(spiralDensitySlider.value));
+            const noteIndex = Math.floor((normalizedAngle / (2*Math.PI)) * 12);
+            
+            if (octave >= 1 && octave <= parseInt(spiralDensitySlider.value)) {
+                const frequency = getNoteFrequency(noteIndex, octave - 1, temperamentSelect.value);
+                playNote(frequency);
+                
+                const noteKey = `${noteIndex}-${octave}`;
+                activeNotes.add(noteKey);
+                setTimeout(() => activeNotes.delete(noteKey), 2000);
+            }
+        });
+
+        // Note button controls
+        document.querySelectorAll('.note-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!audioContext) initAudio();
+                
+                const noteName = btn.dataset.note;
+                const noteIndex = noteNames.indexOf(noteName);
+                const frequency = getNoteFrequency(noteIndex, 1, temperamentSelect.value);
+                
+                playNote(frequency);
+                
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 500);
+            });
+        });
+
+        // Chord button
+        document.getElementById('playChord').addEventListener('click', () => {
+            if (!audioContext) initAudio();
+            
+            // C Major chord: C, E, G
+            const chordNotes = [0, 4, 7]; // C, E, G
+            chordNotes.forEach(noteIndex => {
+                const frequency = getNoteFrequency(noteIndex, 1, temperamentSelect.value);
+                playNote(frequency, 3000);
+            });
+        });
+
+        // Control change handlers
+        [spiralDensitySlider, waveAmplitudeSlider, harmonicsSlider, temperamentSelect].forEach(control => {
+            control.addEventListener('input', drawSpiral);
+        });
+
+        // Initialize
+        drawSpiral();
+        animate();
+    </script>
+</body>
+</html>
