@@ -1,3 +1,6 @@
+---
+---
+
 # ⚛️ MolecularSynth
 
 An interactive web-based synthesizer that translates the structural and quantum properties of chemical molecules into sound and musical patterns.
