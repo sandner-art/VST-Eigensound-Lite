@@ -23,19 +23,116 @@
             </ul>
         </nav>
 
-        <div class="content-section">
-            <h2>About Eigensound</h2>
-            <p>
-                eigensound|lab is an open-source research and education project dedicated to exploring the intersection of mathematics, theoretical physics, and digital audio.
-    Our primary focus is on "sonification" — the process of translating data and mathematical models into sound — and its alternative visualization techniques.
-</p>
-<p>
-    We research and develop novel sound synthesis techniques based on the principles of quantum mechanics and general relativity. By using concepts like eigenmodes, eigenvalues, and wave functions, we generate complex sound structures and timbres.
-</p>
-<p>
-    This website serves as a central preview hub for interactive web applications focused on sonification and visualization, research papers, and demonstration videos.
-</p>
-        </div>
+<div class="content-section">
+    <h2>About eigensound|lab</h2>
+
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="quantum-harmony-title">
+    <title id="quantum-harmony-title">Quantum Harmony Icon</title>
+    <g stroke="black" stroke-width="2" fill="none">
+        <circle cx="50" cy="50" r="8" fill="black" />
+
+        <ellipse cx="50" cy="50" rx="30" ry="20" transform="rotate(20 50 50)" stroke-dasharray="4 2" />
+        <ellipse cx="50" cy="50" rx="30" ry="20" transform="rotate(110 50 50)" stroke-dasharray="4 2" />
+
+        <path d="M 15,50 C 25,40 35,60 45,50" stroke-width="2.5" />
+        <path d="M 85,50 C 75,40 65,60 55,50" stroke-width="2.5" />
+
+        <path d="M 50,15 L 50,30" stroke-linecap="round" />
+        <path d="M 50,85 L 50,70" stroke-linecap="round" />
+    </g>
+</svg>
+
+    <p>
+        <strong>eigensound|lab</strong> is an open-source research and education project exploring the intersection of <strong>mathematics, theoretical physics, and digital audio</strong>. Our main focus is <strong>sonification</strong>—the art of translating data and complex mathematical models into sound—alongside innovative alternative visualization techniques.
+    </p>
+    <p>
+        We dive deep into <strong>novel sound synthesis techniques</strong> inspired by the principles of <strong>quantum mechanics and general relativity</strong>. By leveraging concepts like <strong>eigenmodes, eigenvalues, and wave functions</strong>, we generate rich, complex sound structures and unique timbres.
+    </p>
+    <p>
+        This website is your central hub for <strong>interactive web applications</strong> showcasing our sonification and visualization experiments, <strong>research papers</strong>, and <strong>demonstration videos</strong>.
+    </p>
+
+
+
+
+
+    <hr> <h2>Why "eigensound"?</h2>
+    <p>
+        The name "eigensound" is directly inspired by fundamental concepts in mathematics and physics: <strong>eigenvectors</strong> and <strong>eigenvalues</strong>.
+    </p>
+    <p>
+        Imagine a system, like a vibrating string or a quantum particle. When you apply an operation or a transformation to this system, it usually changes its state or direction. However, for certain special states, the system only scales—it gets stronger or weaker, but its fundamental character or direction remains the same. These special states are called <strong>eigenvectors</strong>.
+    </p>
+
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="eigen-transformation-title">
+    <title id="eigen-transformation-title">Eigenvector Transformation</title>
+    <g stroke="black" fill="none">
+        <line x1="10" y1="50" x2="90" y2="50" stroke-width="1"/>
+        <line x1="50" y1="10" x2="50" y2="90" stroke-width="1"/>
+        <circle cx="50" cy="50" r="3" fill="black"/>
+
+        <path d="M 50,50 L 70,40" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+        <path d="M 50,50 L 30,70" stroke-width="2" stroke-linecap="round" opacity="0.4" /> <line x1="15" y1="55" x2="85" y2="45" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="55" y1="15" x2="45" y2="85" stroke-width="1" stroke-dasharray="3 2"/>
+
+        <path d="M 50,50 L 75,25" stroke="red" stroke-width="1" stroke-linecap="round" marker-end="url(#arrowhead-red)"/>
+
+        <defs>
+            <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="black" stroke="none"/>
+            </marker>
+            <marker id="arrowhead-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="red" stroke="none"/>
+            </marker>
+        </defs>
+    </g>
+</svg>
+
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="eigenmode-vibration-title">
+    <title id="eigenmode-vibration-title">Eigenmode Vibration</title>
+    <g stroke="black" fill="none" stroke-linecap="round">
+        <line x1="15" y1="50" x2="85" y2="50" stroke-width="2"/>
+
+        <path d="M 15,50 C 35,30 65,30 85,50" stroke-width="2" opacity="0.5"/>
+        <path d="M 15,50 C 35,70 65,70 85,50" stroke-width="2" opacity="0.8"/>
+
+        <path d="M 15,50 C 25,60 35,40 50,50 C 65,60 75,40 85,50" stroke-width="2" stroke-dasharray="4 2" opacity="0.5"/>
+        <path d="M 15,50 C 25,40 35,60 50,50 C 65,40 75,60 85,50" stroke-width="2" stroke-dasharray="4 2" opacity="0.5"/>
+
+        <circle cx="15" cy="50" r="3" fill="black"/>
+        <circle cx="85" cy="50" r="3" fill="black"/>
+        <circle cx="50" cy="50" r="3" fill="black" opacity="0.7"/> <path d="M 90,45 L 95,40 M 90,55 L 95,60" stroke-width="2"/>
+    </g>
+</svg>
+
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-labelledby="stable-direction-title">
+    <title id="stable-direction-title">Stable Direction Under Transformation</title>
+    <g stroke="black" fill="none">
+        <circle cx="50" cy="50" r="3" fill="black"/>
+
+        <line x1="10" y1="50" x2="90" y2="50" stroke-width="1" stroke-dasharray="2 2" opacity="0.6"/>
+        <line x1="50" y1="10" x2="50" y2="90" stroke-width="1" stroke-dasharray="2 2" opacity="0.6"/>
+
+        <path d="M 50,50 L 75,30" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead-black)"/>
+        <path d="M 50,50 L 70,40" stroke-width="2" opacity="0.4" stroke-linecap="round"/> <path d="M 50,50 L 50,20" stroke="blue" stroke-width="2" stroke-linecap="round" marker-end="url(#arrowhead-blue)"/>
+        <path d="M 50,50 L 50,35" stroke="blue" stroke-width="2" opacity="0.5" stroke-linecap="round"/> <defs>
+            <marker id="arrowhead-black" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="black" stroke="none"/>
+            </marker>
+            <marker id="arrowhead-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="blue" stroke="none"/>
+            </marker>
+        </defs>
+    </g>
+</svg>
+
+    <p>
+        The amount by which these eigenvectors are scaled is called their <strong>eigenvalue</strong>, where "eigen" is meaning its own, characteristic property. Think of it as a unique "fingerprint" or inherent characteristic of that specific state within the system.
+    </p>
+    <p>
+        We often use these concepts to model how complex systems behave and resonate; we translate these mathematical behaviors into sound, creating "eigensounds" that explore or interpret the intrinsic properties of the underlying data or physical models. While our interactive apps encompass a broad spectrum of mathematical and physical simulations and sonifications, including innovative visualizations of various phenomena, the core idea of uncovering these inherent "modes" and "characteristics" through sound remains a principle embedded in the very name <strong>eigensound</strong>.
+    </p>
+</div>
 
         <p class="subtitle" style="margin-top: 40px;">Open-source scientific sonification research. Copyright © 2025 Daniel Sandner.</p>
     </div>
