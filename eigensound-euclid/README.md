@@ -2,7 +2,7 @@
 layout: default 
 ---
 
-# Rhythmic Euclid Sonifier
+# Euclid Sonifier
 
 ## Abstract
 

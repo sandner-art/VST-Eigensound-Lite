@@ -45,6 +45,11 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #4B5563; /* gray-600 */
       }
+      /* Fix for dropdown option colors */
+      select option {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+      }
     </style>
   <script type="importmap">
 {
@@ -56,7 +61,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>

@@ -4,7 +4,7 @@ layout: default
 
 # Foucault Terraphone
 
-**A Real-Time Interactive Sonification of Pendulum Physics and Celestial Mechanics**
+**A Real-Time Interactive Sonification of Pendulum Physics and Celestial Mechanics**, Conceptual Experiment
 
 ---
 
@@ -16,7 +16,7 @@ The Foucault Terraphone is a real-time, interactive web application that explore
 
 ### 1. Introduction
 
-The Foucault pendulum, first exhibited in 1851, provides a direct and elegant proof of a planet's rotation. The apparent rotation of the pendulum's swing plane is a consequence of the Coriolis force, an inertial force that acts on objects in motion within a rotating frame of reference.
+The Foucault pendulum, first exhibited in 1851, provides a direct proof of a planet's rotation. The apparent rotation of the pendulum's swing plane is a consequence of the Coriolis force, an inertial force that acts on objects in motion within a rotating frame of reference.
 
 The Foucault Terraphone project aims to make the principles of this phenomenon both audible and interactive. Users can instantiate virtual pendulums and manipulate the physical parameters of the simulated environment—such as gravity, latitude, and planetary rotation speed—and immediately hear the impact on the system's dynamics.
 
