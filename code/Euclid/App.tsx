@@ -7,6 +7,7 @@ import { Preset, EuclidI47Data, CircleData, EuclidIData, GoldenRatioSquareData, 
 import { descriptions } from './descriptions';
 import { SonificationEngine, SourceData } from './services/sonificationService';
 import { generateSonificationPatch } from './services/geminiService';
+import { defaultSettings } from './defaults';
 
 const themes: Record<ThemeName, Record<string, string>> = {
   dark: {
@@ -37,8 +38,8 @@ const themes: Record<ThemeName, Record<string, string>> = {
 
 const App: React.FC = () => {
     // Core state
-    const [theme, setTheme] = useState<ThemeName>('dark');
-    const [activePresetKey, setActivePresetKey] = useState<PresetKey>('euclid_I_47');
+    const [theme, setTheme] = useState<ThemeName>(defaultSettings.theme);
+    const [activePresetKey, setActivePresetKey] = useState<PresetKey>(defaultSettings.activePresetKey);
     const activePreset: Preset = presets[activePresetKey];
     const sonificationEngine = useMemo(() => new SonificationEngine(), []);
     const [isFullScreen, setIsFullScreen] = useState(false);
@@ -103,25 +104,9 @@ const App: React.FC = () => {
 
 
     // UI & Sonification states
-    const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('continuous');
-    const [fadeoutTime, setFadeoutTime] = useState(3); // seconds
-    const [sonificationRules, setSonificationRules] = useState<SonificationRules>({
-        baseFrequency: 220,
-        mapping: 'length_to_freq',
-        waveform: 'sine',
-        scale: 'major',
-        mode: 'pitch',
-        normalization: 'none',
-        granularModulationTarget: 'pitch',
-        lfo: {
-            target: 'none',
-            waveform: 'sine',
-            rate: 2,
-            depth: 0.25,
-        },
-        lfoModulationTarget: 'rate',
-        maxPolyphony: 10,
-    });
+    const [playbackMode, setPlaybackMode] = useState<PlaybackMode>(defaultSettings.playbackMode);
+    const [fadeoutTime, setFadeoutTime] = useState(defaultSettings.fadeoutTime);
+    const [sonificationRules, setSonificationRules] = useState<SonificationRules>(defaultSettings.sonificationRules);
     const [sonificationSelection, setSonificationSelection] = useState<SonificationSelection>({
         euclid_I_47: { a: true, b: true, c: false },
         euclid_I_1: { side: true, height: false },
@@ -142,27 +127,20 @@ const App: React.FC = () => {
     const [fxAssignments, setFxAssignments] = useState<FxAssignments>({});
     const [sourceParameters, setSourceParameters] = useState<SourceParameters>({});
     const [samples, setSamples] = useState<Sample[]>([]);
-    const [showLabels, setShowLabels] = useState(true);
-    const [isMuted, setIsMuted] = useState(false);
+    const [showLabels, setShowLabels] = useState(defaultSettings.showLabels);
+    const [isMuted, setIsMuted] = useState(defaultSettings.isMuted);
     const [xy, setXY] = useState<{x: number, y: number}>({x: 0, y: 0});
-    const [interactionMode, setInteractionMode] = useState<InteractionMode>('direct');
+    const [interactionMode, setInteractionMode] = useState<InteractionMode>(defaultSettings.interactionMode);
 
     // AI Distiller State
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [generatedExplanation, setGeneratedExplanation] = useState<string | null>(null);
-    const [aiStyle, setAiStyle] = useState<AIStyle>('ambient');
-    const [aiNotes, setAiNotes] = useState('');
+    const [aiStyle, setAiStyle] = useState<AIStyle>(defaultSettings.aiStyle);
+    const [aiNotes, setAiNotes] = useState(defaultSettings.aiNotes);
 
     // Rhythm Module State
-    const [rhythmSettings, setRhythmSettings] = useState<RhythmSettings>({
-        isEnabled: false,
-        bpm: 120,
-        kickVolume: 0.8,
-        snareVolume: 0.7,
-        hatVolume: 0.5,
-        harmonicBass: false,
-    });
+    const [rhythmSettings, setRhythmSettings] = useState<RhythmSettings>(defaultSettings.rhythmSettings);
     const [rhythmSourceMapping, setRhythmSourceMapping] = useState<RhythmSourceMapping>({});
 
     const handleApplyAIPatch = useCallback((patch: SonificationPatch) => {
