@@ -1,0 +1,6 @@
+{
+  "name": " Advanced Foucault Terraphonev2",
+  "description": "A novel, real-time interactive application that sonifies the physics of a Foucault pendulum. By translating the elegant principles of the pendulum's motion and the subtle influence of the Coriolis effect into sound, the Terraphone aims to be both a unique musical instrument and an intuitive educational tool.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

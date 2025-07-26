@@ -1,0 +1,6 @@
+{
+  "name": "Rhytmic Euclid Sonifier AI Distiller UI",
+  "description": "An interactive web application that translates geometric principles into sound. Features an 'AI Distiller' that uses the Gemini API to creatively generate sonification patches and musical interpretations of mathematical concepts.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
