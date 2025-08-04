@@ -8,7 +8,7 @@ layout: default
 |[eigensound.com](https://eigensound.com) | [sandner.art](https://sandner.art) |
 
 
-## Quick Start for Musicians: What is this and why should I use it?
+## Quick Start for Musicians: What is this?
 
 Ever wished you could *see* the shape of a chord? Or watch how harmony flows through a piece of music? That's the core idea behind EigenSound Archimedea.
 
@@ -23,7 +23,7 @@ Archimedea is three tools in one:
     The spiral isn't just for looking—it's an instrument. Touch anywhere on its surface to play notes and chords. Explore new melodies by drawing paths on the screen and discover the geometric nature of musical intervals.
 
 *   **3. An Educational Platform: Understand Music Visually.**
-    Grasp difficult concepts like scales, intervals, and chord structures intuitively. You can *see* why certain notes sound good together by observing their simple, balanced relationships on the spiral.
+    Grasp concepts like scales, intervals, and chord structures intuitively. You can *see* why certain notes sound good together by observing their simple, balanced relationships on the spiral.
 
 ---
 
