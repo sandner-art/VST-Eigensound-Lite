@@ -550,8 +550,8 @@
 
 /* Styles for new cycler buttons in the top controls */
 .top-controls .theme-btn {
-    padding: 6px 12px;
-    min-width: 85px;
+    padding: 6px 10px;
+    min-width: 55px;
     text-align: center;
     white-space: nowrap;
 }
@@ -998,10 +998,10 @@ function initCyclerButtons() {
         scaleSelect.dispatchEvent(new Event('change'));
     });
 
-    // Function to update the scale button's text from the select element
+    // Function to update the scale button's text from the select element Scale:
     const updateScaleButtonText = () => {
         const optionText = scaleSelect.options[scaleSelect.selectedIndex].text;
-        scaleCyclerBtn.textContent = `Scale: ${optionText}`;
+        scaleCyclerBtn.textContent = `${optionText}`;
     };
 
     // Listen for changes on the select itself to keep the button in sync
